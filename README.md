@@ -23,7 +23,7 @@ npm run dev:mp-weixin
 
 ### 工程结构解析
 
-```
+```shell
 ├── .husky                     # Git Hooks
 ├── .vscode                    # VS Code 插件 + 设置
 ├── dist                       # 打包文件夹（可删除重新打包）
