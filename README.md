@@ -24,6 +24,7 @@ pnpm run dev:mp-weixin
 
 
 ### 工程结构解析
+```
 
 ├── .husky                     # Git Hooks
 ├── .vscode                    # VS Code 插件 + 设置
