@@ -17,9 +17,11 @@ pnpm i --registry=https://registry.npmmirror.com
 
 ```shell
 # 微信小程序端
-npm run dev:mp-weixin
+pnpm run dev:mp-weixin
+```
 
 3. 微信开发者工具导入 `/dist/dev/mp-weixin` 目录
+
 
 ### 工程结构解析
 
