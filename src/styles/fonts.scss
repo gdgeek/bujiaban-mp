@@ -1,9 +1,9 @@
 @font-face {
   font-family: 'bujiaban-mp';  /* Project id 4419566 */
-  src: url('//at.alicdn.com/t/c/font_4419566_rvvv0rdh6ea.woff2?t=1746524267069') format('woff2'),
-       url('//at.alicdn.com/t/c/font_4419566_rvvv0rdh6ea.woff?t=1746524267069') format('woff'),
-       url('//at.alicdn.com/t/c/font_4419566_rvvv0rdh6ea.ttf?t=1746524267069') format('truetype'),
-       url('//at.alicdn.com/t/c/font_4419566_rvvv0rdh6ea.svg?t=1746524267069#bujiaban-mp') format('svg');
+  src: url('//at.alicdn.com/t/c/font_4419566_me5igzucgj.woff2?t=1746587786102') format('woff2'),
+       url('//at.alicdn.com/t/c/font_4419566_me5igzucgj.woff?t=1746587786102') format('woff'),
+       url('//at.alicdn.com/t/c/font_4419566_me5igzucgj.ttf?t=1746587786102') format('truetype'),
+       url('//at.alicdn.com/t/c/font_4419566_me5igzucgj.svg?t=1746587786102#bujiaban-mp') format('svg');
 }
 
 [class^='icon-'],
@@ -14,7 +14,42 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-.icon-bujiaban:before {
-  content: '\e621';
+.icon-star:before {
+  content: '\e6cc';
 }
 
+.icon-like:before {
+  content: '\e66d';
+}
+
+.icon-clock:before {
+  content: '\e638';
+}
+
+.icon-service:before {
+  content: '\e67e';
+}
+
+.icon-setting:before {
+  content: '\e6b2';
+}
+
+.icon-share:before {
+  content: '\e67d';
+}
+
+.icon-user:before {
+  content: '\e64b';
+}
+
+.icon-home:before {
+  content: '\e62a';
+}
+
+.icon-edit:before {
+  content: '\e670';
+}
+
+.icon-arrow-right:before {
+  content: '\e61a';
+}
