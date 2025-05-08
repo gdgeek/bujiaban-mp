@@ -34,6 +34,12 @@
         "navigationBarTitleText": "内置浏览器"
 
       }
+    },
+    {
+      "path": "pages/video/index",
+      "style": {
+        "navigationBarTitleText": "视频管理"
+      }
     }
   ],
   "globalStyle": {
@@ -54,6 +60,12 @@
         "pagePath": "pages/home/index",
         "iconPath": "static/tabs/home_default.png",
         "selectedIconPath": "static/tabs/home_selected.png"
+      },
+      {
+        "text": "视频管理",
+        "pagePath": "pages/video/index",
+        "iconPath": "static/tabs/video_default.png",
+        "selectedIconPath": "static/tabs/video_selected.png"
       },
       {
         "text": "我的",

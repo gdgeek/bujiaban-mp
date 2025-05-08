@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineExpose } from "vue";
+import { ref, onMounted } from "vue";
 const videoPoster = ref("https://picsum.photos/700/400"); // 使用随机图片作为视频封面
 const videoTitle = ref("精彩视频");
 const videoDesc = ref("这是一段非常精彩的视频，点击查看更多内容！");
