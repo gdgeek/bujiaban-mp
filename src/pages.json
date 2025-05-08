@@ -4,12 +4,15 @@
     {
       "path": "pages/home/index",
       "style": {
-        "navigationBarTitleText": "首页"
+        "navigationBarTitleText": "首页",
+        "enablePullDownRefresh": false
+
       }
     },
     {
       "path": "pages/my/index",
       "style": {
+        "navigationStyle": "custom", // 隐藏默认导航
         "navigationBarTitleText": "我的"
       }
     },
@@ -23,6 +26,13 @@
       "path": "pages/login/index",
       "style": {
         "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/webview/index",
+      "style": {
+        "navigationBarTitleText": "内置浏览器"
+
       }
     }
   ],
