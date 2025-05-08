@@ -4,11 +4,11 @@ import { onLoad } from "@dcloudio/uni-app";
 const openid = ref<string | null>(null);
 const token = ref<string | null>(null);
 const status = ref<string | null>(null);
-const getStatus = async (id: string) => {
+const getStatus = async (token: string) => {
   return new Promise((resolve, reject) => {
     console.error("refresh:");
     wx.request({
-      url: "https://w.4mr.cn/v1/checkin/status?openid=" + id,
+      url: "https://w.4mr.cn/v1/checkin/status?token=" + token,
       method: "GET",
       success: function (res) {
         console.log("登录成功！" + JSON.stringify(res));
@@ -32,7 +32,7 @@ const getQueryString = (url: string, name: string): string | null => {
 };
 
 const refresh = async () => {
-  const ready = await getStatus(openid.value);
+  const ready = await getStatus(token.value);
   status.value = ready.data.status;
 };
 const login = async () => {
@@ -115,21 +115,16 @@ const close = () => {
 };
 onLoad(async () => {
   try {
-    const ret = await login();
-
-    console.log("openid:" + ret.openid);
-    openid.value = ret.openid;
-    await refresh();
-    //console.error("ready!:" + JSON.stringify(ready.data.status));
-
     const query = getCurrentPages()[getCurrentPages().length - 1].options;
-
     const decodedUrl = decodeURIComponent(query.q);
     token.value = getQueryString(decodedUrl, "k");
     if (!token.value) {
       token.value = "test123";
     }
-    ///openid.value = openidRes.data.openid;
+
+    const ret = await login();
+    openid.value = ret.openid;
+    await refresh();
   } catch (error) {
     console.log("请求失败！" + error);
   }
