@@ -14,6 +14,12 @@
       }
     },
     {
+      "path": "pages/checkin/index",
+      "style": {
+        "navigationBarTitleText": "打卡"
+      }
+    },
+    {
       "path": "pages/login/index",
       "style": {
         "navigationBarTitleText": "登录"
@@ -42,6 +48,12 @@
       {
         "text": "我的",
         "pagePath": "pages/my/index",
+        "iconPath": "static/tabs/user_default.png",
+        "selectedIconPath": "static/tabs/user_selected.png"
+      },
+      {
+        "text": "打卡",
+        "pagePath": "pages/checkin/index",
         "iconPath": "static/tabs/user_default.png",
         "selectedIconPath": "static/tabs/user_selected.png"
       }
