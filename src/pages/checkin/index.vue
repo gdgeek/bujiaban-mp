@@ -1,10 +1,31 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 const openid = ref<string | null>(null);
 const token = ref<string | null>(null);
 const status = ref<string | null>(null);
-const getStatus = async (token: string) => {
+const _ready = computed(() => {
+  return !!(status.value && status.value.checkin.status == "ready");
+});
+let intervalId: NodeJS.Timeout | null = null;
+watch(
+  () => _ready.value,
+  (newVal) => {
+    console.log("ready:" + newVal);
+    if (newVal) {
+      intervalId = setInterval(async () => {
+        await refresh();
+      }, 1800);
+    } else {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+  },
+  { immediate: true },
+);
+const _refresh = async (token: string) => {
   return new Promise((resolve, reject) => {
     console.error("refresh:");
     wx.request({
@@ -33,8 +54,8 @@ const getQueryString = (url: string, name: string): string | null => {
 };
 
 const refresh = async () => {
-  const ready = await getStatus(token.value);
-  status.value = ready.data.status;
+  const ret = await _refresh(token.value);
+  status.value = ret.data;
 };
 const login = async () => {
   return new Promise((resolve, reject) => {
@@ -178,7 +199,7 @@ onLoad(async () => {
     return;
   }
   try {
-    const ret = await getStatus(token.value);
+    const ret = await _refresh(token.value);
 
     console.error("===" + JSON.stringify(ret));
     if (!ret.scuess || ret.data.checkin.openid != openid.value) {
@@ -201,6 +222,8 @@ onLoad(async () => {
     <p>openid:{{ openid }}</p>
     <p>token:{{ token }}</p>
     <p>status:{{ status }}</p>
+    <p>_ready:{{ _ready }}</p>
+
     <view v-if="status && status.checkin.status == 'linked'">
       <button @click="begin">准备开始</button>
     </view>
