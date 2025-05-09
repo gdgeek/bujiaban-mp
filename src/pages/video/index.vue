@@ -2,7 +2,7 @@
   <view class="video-page">
     <!-- 添加调试信息 -->
     <view v-if="!isLoaded" class="loading-tips">
-      <text>正在加载视频管理页面...</text>
+      <text>正在加载记录管理页面...</text>
       <text>当前URL: {{ webviewUrl }}</text>
     </view>
 
@@ -34,13 +34,14 @@ onMounted(() => {
     if (env === "develop") {
       // 开发环境 - 使用本地开发服务器
       // webviewUrl.value = "http://localhost:3000/video/index.html";
-      webviewUrl.value = "http://localhost:5173";
+      webviewUrl.value = "https://file.4mr.cn";
+      // webviewUrl.value = "http://localhost:5173";
     } else if (env === "trial") {
       // 体验版环境 - 使用测试服务器
       webviewUrl.value = "https://test-example.com/video/index.html";
     } else {
       // 正式环境 - 使用生产服务器
-      webviewUrl.value = "https://example.com/video/index.html";
+      webviewUrl.value = "https://file.4mr.cn";
     }
 
     console.log("当前小程序环境:", env);
