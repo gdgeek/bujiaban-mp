@@ -119,11 +119,12 @@
               <video
                 @click="handleVideoClick($event, video.id)"
                 :src="video.videoUrl"
-                :poster="video.thumbnail"
+                :poster="video.thumbnail || ''"
                 preload="metadata"
                 :controls="isPlaying[video.id]"
                 playsinline
                 @loadedmetadata="handleVideoMetadata($event, video.id)"
+                @loadeddata="generateThumbnail($event, video.id)"
               ></video>
               <div class="video-duration">{{ videoDurations[video.id] || '加载中...' }}</div>
             </div>
@@ -136,7 +137,9 @@
             </div>
             <div class="video-actions">
               <div class="video-action" @click="handleEditVideo(video.id)">编辑</div>
-              <div class="video-action" @click="handlePlayVideo(video.id)">播放</div>
+              <div class="video-action" @click="handlePlayVideo(video.id)">
+                {{ isPlaying[video.id] ? '暂停' : '播放' }}
+              </div>
               <div class="video-action" @click="handleDeleteVideo(video.id)">删除</div>
             </div>
           </div>
@@ -145,16 +148,6 @@
     </div>
 
     <script>
-      /**
-       * @typedef {Object} Video
-       * @property {number} id - 视频ID
-       * @property {string} title - 视频标题
-       * @property {string} thumbnail - 视频缩略图URL
-       * @property {string} videoUrl - 视频URL
-       * @property {string} uploadDate - 上传日期
-       * @property {number} views - 观看次数
-       */
-
       const { createApp, ref, onMounted } = Vue;
 
       const app = createApp({
@@ -164,34 +157,11 @@
             {
               id: 1,
               title: "如何高效管理工作时间 - 不加班指南",
-              thumbnail: "https://picsum.photos/700/400",
-              videoUrl: "https://vjs.zencdn.net/v/oceans.mp4",
+              thumbnail: "",
+              videoUrl:
+                "https://game-1251022382.cos.ap-nanjing.myqcloud.com/Recording_1746691562.mp4",
               uploadDate: "2023-05-15",
               views: 1254,
-            },
-            {
-              id: 2,
-              title: "团队协作工具使用技巧",
-              thumbnail: "https://picsum.photos/700/400",
-              videoUrl: "https://vjs.zencdn.net/v/oceans.mp4",
-              uploadDate: "2023-06-22",
-              views: 857,
-            },
-            {
-              id: 3,
-              title: "远程办公效率提升方法",
-              thumbnail: "https://picsum.photos/700/400",
-              videoUrl: "https://vjs.zencdn.net/v/oceans.mp4",
-              uploadDate: "2023-07-30",
-              views: 2104,
-            },
-            {
-              id: 4,
-              title: "工作与生活平衡的秘诀",
-              thumbnail: "https://picsum.photos/700/400",
-              videoUrl: "https://vjs.zencdn.net/v/oceans.mp4",
-              uploadDate: "2023-08-12",
-              views: 1732,
             },
           ]);
 
@@ -212,6 +182,38 @@
           const handleVideoMetadata = (event, videoId) => {
             const duration = event.target.duration;
             videoDurations.value[videoId] = formatDuration(duration);
+          };
+
+          // 生成视频缩略图
+          const generateThumbnail = (event, videoId) => {
+            const video = event.target;
+            const index = videos.value.findIndex((v) => v.id === videoId);
+
+            if (index !== -1 && !videos.value[index].thumbnail) {
+              // 创建临时canvas来获取视频第一帧
+              const canvas = document.createElement("canvas");
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+
+              // 设置当前时间为0（第一帧）
+              video.currentTime = 0;
+
+              // 当视频时间更新后（已经seek到第一帧）绘制到canvas
+              video.addEventListener(
+                "timeupdate",
+                function onTimeUpdate() {
+                  const ctx = canvas.getContext("2d");
+                  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                  // 将canvas内容转换为dataURL作为缩略图
+                  videos.value[index].thumbnail = canvas.toDataURL("image/jpeg");
+
+                  // 移除事件监听器，避免重复执行
+                  video.removeEventListener("timeupdate", onTimeUpdate);
+                },
+                { once: true },
+              );
+            }
           };
 
           // 向小程序发送消息
@@ -360,6 +362,7 @@
             handlePlayVideo,
             handleVideoClick,
             handleVideoMetadata,
+            generateThumbnail,
           };
         },
       });
