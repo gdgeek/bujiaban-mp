@@ -32,23 +32,20 @@ onMounted(() => {
 
     // 根据不同环境使用不同URL
     if (env === "develop") {
-      // 开发环境 - 使用本地开发服务器
-      // webviewUrl.value = "http://localhost:3000/video/index.html";
-      webviewUrl.value = "https://file.4mr.cn";
-      // webviewUrl.value = "http://localhost:5173";
+      // 开发环境
+      // webviewUrl.value = "https://file.4mr.cn";
+      webviewUrl.value = "http://localhost:5173";
     } else if (env === "trial") {
-      // 体验版环境 - 使用测试服务器
-      webviewUrl.value = "https://test-example.com/video/index.html";
+      // 体验版环境
+      webviewUrl.value = "https://file.4mr.cn";
     } else {
-      // 正式环境 - 使用生产服务器
+      // 正式环境
       webviewUrl.value = "https://file.4mr.cn";
     }
 
     console.log("当前小程序环境:", env);
   } catch (err) {
     console.error("获取小程序信息失败:", err);
-    // 出错时使用备用URL
-    webviewUrl.value = "http://localhost:3000/video/index.html";
   }
 
   console.log("加载HTML路径:", webviewUrl.value);
