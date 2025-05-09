@@ -11,7 +11,7 @@ const getStatus = async (token: string) => {
       url: "https://w.4mr.cn/v1/checkin/status?token=" + token,
       method: "GET",
       success: function (res) {
-        console.log("登录成功！" + JSON.stringify(res));
+        console.log("验证成功！" + JSON.stringify(res.data));
         resolve(res.data);
       },
       fail: function (res) {
@@ -21,7 +21,8 @@ const getStatus = async (token: string) => {
     });
   });
 };
-//得到 openid
+
+//得到 token
 const getQueryString = (url: string, name: string): string | null => {
   var reg = new RegExp("(^|&|/?)" + name + "=([^&|/?]*)(&|/?|$)", "i");
   var r = url.substring(1).match(reg);
@@ -70,24 +71,64 @@ const login = async () => {
   });
 };
 const begin = async () => {
-  await ready();
-  await refresh();
+  const ret = await ready();
+  status.value = ret.data;
 };
 const stop = async () => {
-  await close();
-  await refresh();
+  const ret = await over();
+  status.value = ret.data;
 };
-const ready = async () => {
+const over = async () => {
   return new Promise((resolve, reject) => {
     wx.request({
-      url: "https://w.4mr.cn/v1/checkin/ready",
+      url: "https://w.4mr.cn/v1/checkin/status-over",
       method: "POST",
       data: {
         openid: openid.value,
         token: token.value,
       },
       success: function (res) {
-        console.log("请求成功！" + JSON.stringify(res));
+        console.log("openid" + openid.value);
+        resolve(res.data);
+      },
+      fail: function (res) {
+        console.log("请求失败！" + res.errMsg);
+        reject(res.errMsg);
+      },
+    });
+  });
+};
+const linked = async () => {
+  return new Promise((resolve, reject) => {
+    wx.request({
+      url: "https://w.4mr.cn/v1/checkin/status-linked",
+      method: "POST",
+      data: {
+        openid: openid.value,
+        token: token.value,
+      },
+      success: function (res) {
+        console.log("openid" + openid.value);
+        resolve(res.data);
+      },
+      fail: function (res) {
+        console.log("请求失败！" + res.errMsg);
+        reject(res.errMsg);
+      },
+    });
+  });
+};
+const ready = async () => {
+  return new Promise((resolve, reject) => {
+    wx.request({
+      url: "https://w.4mr.cn/v1/checkin/status-ready",
+      method: "POST",
+      data: {
+        openid: openid.value,
+        token: token.value,
+      },
+      success: function (res) {
+        console.log("openid" + openid.value);
         resolve(res.data);
       },
       fail: function (res) {
@@ -103,7 +144,7 @@ const close = () => {
       url: "https://w.4mr.cn/v1/checkin/close?openid=" + openid.value,
       method: "DELETE",
       success: function (res) {
-        console.log("删除成功！！！" + JSON.stringify(res));
+        console.log("删除成功！！！" + JSON.stringify(res.data));
         resolve(res.data);
       },
       fail: function (res) {
@@ -113,20 +154,45 @@ const close = () => {
     });
   });
 };
-onLoad(async () => {
-  try {
-    const query = getCurrentPages()[getCurrentPages().length - 1].options;
-    const decodedUrl = decodeURIComponent(query.q);
-    token.value = getQueryString(decodedUrl, "k");
-    if (!token.value) {
-      token.value = "test123";
-    }
 
+const getToken = () => {
+  const query = getCurrentPages()[getCurrentPages().length - 1].options;
+  const decodedUrl = decodeURIComponent(query.q);
+  const result = getQueryString(decodedUrl, "k");
+  if (!result) {
+    return "test123";
+  }
+  return result;
+};
+onLoad(async () => {
+  token.value = getToken(); //得到token
+  //本页面所有操作都具有token
+  try {
     const ret = await login();
-    openid.value = ret.openid;
-    await refresh();
+
+    openid.value = ret.openid; //得到openid
+
+    //本页面所有操作都得到openid
   } catch (error) {
-    console.log("请求失败！" + error);
+    console.error("openid 请求失败！" + error);
+    return;
+  }
+  try {
+    const ret = await getStatus(token.value);
+
+    console.error("===" + JSON.stringify(ret));
+    if (!ret.scuess || ret.data.checkin.openid != openid.value) {
+      //没有状态，证明没有链接，这里要链接
+
+      const ret = await linked();
+      console.log("链接成功！" + JSON.stringify(ret));
+      status.value = ret.data;
+    } else {
+      //有状态，证明已经链接，这里要刷新
+      status.value = ret.data;
+    }
+  } catch (error) {
+    console.log("status 请求失败！" + error);
   }
 });
 </script>
@@ -135,10 +201,10 @@ onLoad(async () => {
     <p>openid:{{ openid }}</p>
     <p>token:{{ token }}</p>
     <p>status:{{ status }}</p>
-    <view v-if="status == 'waiting'">
+    <view v-if="status && status.checkin.status == 'linked'">
       <button @click="begin">准备开始</button>
     </view>
-    <view v-if="status == 'ready'">
+    <view v-if="status && status.checkin.status == 'ready'">
       <button @click="stop">放弃录制</button>
     </view>
   </view>
