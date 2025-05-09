@@ -33,7 +33,8 @@ onMounted(() => {
     // 根据不同环境使用不同URL
     if (env === "develop") {
       // 开发环境 - 使用本地开发服务器
-      webviewUrl.value = "http://localhost:3000/video/index.html";
+      // webviewUrl.value = "http://localhost:3000/video/index.html";
+      webviewUrl.value = "http://localhost:5173";
     } else if (env === "trial") {
       // 体验版环境 - 使用测试服务器
       webviewUrl.value = "https://test-example.com/video/index.html";
