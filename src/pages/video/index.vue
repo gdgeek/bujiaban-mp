@@ -68,63 +68,7 @@ const onWebViewError = (event: any) => {
 
 // 处理web-view消息
 const handleMessage = (event: any) => {
-  console.log("收到web-view消息:", event);
-
-  // 从web-view接收消息
-  if (event.detail && event.detail.data) {
-    const data = event.detail.data;
-
-    // 根据不同的消息类型进行处理
-    switch (data.action) {
-      case "add":
-        handleAddVideo();
-        break;
-      case "edit":
-        handleEditVideo(data.videoId);
-        break;
-      case "delete":
-        handleDeleteVideo(data.videoId);
-        break;
-      default:
-        console.log("未知操作:", data);
-    }
-  }
-};
-
-// 处理添加视频
-const handleAddVideo = () => {
-  uni.showToast({
-    title: "正在添加视频...",
-    icon: "none",
-  });
-
-  // 这里实现添加视频的逻辑
-  // 未来将通过API调用实现
-  console.log("添加视频");
-};
-
-// 处理编辑视频
-const handleEditVideo = (videoId: number) => {
-  uni.showToast({
-    title: "正在编辑视频 ID: " + videoId,
-    icon: "none",
-  });
-
-  // 这里实现编辑视频的逻辑
-  // 未来将通过API调用实现
-  console.log("编辑视频", videoId);
-};
-
-// 处理删除视频
-const handleDeleteVideo = (videoId: number) => {
-  uni.showToast({
-    title: "已删除视频 ID: " + videoId,
-    icon: "none",
-  });
-
-  // 这里实现删除视频的逻辑
-  // 未来将通过API调用实现
-  console.log("删除视频", videoId);
+  console.log("收到web-view消息", event);
 };
 </script>
 
