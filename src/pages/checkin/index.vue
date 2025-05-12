@@ -1,13 +1,41 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
+
+// 定义接口类型
+interface CheckinInfo {
+  created_at: string;
+  token: string;
+  openid: string;
+  status: string;
+  updated_at: string;
+}
+
+interface FileInfo {
+  token: string;
+  key: string;
+  openid: string;
+  created_at: string;
+}
+
+interface StatusData {
+  checkin: CheckinInfo;
+  file?: FileInfo | null;
+}
+
+interface ApiResponse {
+  scuess: boolean;
+  message: string;
+  data: StatusData;
+}
+
 const openid = ref<string | null>(null);
 const token = ref<string | null>(null);
-const status = ref<string | null>(null);
+const status = ref<StatusData | null>(null);
 const _ready = computed(() => {
   return !!(status.value && status.value.checkin.status == "ready");
 });
-let intervalId: NodeJS.Timeout | null = null;
+let intervalId: number | null = null;
 watch(
   () => _ready.value,
   (newVal) => {
@@ -25,7 +53,7 @@ watch(
   },
   { immediate: true },
 );
-const _refresh = async (token: string) => {
+const _refresh = async (token: string): Promise<ApiResponse> => {
   return new Promise((resolve, reject) => {
     console.error("refresh:");
     wx.request({
@@ -33,7 +61,7 @@ const _refresh = async (token: string) => {
       method: "GET",
       success: function (res) {
         console.log("验证成功！" + JSON.stringify(res.data));
-        resolve(res.data);
+        resolve(res.data as ApiResponse);
       },
       fail: function (res) {
         console.log("请求失败！" + res.errMsg);
@@ -54,10 +82,12 @@ const getQueryString = (url: string, name: string): string | null => {
 };
 
 const refresh = async () => {
-  const ret = await _refresh(token.value);
-  status.value = ret.data;
+  if (token.value) {
+    const ret = await _refresh(token.value);
+    status.value = ret.data;
+  }
 };
-const login = async () => {
+const login = async (): Promise<{ openid: string }> => {
   return new Promise((resolve, reject) => {
     wx.login({
       success: function (res) {
@@ -69,10 +99,7 @@ const login = async () => {
             },
             method: "POST",
             success: function (res) {
-              //console.log("openid:" + res.data.openid);
-              // openid.value = res.data.openid;
-              //  console.error("openid!!!!:" + res.data);
-              resolve(res.data);
+              resolve(res.data as { openid: string });
             },
             fail: function (res) {
               console.log("请求失败！" + res.errMsg);
@@ -99,7 +126,7 @@ const stop = async () => {
   const ret = await over();
   status.value = ret.data;
 };
-const over = async () => {
+const over = async (): Promise<ApiResponse> => {
   return new Promise((resolve, reject) => {
     wx.request({
       url: "https://w.4mr.cn/v1/checkin/status-over",
@@ -110,7 +137,7 @@ const over = async () => {
       },
       success: function (res) {
         console.log("openid" + openid.value);
-        resolve(res.data);
+        resolve(res.data as ApiResponse);
       },
       fail: function (res) {
         console.log("请求失败！" + res.errMsg);
@@ -119,7 +146,7 @@ const over = async () => {
     });
   });
 };
-const linked = async () => {
+const linked = async (): Promise<ApiResponse> => {
   return new Promise((resolve, reject) => {
     wx.request({
       url: "https://w.4mr.cn/v1/checkin/status-linked",
@@ -130,7 +157,7 @@ const linked = async () => {
       },
       success: function (res) {
         console.log("openid" + openid.value);
-        resolve(res.data);
+        resolve(res.data as ApiResponse);
       },
       fail: function (res) {
         console.log("请求失败！" + res.errMsg);
@@ -140,9 +167,23 @@ const linked = async () => {
   });
 };
 const show = (key: string) => {
-  console.error(key);
+  console.error(key); //recode/test123.mp4
+  // 跳转到网页端展示视频
+  uni.navigateTo({
+    url: `/pages/webview/index?key=${encodeURIComponent(key)}`,
+    success: () => {
+      console.log(`成功跳转到视频页面，key: ${key}`);
+    },
+    fail: (err) => {
+      console.error(`跳转失败: ${JSON.stringify(err)}`);
+      uni.showToast({
+        title: "页面跳转失败",
+        icon: "none",
+      });
+    },
+  });
 };
-const ready = async () => {
+const ready = async (): Promise<ApiResponse> => {
   return new Promise((resolve, reject) => {
     wx.request({
       url: "https://w.4mr.cn/v1/checkin/status-ready",
@@ -153,7 +194,7 @@ const ready = async () => {
       },
       success: function (res) {
         console.log("openid" + openid.value);
-        resolve(res.data);
+        resolve(res.data as ApiResponse);
       },
       fail: function (res) {
         console.log("请求失败！" + res.errMsg);
@@ -179,8 +220,16 @@ const close = () => {
   });
 };
 
+interface PageInstance {
+  options: {
+    q: string;
+  };
+}
+
 const getToken = () => {
-  const query = getCurrentPages()[getCurrentPages().length - 1].options;
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1] as unknown as PageInstance;
+  const query = currentPage.options;
   const decodedUrl = decodeURIComponent(query.q);
   const result = getQueryString(decodedUrl, "k");
   if (!result) {
@@ -202,17 +251,19 @@ onLoad(async () => {
     return;
   }
   try {
-    const ret = await _refresh(token.value);
+    if (token.value) {
+      const ret = await _refresh(token.value);
 
-    if (!ret.scuess || ret.data.checkin.openid != openid.value) {
-      //没有状态，证明没有链接，这里要链接
+      if (!ret.scuess || ret.data.checkin.openid != openid.value) {
+        //没有状态，证明没有链接，这里要链接
 
-      const ret = await linked();
-      console.log("链接成功！" + JSON.stringify(ret));
-      status.value = ret.data;
-    } else {
-      //有状态，证明已经链接，这里要刷新
-      status.value = ret.data;
+        const linkedRet = await linked();
+        console.log("链接成功！" + JSON.stringify(linkedRet));
+        status.value = linkedRet.data;
+      } else {
+        //有状态，证明已经链接，这里要刷新
+        status.value = ret.data;
+      }
     }
   } catch (error) {
     console.log("status 请求失败！" + error);

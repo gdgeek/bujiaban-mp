@@ -31,7 +31,7 @@
     {
       "path": "pages/webview/index",
       "style": {
-        "navigationBarTitleText": "内置浏览器"
+        "navigationBarTitleText": "打卡记录"
 
       }
     },
