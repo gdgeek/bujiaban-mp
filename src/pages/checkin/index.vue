@@ -181,7 +181,7 @@ const getToken = () => {
   const decodedUrl = decodeURIComponent(query.q);
   const result = getQueryString(decodedUrl, "k");
   if (!result) {
-    return "test123";
+    return "1007e72dc7944b929f5ba71f20acc885";
   }
   return result;
 };
@@ -218,7 +218,8 @@ onLoad(async () => {
 </script>
 <template>
   <view class="index">
-    <p>openid:{{ openid }}</p>
+    checkin
+    <p>openid~:{{ openid }}</p>
     <p>token:{{ token }}</p>
     <p>status:{{ status }}</p>
     <p>_ready:{{ _ready }}</p>
