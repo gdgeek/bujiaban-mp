@@ -139,6 +139,9 @@ const linked = async () => {
     });
   });
 };
+const show = (key: string) => {
+  console.error(key);
+};
 const ready = async () => {
   return new Promise((resolve, reject) => {
     wx.request({
@@ -181,7 +184,7 @@ const getToken = () => {
   const decodedUrl = decodeURIComponent(query.q);
   const result = getQueryString(decodedUrl, "k");
   if (!result) {
-    return "1007e72dc7944b929f5ba71f20acc885";
+    return "test123";
   }
   return result;
 };
@@ -224,10 +227,14 @@ onLoad(async () => {
     <p>status:{{ status }}</p>
     <p>_ready:{{ _ready }}</p>
 
-    <view v-if="status && status.checkin.status == 'linked'">
+    <view v-if="status && status.file != null">
+      <p>文件名:{{ status.file.key }}</p>
+      <button @click="show(status.file.key)">打开文件</button>
+    </view>
+    <view v-else-if="status && status.checkin.status == 'linked'">
       <button @click="begin">准备开始</button>
     </view>
-    <view v-if="status && status.checkin.status == 'ready'">
+    <view v-else-if="status && status.checkin.status == 'ready'">
       <button @click="stop">放弃录制</button>
     </view>
   </view>
