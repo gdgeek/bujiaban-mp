@@ -24,7 +24,9 @@ import { ref, onMounted } from "vue";
 const videoPoster = ref("https://picsum.photos/700/400"); // 使用随机图片作为视频封面
 const videoTitle = ref("精彩视频");
 const videoDesc = ref("这是一段非常精彩的视频，点击查看更多内容！");
-const externalVideoUrl = ref("https://vjs.zencdn.net/v/oceans.mp4"); // 外部视频链接
+const externalVideoUrl = ref(
+  "https://game-1251022382.cos.ap-nanjing.myqcloud.com/Recording_1746691562.mp4",
+);
 
 // 播放视频 - 跳转到外部网页
 const playVideo = () => {

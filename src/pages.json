@@ -22,12 +22,12 @@
         "navigationBarTitleText": "打卡"
       }
     },
-    {
-      "path": "pages/login/index",
-      "style": {
-        "navigationBarTitleText": "登录"
-      }
-    },
+    // {
+    //   "path": "pages/login/index",
+    //   "style": {
+    //     "navigationBarTitleText": "登录"
+    //   }
+    // },
     {
       "path": "pages/webview/index",
       "style": {
@@ -38,7 +38,7 @@
     {
       "path": "pages/video/index",
       "style": {
-        "navigationBarTitleText": "视频管理"
+        "navigationBarTitleText": "记录管理"
       }
     }
   ],
@@ -62,7 +62,7 @@
         "selectedIconPath": "static/tabs/home_selected.png"
       },
       {
-        "text": "视频管理",
+        "text": "记录管理",
         "pagePath": "pages/video/index",
         "iconPath": "static/tabs/video_default.png",
         "selectedIconPath": "static/tabs/video_selected.png"
