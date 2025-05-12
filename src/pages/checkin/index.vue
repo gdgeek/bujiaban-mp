@@ -201,7 +201,6 @@ onLoad(async () => {
   try {
     const ret = await _refresh(token.value);
 
-    console.error("===" + JSON.stringify(ret));
     if (!ret.scuess || ret.data.checkin.openid != openid.value) {
       //没有状态，证明没有链接，这里要链接
 
