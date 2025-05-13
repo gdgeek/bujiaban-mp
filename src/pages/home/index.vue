@@ -11,10 +11,10 @@
         <text class="share-text">分享给朋友</text>
       </button>
 
-      <view class="share-button" @click="playVideo">
+      <!-- <view class="share-button" @click="playVideo">
         <image src="@/static/icons/video_play.png" class="share-icon"></image>
         <text class="share-text">查看详情</text>
-      </view>
+      </view> -->
     </view>
   </view>
 </template>
@@ -31,31 +31,31 @@ const externalVideoUrl = ref(
 // 播放视频 - 跳转到外部网页
 const playVideo = () => {
   // 打开外部链接
-  uni.navigateTo({
-    url: `/pages/webview/index?url=${encodeURIComponent(externalVideoUrl.value)}`,
-    fail: (err) => {
-      console.error("跳转失败", err);
-      // 如果没有webview页面，则使用系统浏览器打开
-      uni.showModal({
-        title: "提示",
-        content: "是否复制视频链接？",
-        success: (res) => {
-          if (res.confirm) {
-            // 微信小程序中复制链接到剪贴板
-            uni.setClipboardData({
-              data: externalVideoUrl.value,
-              success: () => {
-                uni.showToast({
-                  title: "链接已复制，请在浏览器中打开",
-                  icon: "none",
-                });
-              },
-            });
-          }
-        },
-      });
-    },
-  });
+  // uni.navigateTo({
+  //   url: `/pages/webview/index?url=${encodeURIComponent(externalVideoUrl.value)}`,
+  //   fail: (err) => {
+  //     console.error("跳转失败", err);
+  //     // 如果没有webview页面，则使用系统浏览器打开
+  //     uni.showModal({
+  //       title: "提示",
+  //       content: "是否复制视频链接？",
+  //       success: (res) => {
+  //         if (res.confirm) {
+  //           // 微信小程序中复制链接到剪贴板
+  //           uni.setClipboardData({
+  //             data: externalVideoUrl.value,
+  //             success: () => {
+  //               uni.showToast({
+  //                 title: "链接已复制，请在浏览器中打开",
+  //                 icon: "none",
+  //               });
+  //             },
+  //           });
+  //         }
+  //       },
+  //     });
+  //   },
+  // });
 };
 
 // 页面加载
