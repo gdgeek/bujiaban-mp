@@ -47,6 +47,44 @@ const animationActive = ref(false);
 const showDevInfo = ref(false);
 const { safeAreaInsets } = uni.getWindowInfo();
 
+// 测试进度条的函数
+const testProgressStep = () => {
+  // 首先重置到初始状态
+  status.value = {
+    checkin: {
+      created_at: new Date().toISOString(),
+      token: token.value || "test",
+      openid: openid.value || "test",
+      status: "",
+      updated_at: new Date().toISOString(),
+    },
+  };
+
+  // 使用延时器依次展示各个状态
+  setTimeout(() => {
+    if (status.value) {
+      status.value.checkin.status = "linked";
+    }
+
+    setTimeout(() => {
+      if (status.value) {
+        status.value.checkin.status = "ready";
+      }
+
+      setTimeout(() => {
+        if (status.value) {
+          status.value.file = {
+            token: status.value.checkin.token,
+            key: "recode/test123.mp4",
+            openid: status.value.checkin.openid,
+            created_at: new Date().toISOString(),
+          };
+        }
+      }, 1500);
+    }, 1500);
+  }, 500);
+};
+
 let intervalId: number | null = null;
 watch(
   () => _ready.value,
@@ -445,6 +483,9 @@ onLoad(async () => {
             <text class="dev-info-label">状态:</text>
             <text class="dev-info-value">{{ status?.checkin.status }}</text>
           </view>
+          <view class="test-progress-btn" @click="testProgressStep">
+            <text>测试进度条</text>
+          </view>
         </view>
       </view>
     </view>
@@ -515,13 +556,13 @@ onLoad(async () => {
     margin-top: 4rpx;
     margin-bottom: 4rpx;
     text-align: left;
-    background: linear-gradient(90deg, #4a6bff 0%, #9c4dff 100%);
+    background: linear-gradient(90deg, #4a90e2 0%, #52c41a 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     .slogan-icon {
-      width: 50rpx;
-      height: 50rpx;
+      width: 60rpx;
+      height: 60rpx;
     }
     .slogan-text {
       margin-left: 10rpx;
@@ -600,55 +641,31 @@ onLoad(async () => {
       font-size: 28rpx;
       font-weight: 600;
       margin-bottom: 10rpx;
-      transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      position: relative;
-      overflow: hidden;
-
-      &::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #52c41a;
-        transform: translateX(-100%);
-        transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      }
+      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
     }
 
     .step-label {
       font-size: 24rpx;
       color: #999;
-      transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      position: relative;
+      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
     }
 
     &.active {
       .step-circle {
         background: #52c41a;
-        box-shadow: 0 0 15rpx rgba(82, 196, 26, 0.5);
+        box-shadow: 0 0 10rpx rgba(82, 196, 26, 0.4);
         transform: scale(1.05);
-
-        &::before {
-          transform: translateX(0);
-        }
       }
       .step-label {
         color: #52c41a;
         font-weight: 500;
-        transform: scale(1.05);
       }
     }
 
     &.completed {
       .step-circle {
         background: #52c41a;
-        box-shadow: 0 0 15rpx rgba(82, 196, 26, 0.5);
-
-        &::before {
-          transform: translateX(0);
-        }
+        box-shadow: 0 0 10rpx rgba(82, 196, 26, 0.4);
       }
     }
   }
@@ -660,26 +677,14 @@ onLoad(async () => {
     margin: 0 10rpx;
     position: relative;
     top: -24rpx;
-    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    overflow: hidden;
+    transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 
-    &::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+    &.active {
       background: #52c41a;
-      transform: translateX(-100%);
-      transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
-    &.active,
     &.completed {
-      &::before {
-        transform: translateX(0);
-      }
+      background: #52c41a;
     }
   }
 }
@@ -955,6 +960,22 @@ onLoad(async () => {
       .dev-info-value {
         color: #666;
         word-break: break-all;
+      }
+    }
+
+    .test-progress-btn {
+      margin-top: 20rpx;
+      background: #4a90e2;
+      color: #fff;
+      text-align: center;
+      padding: 10rpx 0;
+      border-radius: 8rpx;
+      font-size: 24rpx;
+      transition: all 0.3s ease;
+
+      &:active {
+        background: #3a80d2;
+        transform: translateY(2rpx);
       }
     }
   }
