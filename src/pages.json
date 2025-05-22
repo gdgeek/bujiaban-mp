@@ -19,6 +19,7 @@
     {
       "path": "pages/checkin/index",
       "style": {
+        "navigationStyle": "custom",
         "navigationBarTitleText": "打卡"
       }
     },
