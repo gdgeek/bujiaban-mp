@@ -678,13 +678,34 @@ onLoad(async () => {
     position: relative;
     top: -24rpx;
     transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    overflow: hidden;
+
+    &:before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0;
+      background: #52c41a;
+      transition: width 0.8s ease-in-out;
+    }
 
     &.active {
-      background: #52c41a;
+      background: #e0e0e0;
+
+      &:before {
+        width: 100%;
+        animation: line-pulse 1.5s ease-in-out infinite;
+      }
     }
 
     &.completed {
-      background: #52c41a;
+      background: #e0e0e0;
+
+      &:before {
+        width: 100%;
+      }
     }
   }
 }
@@ -1016,6 +1037,19 @@ onLoad(async () => {
   }
   100% {
     box-shadow: 0 0 0 0 rgba(250, 173, 20, 0);
+  }
+}
+
+// 添加线条脉冲动画
+@keyframes line-pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
   }
 }
 </style>
