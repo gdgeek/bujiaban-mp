@@ -80,9 +80,9 @@ const testProgressStep = () => {
             created_at: new Date().toISOString(),
           };
         }
-      }, 1500);
-    }, 1500);
-  }, 500);
+      }, 5000);
+    }, 5000);
+  }, 5000);
 };
 
 let intervalId: number | null = null;
@@ -241,6 +241,57 @@ const show = (key: string) => {
     },
   });
 };
+const downloadVideo = (key: string) => {
+  const videoUrl = `https://game-1251022382.cos.ap-nanjing.myqcloud.com/${key}`;
+
+  uni.showLoading({
+    title: "正在下载视频...",
+    mask: true,
+  });
+
+  // 下载视频文件
+  uni.downloadFile({
+    url: videoUrl,
+    success: (res) => {
+      uni.hideLoading();
+
+      if (res.statusCode === 200) {
+        // 保存视频到相册
+        uni.saveVideoToPhotosAlbum({
+          filePath: res.tempFilePath,
+          success: () => {
+            uni.showToast({
+              title: "视频已保存到相册",
+              icon: "success",
+              duration: 2000,
+            });
+          },
+          fail: (err) => {
+            console.error("保存到相册失败：", err);
+            uni.showModal({
+              title: "保存失败",
+              content: "无法保存视频到相册，请检查相册权限设置",
+              showCancel: false,
+            });
+          },
+        });
+      } else {
+        uni.showToast({
+          title: "下载失败",
+          icon: "none",
+        });
+      }
+    },
+    fail: (err) => {
+      uni.hideLoading();
+      console.error("下载失败：", err);
+      uni.showToast({
+        title: "网络异常，下载失败",
+        icon: "none",
+      });
+    },
+  });
+};
 const ready = async (): Promise<ApiResponse> => {
   return new Promise((resolve, reject) => {
     wx.request({
@@ -338,7 +389,7 @@ onLoad(async () => {
         <view class="logo-container">
           <image class="logo" src="/static/images/ar_logo.png" mode="aspectFit"></image>
         </view>
-        <view class="title">不加班AR打卡平台</view>
+        <view class="title" data-text="不加班AR打卡平台">不加班AR打卡平台</view>
       </view>
       <view class="slogan">
         <image class="slogan-icon" src="/static/icons/slogan.png" mode="aspectFit"></image>
@@ -357,7 +408,15 @@ onLoad(async () => {
       <!-- 进度指示器 -->
       <view class="progress-tracker">
         <view class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
-          <view class="step-circle">1</view>
+          <view class="step-circle">
+            <image
+              v-if="currentStep > 0"
+              class="step-success-icon"
+              src="/static/icons/process_success.png"
+              mode="aspectFit"
+            ></image>
+            <text v-else>1</text>
+          </view>
           <view class="step-label">连接</view>
         </view>
         <view
@@ -365,7 +424,15 @@ onLoad(async () => {
           :class="{ active: currentStep >= 1, completed: currentStep > 1 }"
         ></view>
         <view class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
-          <view class="step-circle">2</view>
+          <view class="step-circle">
+            <image
+              v-if="currentStep > 1"
+              class="step-success-icon"
+              src="/static/icons/process_success.png"
+              mode="aspectFit"
+            ></image>
+            <text v-else>2</text>
+          </view>
           <view class="step-label">准备</view>
         </view>
         <view
@@ -373,7 +440,15 @@ onLoad(async () => {
           :class="{ active: currentStep >= 2, completed: currentStep > 2 }"
         ></view>
         <view class="step" :class="{ active: currentStep >= 3, completed: currentStep > 3 }">
-          <view class="step-circle">3</view>
+          <view class="step-circle">
+            <image
+              v-if="currentStep > 2"
+              class="step-success-icon"
+              src="/static/icons/process_success.png"
+              mode="aspectFit"
+            ></image>
+            <text v-else>3</text>
+          </view>
           <view class="step-label">完成</view>
         </view>
       </view>
@@ -384,20 +459,30 @@ onLoad(async () => {
           <view class="status-icon success-icon">
             <image src="/static/icons/success.png" mode="aspectFit"></image>
           </view>
-          <view class="status-title">录制完成</view>
-          <view class="status-description">您的AR打卡视频已成功生成</view>
+          <view class="status-title">🎉 录制完成！</view>
+          <view class="status-description"
+            >恭喜您！AR打卡视频已成功生成，快来查看您的精彩时刻吧！</view
+          >
           <view class="file-info">
             <view class="file-icon">
               <image src="/static/icons/video_icon.png" mode="aspectFit"></image>
             </view>
             <view class="file-name">{{ status.file.key.split("/").pop() }}</view>
           </view>
-          <button class="action-button view-button" @click="show(status.file.key)">
-            <view class="button-icon"
-              ><image src="/static/icons/view_video.png" mode="aspectFit"></image
-            ></view>
-            <text>查看视频</text>
-          </button>
+          <view class="action-buttons">
+            <button class="action-button view-button" @click="show(status.file.key)">
+              <view class="button-icon"
+                ><image src="/static/icons/view_video.png" mode="aspectFit"></image
+              ></view>
+              <text>查看视频</text>
+            </button>
+            <button class="action-button download-button" @click="downloadVideo(status.file.key)">
+              <view class="button-icon"
+                ><image src="/static/icons/download.png" mode="aspectFit"></image
+              ></view>
+              <text>下载视频</text>
+            </button>
+          </view>
         </block>
 
         <block v-else-if="status && status.checkin.status == 'linked'">
@@ -432,11 +517,12 @@ onLoad(async () => {
           <view class="status-icon ready-icon">
             <image src="/static/icons/recording.png" mode="aspectFit"></image>
           </view>
-          <view class="status-title">录制中</view>
+          <view class="status-title">录制进行中</view>
           <view class="status-description">正在进行AR打卡录制，请保持设备稳定...</view>
           <view class="recording-indicator">
             <view class="recording-pulse"></view>
-            <view class="recording-time">录制中</view>
+            <view class="recording-ring"></view>
+            <view class="recording-time">● REC</view>
           </view>
           <button class="action-button cancel-button" @click="stop">
             <view class="button-icon"
@@ -459,7 +545,7 @@ onLoad(async () => {
             </view>
             <view class="tip-item">
               <image src="/static/icons/tip.png" mode="aspectFit"></image>
-              <text>保持良好的网络连接</text>
+              <text>保持良好的网络连接状态</text>
             </view>
           </view>
         </block>
@@ -510,68 +596,149 @@ onLoad(async () => {
 
 // 顶部导航栏
 .header {
-  padding-bottom: 30rpx;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  margin-bottom: 40rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 0 0 32rpx 32rpx;
+  padding: 32rpx 24rpx 40rpx 24rpx;
+  margin: -40rpx -30rpx 50rpx -30rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+
+  // 背景装饰元素
+  &::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    right: -50rpx;
+    width: 300rpx;
+    height: 300rpx;
+    background: radial-gradient(circle, rgba(74, 144, 226, 0.06) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: -100rpx;
+    left: -50rpx;
+    width: 200rpx;
+    height: 200rpx;
+    background: radial-gradient(circle, rgba(82, 196, 26, 0.04) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
 
   .header-row {
     display: flex;
     align-items: center;
     width: 100%;
-    margin-bottom: 4rpx;
+    margin-bottom: 20rpx;
+    position: relative;
+    z-index: 2;
   }
 
   .logo-container {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: 20rpx;
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: 24rpx;
     overflow: hidden;
-    background: #ffffff;
-    box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.05);
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+    box-shadow: 0 8rpx 20rpx rgba(74, 144, 226, 0.12), 0 2rpx 4rpx rgba(0, 0, 0, 0.05),
+      inset 0 1rpx 0 rgba(255, 255, 255, 0.9);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 18rpx;
+    margin-right: 24rpx;
+    position: relative;
+
+    // 添加微妙的边框效果
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 24rpx;
+      padding: 1rpx;
+      background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(82, 196, 26, 0.2));
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: xor;
+      -webkit-mask-composite: xor;
+    }
+
     .logo {
-      width: 80rpx;
-      height: 80rpx;
+      width: 72rpx;
+      height: 72rpx;
+      filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
     }
   }
 
   .title {
-    font-size: 36rpx;
-    font-weight: 600;
-    color: #333;
+    font-size: 40rpx;
+    font-weight: 700;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 1rpx;
+    line-height: 1.2;
+    position: relative;
+
+    // 添加微妙的文字阴影效果
+    &::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(82, 196, 26, 0.1));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      z-index: -1;
+      transform: translate(1rpx, 1rpx);
+    }
   }
 
   .slogan {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    letter-spacing: 2rpx;
-    margin-top: 4rpx;
-    margin-bottom: 4rpx;
-    text-align: left;
-    background: linear-gradient(90deg, #4a90e2 0%, #52c41a 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    justify-content: flex-start;
+    background: linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 100%);
+    padding: 16rpx 20rpx;
+    border-radius: 20rpx;
+    box-shadow: 0 4rpx 12rpx rgba(74, 144, 226, 0.08), inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+    border: 1rpx solid rgba(74, 144, 226, 0.08);
+    position: relative;
+    z-index: 2;
+
     .slogan-icon {
-      width: 60rpx;
-      height: 60rpx;
+      width: 48rpx;
+      height: 48rpx;
+      filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
+      animation: gentle-float 3s ease-in-out infinite;
     }
+
     .slogan-text {
-      margin-left: 10rpx;
-      font-size: 28rpx;
-      font-weight: 700;
-      color: inherit;
-      background: none;
-      -webkit-text-fill-color: inherit;
+      margin-left: 12rpx;
+      font-size: 26rpx;
+      font-weight: 600;
+      background: linear-gradient(135deg, #4a90e2 0%, #52c41a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.5rpx;
+      line-height: 1.3;
     }
+  }
+}
+
+// 添加图标浮动动画
+@keyframes gentle-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4rpx);
   }
 }
 
@@ -614,69 +781,137 @@ onLoad(async () => {
 
 // 进度指示器
 .progress-tracker {
-  background: #fff;
-  border-radius: 24rpx;
-  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.05);
-  padding: 40rpx;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 28rpx;
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.06), 0 4rpx 8rpx rgba(0, 0, 0, 0.04);
+  padding: 48rpx 40rpx;
   margin-bottom: 40rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+
+  // 添加背景装饰
+  &::before {
+    content: "";
+    position: absolute;
+    top: -20rpx;
+    right: -20rpx;
+    width: 120rpx;
+    height: 120rpx;
+    background: radial-gradient(circle, rgba(82, 196, 26, 0.04) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
 
   .step {
     display: flex;
     flex-direction: column;
     align-items: center;
     z-index: 1;
+    position: relative;
 
     .step-circle {
-      width: 60rpx;
-      height: 60rpx;
+      width: 68rpx;
+      height: 68rpx;
       border-radius: 50%;
-      background: #e0e0e0;
-      color: #fff;
+      background: #e5e7eb;
+      color: #9ca3af;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 28rpx;
-      font-weight: 600;
-      margin-bottom: 10rpx;
-      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      font-weight: 700;
+      margin-bottom: 12rpx;
+      transition: all 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      position: relative;
+      overflow: hidden;
+
+      // 添加光泽效果
+      &::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+          45deg,
+          transparent 30%,
+          rgba(255, 255, 255, 0.3) 50%,
+          transparent 70%
+        );
+        transform: translateX(-100%);
+        transition: transform 0.6s ease;
+      }
+
+      text {
+        position: relative;
+        z-index: 2;
+      }
+
+      .step-success-icon {
+        width: 36rpx;
+        height: 36rpx;
+        filter: brightness(1.1) drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
+        animation: success-bounce 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      }
     }
 
     .step-label {
-      font-size: 24rpx;
-      color: #999;
-      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      font-size: 26rpx;
+      color: #6b7280;
+      font-weight: 500;
+      transition: all 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      letter-spacing: 0.5rpx;
     }
 
     &.active {
       .step-circle {
-        background: #52c41a;
-        box-shadow: 0 0 10rpx rgba(82, 196, 26, 0.4);
-        transform: scale(1.05);
+        background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+        color: #fff;
+        box-shadow: 0 8rpx 20rpx rgba(82, 196, 26, 0.3), 0 4rpx 8rpx rgba(82, 196, 26, 0.2);
+        transform: scale(1.08);
+
+        &::before {
+          transform: translateX(100%);
+        }
       }
+
       .step-label {
         color: #52c41a;
-        font-weight: 500;
+        font-weight: 600;
+        transform: translateY(-2rpx);
       }
     }
 
     &.completed {
       .step-circle {
-        background: #52c41a;
-        box-shadow: 0 0 10rpx rgba(82, 196, 26, 0.4);
+        background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+        color: #fff;
+        box-shadow: 0 8rpx 20rpx rgba(82, 196, 26, 0.25), 0 4rpx 8rpx rgba(82, 196, 26, 0.15);
+
+        &::before {
+          transform: translateX(100%);
+        }
+      }
+
+      .step-label {
+        color: #52c41a;
+        font-weight: 600;
       }
     }
   }
 
   .step-line {
-    height: 4rpx;
+    height: 6rpx;
     flex: 1;
-    background: #e0e0e0;
-    margin: 0 10rpx;
+    background: #e5e7eb;
+    margin: 0 16rpx;
     position: relative;
-    top: -24rpx;
+    top: -30rpx;
+    border-radius: 3rpx;
     transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
     overflow: hidden;
 
@@ -687,21 +922,23 @@ onLoad(async () => {
       top: 0;
       height: 100%;
       width: 0;
-      background: #52c41a;
+      background: linear-gradient(90deg, #52c41a 0%, #73d13d 100%);
+      border-radius: 3rpx;
       transition: width 0.8s ease-in-out;
+      box-shadow: 0 2rpx 8rpx rgba(82, 196, 26, 0.3);
     }
 
     &.active {
-      background: #e0e0e0;
+      background: #e5e7eb;
 
       &:before {
         width: 100%;
-        animation: line-pulse 1.5s ease-in-out infinite;
+        animation: line-glow 2s ease-in-out infinite;
       }
     }
 
     &.completed {
-      background: #e0e0e0;
+      background: #e5e7eb;
 
       &:before {
         width: 100%;
@@ -745,23 +982,169 @@ onLoad(async () => {
 
     &.linked-icon {
       background: rgba(74, 144, 226, 0.1);
+      position: relative;
+      overflow: visible;
+      animation: connected-pulse 3s ease-in-out infinite;
+
+      // 连接成功波纹效果
+      &::before {
+        content: "";
+        position: absolute;
+        top: -15rpx;
+        left: -15rpx;
+        right: -15rpx;
+        bottom: -15rpx;
+        border: 2rpx solid rgba(74, 144, 226, 0.4);
+        border-radius: 50%;
+        animation: connection-wave 2s ease-out infinite;
+      }
+
+      // 内层成功指示圆环
+      &::after {
+        content: "";
+        position: absolute;
+        top: -8rpx;
+        left: -8rpx;
+        right: -8rpx;
+        bottom: -8rpx;
+        border: 1rpx solid rgba(74, 144, 226, 0.6);
+        border-radius: 50%;
+        animation: success-ring 1.5s ease-in-out infinite;
+      }
+
       image {
         width: 100rpx;
         height: 100rpx;
+        position: relative;
+        z-index: 2;
+        filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(74, 144, 226, 0.3));
+        animation: icon-breath 2.5s ease-in-out infinite;
       }
     }
 
     &.ready-icon {
       background: rgba(250, 173, 20, 0.1);
       animation: pulse 2s infinite;
+      position: relative;
+      overflow: visible;
+
+      // 录制指示闪烁灯
+      &::before {
+        content: "";
+        position: absolute;
+        top: -8rpx;
+        right: -8rpx;
+        width: 24rpx;
+        height: 24rpx;
+        background: #ff4d4f;
+        border-radius: 50%;
+        border: 3rpx solid #fff;
+        box-shadow: 0 0 0 2rpx rgba(255, 77, 79, 0.3);
+        animation: recording-blink 1s ease-in-out infinite;
+      }
+
+      // 扫描旋转圈
+      &::after {
+        content: "";
+        position: absolute;
+        top: -15rpx;
+        left: -15rpx;
+        right: -15rpx;
+        bottom: -15rpx;
+        border: 2rpx solid transparent;
+        border-top: 2rpx solid rgba(250, 173, 20, 0.8);
+        border-right: 2rpx solid rgba(250, 173, 20, 0.6);
+        border-radius: 50%;
+        animation: recording-scan 2s linear infinite;
+      }
+
+      image {
+        position: relative;
+        z-index: 2;
+        filter: brightness(1.1) drop-shadow(0 4rpx 12rpx rgba(250, 173, 20, 0.4));
+        animation: recording-breath 3s ease-in-out infinite;
+      }
     }
 
     &.success-icon {
       background: rgba(82, 196, 26, 0.1);
+      position: relative;
+      overflow: visible;
+      animation: success-celebrate 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+
+      // 成功庆祝波纹效果
+      &::before {
+        content: "";
+        position: absolute;
+        top: -20rpx;
+        left: -20rpx;
+        right: -20rpx;
+        bottom: -20rpx;
+        border: 3rpx solid rgba(82, 196, 26, 0.4);
+        border-radius: 50%;
+        animation: success-wave 1.5s ease-out infinite;
+      }
+
+      // 成功光晕效果
+      &::after {
+        content: "";
+        position: absolute;
+        top: -30rpx;
+        left: -30rpx;
+        right: -30rpx;
+        bottom: -30rpx;
+        background: radial-gradient(circle, rgba(82, 196, 26, 0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: success-glow 2s ease-in-out infinite;
+      }
+
+      image {
+        position: relative;
+        z-index: 2;
+        filter: brightness(1.2) drop-shadow(0 6rpx 15rpx rgba(82, 196, 26, 0.4));
+        animation: success-bounce 2s ease-in-out infinite;
+      }
     }
 
     &.waiting-icon {
-      background: rgba(170, 170, 170, 0.1);
+      background: rgba(74, 144, 226, 0.08);
+      position: relative;
+      overflow: visible;
+
+      // 外围扫描圆环
+      &::before {
+        content: "";
+        position: absolute;
+        top: -20rpx;
+        left: -20rpx;
+        right: -20rpx;
+        bottom: -20rpx;
+        border: 3rpx solid transparent;
+        border-top: 3rpx solid #4a90e2;
+        border-radius: 50%;
+        animation: radar-scan 2s linear infinite;
+        opacity: 0.8;
+      }
+
+      // 内层扫描波纹
+      &::after {
+        content: "";
+        position: absolute;
+        top: -10rpx;
+        left: -10rpx;
+        right: -10rpx;
+        bottom: -10rpx;
+        border: 2rpx solid rgba(74, 144, 226, 0.3);
+        border-radius: 50%;
+        animation: pulse-ring 3s ease-in-out infinite;
+      }
+
+      image {
+        position: relative;
+        z-index: 2;
+        filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(74, 144, 226, 0.2));
+        animation: gentle-glow 2s ease-in-out infinite alternate;
+      }
     }
   }
 
@@ -864,6 +1247,15 @@ onLoad(async () => {
       animation: recording-pulse 2s infinite;
     }
 
+    .recording-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2rpx solid rgba(250, 173, 20, 0.4);
+      animation: pulse 2s infinite;
+    }
+
     .recording-time {
       position: relative;
       background: #faad14;
@@ -879,23 +1271,42 @@ onLoad(async () => {
   .connection-tips {
     width: 100%;
     margin-bottom: 30rpx;
+    padding: 24rpx;
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.03) 0%, rgba(74, 144, 226, 0.06) 100%);
+    border-radius: 16rpx;
+    border: 1rpx solid rgba(74, 144, 226, 0.1);
 
     .tip-item {
       display: flex;
       align-items: center;
       margin-bottom: 20rpx;
+      animation: tip-fade-in 0.5s ease-in-out;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
 
       image {
         width: 40rpx;
         height: 40rpx;
         margin-right: 16rpx;
+        filter: drop-shadow(0 2rpx 4rpx rgba(74, 144, 226, 0.2));
       }
 
       text {
         font-size: 26rpx;
-        color: #666;
+        color: #999;
+        font-weight: 500;
+        letter-spacing: 0.5rpx;
       }
     }
+  }
+
+  // 按钮容器样式
+  .action-buttons {
+    display: flex;
+    width: 100%;
+    gap: 20rpx;
   }
 
   // 按钮样式
@@ -904,30 +1315,48 @@ onLoad(async () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 5rpx 30rpx;
+    padding: 20rpx 24rpx;
     border-radius: 20rpx;
-    font-size: 30rpx;
+    font-size: 26rpx;
     font-weight: 500;
     color: #fff;
     box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
+    flex: 1;
+    min-height: 80rpx;
+    line-height: 1;
 
     .button-icon {
-      width: 80rpx;
-      height: 80rpx;
-      margin-right: 10rpx;
+      width: 40rpx;
+      height: 40rpx;
+      margin-right: 12rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
       image {
         width: 100%;
         height: 100%;
+        vertical-align: middle;
       }
+    }
+
+    text {
+      line-height: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    // 统一的激活状态效果
+    &:active {
+      transform: translateY(2rpx);
+      box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.15);
     }
 
     &.begin-button {
       background: #4a90e2;
       &:active {
         background: #3a80d2;
-        transform: translateY(2rpx);
       }
     }
 
@@ -935,7 +1364,6 @@ onLoad(async () => {
       background: #ff4d4f;
       &:active {
         background: #ff3a3d;
-        transform: translateY(2rpx);
       }
     }
 
@@ -943,7 +1371,13 @@ onLoad(async () => {
       background: #52c41a;
       &:active {
         background: #49ad17;
-        transform: translateY(2rpx);
+      }
+    }
+
+    &.download-button {
+      background: #1890ff;
+      &:active {
+        background: #177ddc;
       }
     }
   }
@@ -1040,16 +1474,233 @@ onLoad(async () => {
   }
 }
 
-// 添加线条脉冲动画
-@keyframes line-pulse {
+// 成功庆祝缩放动画
+@keyframes success-celebrate {
   0% {
-    opacity: 0.6;
+    transform: scale(0.3);
+    opacity: 0;
   }
   50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// 成功弹跳动画
+@keyframes success-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1.2) drop-shadow(0 6rpx 15rpx rgba(82, 196, 26, 0.4));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.3) drop-shadow(0 8rpx 20rpx rgba(82, 196, 26, 0.5));
+  }
+}
+
+// 成功庆祝波纹动画
+@keyframes success-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+// 成功光晕动画
+@keyframes success-glow {
+  0% {
+    filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(82, 196, 26, 0.2));
+  }
+  100% {
+    filter: brightness(1.3) drop-shadow(0 4rpx 12rpx rgba(82, 196, 26, 0.4));
+  }
+}
+
+// 进度条发光动画
+@keyframes line-glow {
+  0%,
+  100% {
+    box-shadow: 0 2rpx 8rpx rgba(82, 196, 26, 0.3);
+  }
+  50% {
+    box-shadow: 0 2rpx 12rpx rgba(82, 196, 26, 0.5);
+  }
+}
+
+// 雷达扫描动画
+@keyframes radar-scan {
+  0% {
+    transform: rotate(0deg);
     opacity: 1;
   }
   100% {
+    transform: rotate(360deg);
+    opacity: 1;
+  }
+}
+
+// 脉冲波纹动画
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+// 图标轻微发光动画
+@keyframes gentle-glow {
+  0% {
+    filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(74, 144, 226, 0.2));
+  }
+  100% {
+    filter: brightness(1.3) drop-shadow(0 4rpx 12rpx rgba(74, 144, 226, 0.4));
+  }
+}
+
+// 提示项淡入动画
+@keyframes tip-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-10rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// 连接成功背景脉冲动画
+@keyframes connected-pulse {
+  0%,
+  100% {
+    background: rgba(74, 144, 226, 0.1);
+    box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.1);
+  }
+  50% {
+    background: rgba(74, 144, 226, 0.15);
+    box-shadow: 0 0 15rpx 5rpx rgba(74, 144, 226, 0.1);
+  }
+}
+
+// 连接波纹扩散动画
+@keyframes connection-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+// 成功指示圆环动画
+@keyframes success-ring {
+  0%,
+  100% {
+    transform: scale(1);
     opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+// 图标呼吸动画
+@keyframes icon-breath {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(74, 144, 226, 0.3));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.2) drop-shadow(0 6rpx 12rpx rgba(74, 144, 226, 0.4));
+  }
+}
+
+// 录制指示闪烁动画
+@keyframes recording-blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+// 录制扫描旋转动画
+@keyframes recording-scan {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+// 录制呼吸动画
+@keyframes recording-breath {
+  0% {
+    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
+  }
+  50% {
+    filter: brightness(1.2) drop-shadow(0 6rpx 12rpx rgba(250, 173, 20, 0.6));
+  }
+  100% {
+    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
+  }
+}
+
+// 庆祝元素浮入动画
+@keyframes celebration-float {
+  0% {
+    transform: translateY(20rpx);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+// 庆祝元素弹跳动画
+@keyframes celebration-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4rpx);
   }
 }
 </style>
