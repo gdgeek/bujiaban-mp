@@ -1,183 +1,122 @@
 <template>
-  <view class="video-container">
-    <!-- 只显示封面图，去除中间播放按钮 -->
-    <view class="poster-container" @click="playVideo">
-      <image :src="videoPoster" class="video-poster" mode="aspectFill"></image>
-    </view>
-
-    <view class="share-buttons">
-      <button class="share-button" open-type="share">
-        <image src="@/static/icons/share_friends.png" class="share-icon"></image>
-        <text class="share-text">分享给朋友</text>
-      </button>
-
-      <!-- <view class="share-button" @click="playVideo">
-        <image src="@/static/icons/video_play.png" class="share-icon"></image>
-        <text class="share-text">查看详情</text>
-      </view> -->
-    </view>
-  </view>
+  <button @click="handleRecharge('10')">测试支付</button>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-const videoPoster = ref("https://picsum.photos/700/400"); // 使用随机图片作为视频封面
-const videoTitle = ref("精彩视频");
-const videoDesc = ref("这是一段非常精彩的视频，点击查看更多内容！");
-const externalVideoUrl = ref(
-  "https://game-1251022382.cos.ap-nanjing.myqcloud.com/Recording_1746691562.mp4",
-);
+const handleRecharge = async (amount: string) => {
+  try {
+    // const amountTotal = await getAmountTotal(amount);
+    // if (!amountTotal) return;
 
-// 播放视频 - 跳转到外部网页
-const playVideo = () => {
-  // 打开外部链接
-  // uni.navigateTo({
-  //   url: `/pages/webview/index?url=${encodeURIComponent(externalVideoUrl.value)}`,
-  //   fail: (err) => {
-  //     console.error("跳转失败", err);
-  //     // 如果没有webview页面，则使用系统浏览器打开
-  //     uni.showModal({
-  //       title: "提示",
-  //       content: "是否复制视频链接？",
-  //       success: (res) => {
-  //         if (res.confirm) {
-  //           // 微信小程序中复制链接到剪贴板
-  //           uni.setClipboardData({
-  //             data: externalVideoUrl.value,
-  //             success: () => {
-  //               uni.showToast({
-  //                 title: "链接已复制，请在浏览器中打开",
-  //                 icon: "none",
-  //               });
-  //             },
-  //           });
-  //         }
-  //       },
-  //     });
-  //   },
-  // });
+    const amountInCents = Math.round(parseFloat(amount) * 100);
+    const { paymentData, outTradeNo } = await createOrder(amountInCents);
+    await requestPayment(paymentData, outTradeNo);
+  } catch (error) {
+    handlePaymentError(error);
+  }
 };
 
-// 页面加载
-onMounted(() => {
-  console.log("视频页面加载完成");
-});
+const createOrder = async (amountInCents: number) => {
+  const res = await wx.cloud.callFunction({
+    name: "wxpayFunctions",
+    data: {
+      type: "wxpay_order",
+      amountTotal: amountInCents,
+    },
+  });
 
-// 分享给朋友
-const onShareAppMessage = () => {
+  if (!res.result || typeof res.result !== "object") {
+    throw new Error("支付数据获取失败！");
+  }
+
+  const { timeStamp, nonceStr, packageVal, paySign } = res.result.data;
+
+  if (!timeStamp || !nonceStr || !packageVal || !paySign) {
+    throw new Error("支付数据缺失！");
+  }
+
   return {
-    title: videoTitle.value,
-    desc: videoDesc.value,
-    path: "/pages/home/index",
-    imageUrl: videoPoster.value,
-    success() {
-      uni.showToast({
-        title: "分享成功",
-        icon: "success",
-      });
-    },
-    fail() {
-      uni.showToast({
-        title: "分享失败",
-        icon: "none",
-      });
-    },
+    paymentData: { timeStamp, nonceStr, package: packageVal, paySign },
+    outTradeNo: res.result.outTradeNo,
   };
 };
 
-// 分享到朋友圈
-const onShareTimeline = () => {
-  return {
-    title: videoTitle.value,
-    query: "/pages/home/index",
-    imageUrl: videoPoster.value,
-    success() {
-      uni.showToast({
-        title: "分享成功",
-        icon: "success",
-      });
+const requestPayment = async (paymentData: any, outTradeNo: string) => {
+  await wx.requestPayment({
+    ...paymentData,
+    signType: "RSA",
+    success: () => {
+      uni.showToast({ title: "支付成功", icon: "success" });
+      // queryOrderDetail(outTradeNo);
     },
-    fail() {
-      uni.showToast({
-        title: "分享失败",
-        icon: "none",
-      });
+    fail: (error: { errMsg: string | string[] }) => {
+      if (error.errMsg.includes("requestPayment:fail cancel")) {
+        uni.showToast({ title: "支付已取消", icon: "none" });
+      } else {
+        uni.showToast({ title: "支付失败", icon: "none" });
+      }
     },
-  };
+  });
 };
 
-// 将分享方法暴露给页面实例
-defineExpose({
-  onShareAppMessage,
-  onShareTimeline,
-});
+// const queryOrderDetail = async (outTradeNo: string) => {
+//   if (!outTradeNo) {
+//     console.error("订单号不能为空！");
+//     uni.showToast({ title: "订单号缺失，无法查询详情", icon: "none" });
+//     return;
+//   }
+
+//   try {
+//     const res = await wx.cloud.callFunction({
+//       name: "wxpayFunctions",
+//       data: {
+//         type: "wxpay_query_order_by_out_trade_no",
+//         out_trade_no: String(outTradeNo),
+//       },
+//     });
+
+//     if (res.result && typeof res.result === "object") {
+//       const orderDetails = res.result.data;
+//       await updateUserBalance(orderDetails.amount.total);
+//     } else {
+//       throw new Error("未能获取订单详情");
+//     }
+//   } catch (err) {
+//     console.error("查询订单详情失败：", err);
+//     uni.showToast({ title: "查询订单详情失败", icon: "none" });
+//   }
+// };
+
+// const updateUserBalance = async (totalAmount: number) => {
+//   try {
+//     const result = await rechargeAPI(totalAmount);
+
+//     if (result.message === "success") {
+//       uni.showToast({
+//         title: "充值成功",
+//         icon: "success",
+//         duration: 3000,
+//       });
+//     } else {
+//       throw new Error(result.message || "更新余额失败");
+//     }
+//   } catch (error) {
+//     console.error("更新余额失败:", error);
+//     uni.showToast({
+//       title: "更新余额失败",
+//       icon: "none",
+//     });
+//   }
+// };
+
+const handlePaymentError = (error: any) => {
+  console.error("支付过程出错：", error);
+  if (error.errMsg?.includes("requestPayment:fail")) {
+    uni.showToast({ title: "支付被取消或失败", icon: "none" });
+  } else {
+    uni.showToast({ title: "支付失败", icon: "none" });
+  }
+};
 </script>
 
-<style lang="scss">
-.video-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20rpx;
-
-  .poster-container {
-    position: relative;
-    width: 100%;
-    height: 400rpx;
-    border-radius: 12rpx;
-    overflow: hidden;
-
-    .video-poster {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-  }
-
-  .share-buttons {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
-    margin-top: 30rpx;
-
-    .share-button {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20rpx;
-      font-size: 24rpx;
-      line-height: 1.2;
-
-      /* 重置按钮样式 */
-      background-color: transparent;
-      border: none;
-      margin: 0;
-      width: auto;
-
-      &::after {
-        border: none;
-      }
-
-      .share-icon {
-        width: 60rpx;
-        height: 60rpx;
-        margin-bottom: 10rpx;
-      }
-
-      .play-icon-small {
-        width: 0;
-        height: 0;
-        border-top: 12rpx solid transparent;
-        border-bottom: 12rpx solid transparent;
-        border-left: 24rpx solid #666;
-        margin-bottom: 10rpx;
-      }
-
-      .share-text {
-        font-size: 24rpx;
-        color: #666;
-      }
-    }
-  }
-}
-</style>
+<style lang="scss"></style>

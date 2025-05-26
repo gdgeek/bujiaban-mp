@@ -43,6 +43,7 @@ const currentStep = computed(() => {
   return 0;
 });
 const loadingState = ref(true);
+const previewImageLoading = ref(true);
 const animationActive = ref(false);
 const showDevInfo = ref(false);
 const { safeAreaInsets } = uni.getWindowInfo();
@@ -469,13 +470,40 @@ onLoad(async () => {
             </view>
             <view class="file-name">{{ status.file.key.split("/").pop() }}</view>
           </view>
+
+          <!-- 视频第一帧预览 -->
+          <view class="video-preview">
+            <view class="preview-title">视频预览</view>
+            <view class="preview-container">
+              <!-- 加载动画 -->
+              <view class="preview-loading" v-if="previewImageLoading">
+                <view class="loading-spinner"></view>
+                <text class="loading-text">加载预览中...</text>
+              </view>
+              <!-- 预览图 -->
+              <image
+                class="preview-image"
+                :class="{ 'image-loaded': !previewImageLoading }"
+                :src="`https://game-1251022382.cos.ap-nanjing.myqcloud.com/${status.file.key}?ci-process=snapshot&time=0.01`"
+                mode="aspectFill"
+                @click="show(status.file.key)"
+                @load="previewImageLoading = false"
+                @error="previewImageLoading = false"
+              ></image>
+            </view>
+          </view>
+
+          <!-- 按钮组 -->
           <view class="action-buttons">
+            <!-- 查看视频按钮 -->
             <button class="action-button view-button" @click="show(status.file.key)">
               <view class="button-icon"
                 ><image src="/static/icons/view_video.png" mode="aspectFit"></image
               ></view>
               <text>查看视频</text>
             </button>
+
+            <!-- 下载视频按钮 -->
             <button class="action-button download-button" @click="downloadVideo(status.file.key)">
               <view class="button-icon"
                 ><image src="/static/icons/download.png" mode="aspectFit"></image
@@ -505,7 +533,7 @@ onLoad(async () => {
               <view class="instruction-text">完成AR打卡</view>
             </view>
           </view>
-          <button class="action-button begin-button" @click="begin">
+          <button class="action-button begin-button full-width" @click="begin">
             <view class="button-icon"
               ><image src="/static/icons/start_recording.png" mode="aspectFit"></image
             ></view>
@@ -524,7 +552,7 @@ onLoad(async () => {
             <view class="recording-ring"></view>
             <view class="recording-time">● REC</view>
           </view>
-          <button class="action-button cancel-button" @click="stop">
+          <button class="action-button cancel-button full-width" @click="stop">
             <view class="button-icon"
               ><image src="/static/icons/stop_recording.png" mode="aspectFit"></image
             ></view>
@@ -1193,6 +1221,93 @@ onLoad(async () => {
     }
   }
 
+  // 视频预览样式
+  .video-preview {
+    width: 100%;
+    margin-top: 10rpx;
+    margin-bottom: 20rpx;
+
+    .preview-title {
+      font-size: 28rpx;
+      color: #666;
+      margin-bottom: 15rpx;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .preview-container {
+      position: relative;
+      width: 100%;
+      height: 350rpx;
+      border-radius: 16rpx;
+      overflow: hidden;
+      background: #f0f0f0;
+      box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.12);
+    }
+
+    .preview-loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(245, 247, 250, 0.9);
+      z-index: 2;
+
+      .loading-spinner {
+        width: 60rpx;
+        height: 60rpx;
+        border: 4rpx solid rgba(74, 144, 226, 0.1);
+        border-radius: 50%;
+        border-top-color: #4a90e2;
+        animation: spin 1s linear infinite;
+        margin-bottom: 16rpx;
+      }
+
+      .loading-text {
+        font-size: 24rpx;
+        color: #666;
+        font-weight: 500;
+      }
+    }
+
+    .preview-image {
+      width: 100%;
+      height: 100%;
+      border-radius: 16rpx;
+      transition: all 0.3s ease;
+      position: relative;
+      opacity: 0;
+      transform: scale(0.95);
+
+      &.image-loaded {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      &::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 16rpx;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+        pointer-events: none;
+      }
+
+      &:active {
+        transform: scale(0.98);
+        box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+
   // AR指导说明
   .ar-instruction {
     display: flex;
@@ -1325,6 +1440,12 @@ onLoad(async () => {
     flex: 1;
     min-height: 80rpx;
     line-height: 1;
+    margin-bottom: 20rpx;
+
+    &.full-width {
+      width: 100%;
+      margin-right: 0;
+    }
 
     .button-icon {
       width: 40rpx;

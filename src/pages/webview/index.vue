@@ -55,8 +55,8 @@ const initWebviewUrl = () => {
     let baseUrl = "";
     if (env === "develop") {
       // 开发环境
-      // baseUrl = "http://localhost:5173";
-      baseUrl = "https://file.4mr.cn";
+      baseUrl = "http://localhost:5173";
+      // baseUrl = "https://file.4mr.cn";
     } else if (env === "trial") {
       // 体验版环境
       baseUrl = "https://file.4mr.cn";
