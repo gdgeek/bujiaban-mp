@@ -16,6 +16,7 @@ import {
   type ApiResponse,
 } from "@/services/checkin";
 
+const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID"; // 添加一个常量用于存储键名
 const openid = ref<string | null>(null);
 const token = ref<string | null>(null);
 const status = ref<StatusData | null>(null);
@@ -44,6 +45,27 @@ const agreementContent = ref("");
 // 预览图URL
 const previewImageUrl = ref<string>("");
 const videoUrl = ref<string>("");
+
+// 保存openid到本地存储
+const saveOpenidToStorage = (id: string) => {
+  try {
+    uni.setStorageSync(OPENID_STORAGE_KEY, id);
+    console.log("openid已成功保存到本地存储");
+  } catch (e) {
+    console.error("保存openid到本地存储失败:", e);
+  }
+};
+
+// 从本地存储获取openid
+const getOpenidFromStorage = (): string | null => {
+  try {
+    const storedOpenid = uni.getStorageSync(OPENID_STORAGE_KEY);
+    return storedOpenid || null;
+  } catch (e) {
+    console.error("从本地存储获取openid失败:", e);
+    return null;
+  }
+};
 
 // 测试进度
 const testProgressStep = () => {
@@ -261,13 +283,25 @@ const getToken = () => {
 onLoad(async () => {
   token.value = getToken(); //得到token
   //本页面所有操作都具有token
-  try {
-    const ret = await wxLogin();
-    openid.value = ret.openid; //得到openid
-    //本页面所有操作都得到openid
-  } catch (error) {
-    console.error("openid 请求失败！" + error);
-    return;
+
+  // 首先尝试从本地存储中获取openid
+  const storedOpenid = getOpenidFromStorage();
+  if (storedOpenid) {
+    console.log("从本地存储中恢复了openid");
+    openid.value = storedOpenid;
+  } else {
+    // 如果本地没有存储openid，则请求新的
+    try {
+      const ret = await wxLogin();
+      openid.value = ret.openid; //得到openid
+      // 将新获取的openid保存到本地存储
+      if (openid.value) {
+        saveOpenidToStorage(openid.value);
+      }
+    } catch (error) {
+      console.error("openid 请求失败！" + error);
+      return;
+    }
   }
 
   try {

@@ -9,13 +9,13 @@
 
       }
     },
-    {
-      "path": "pages/my/index",
-      "style": {
-        "navigationStyle": "custom", // 隐藏默认导航
-        "navigationBarTitleText": "我的"
-      }
-    },
+    // {
+    //   "path": "pages/my/index",
+    //   "style": {
+    //     "navigationStyle": "custom", // 隐藏默认导航
+    //     "navigationBarTitleText": "我的"
+    //   }
+    // },
     {
       "path": "pages/checkin/index",
       "style": {
@@ -68,12 +68,12 @@
         "iconPath": "static/tabs/video_default.png",
         "selectedIconPath": "static/tabs/video_selected.png"
       },
-      {
-        "text": "我的",
-        "pagePath": "pages/my/index",
-        "iconPath": "static/tabs/user_default.png",
-        "selectedIconPath": "static/tabs/user_selected.png"
-      },
+      // {
+      //   "text": "我的",
+      //   "pagePath": "pages/my/index",
+      //   "iconPath": "static/tabs/user_default.png",
+      //   "selectedIconPath": "static/tabs/user_selected.png"
+      // },
       {
         "text": "打卡",
         "pagePath": "pages/checkin/index",
