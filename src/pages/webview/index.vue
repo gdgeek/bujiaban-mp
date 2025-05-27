@@ -25,12 +25,21 @@ const webviewUrl = ref("");
 const isLoaded = ref(false);
 // 视频key
 const videoKey = ref("");
+// 签名后的URL
+const signedUrl = ref("");
 
 // 接收页面参数
 onLoad((query) => {
   if (query && query.key) {
     videoKey.value = decodeURIComponent(query.key as string);
     console.log("接收到视频key:", videoKey.value);
+
+    // 接收签名URL
+    if (query.url) {
+      signedUrl.value = decodeURIComponent(query.url as string);
+      console.log("接收到签名URL:", signedUrl.value);
+    }
+
     initWebviewUrl();
   } else {
     console.error("缺少key参数");
@@ -65,8 +74,15 @@ const initWebviewUrl = () => {
       baseUrl = "https://file.4mr.cn";
     }
 
-    // 构建完整的URL，包含key参数
-    webviewUrl.value = `${baseUrl}/video?key=${encodeURIComponent(videoKey.value)}`;
+    // 构建完整的URL，包含key参数和签名URL
+    let url = `${baseUrl}/video?key=${encodeURIComponent(videoKey.value)}`;
+
+    // 如果有签名URL，追加到参数中
+    if (signedUrl.value) {
+      url += `&signedUrl=${encodeURIComponent(signedUrl.value)}`;
+    }
+
+    webviewUrl.value = url;
     console.log("当前小程序环境:", env);
     console.log("加载视频URL:", webviewUrl.value);
   } catch (err) {

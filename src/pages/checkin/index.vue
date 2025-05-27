@@ -1,33 +1,20 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
-
-// 定义接口类型
-interface CheckinInfo {
-  created_at: string;
-  token: string;
-  openid: string;
-  status: string;
-  updated_at: string;
-}
-
-interface FileInfo {
-  token: string;
-  key: string;
-  openid: string;
-  created_at: string;
-}
-
-interface StatusData {
-  checkin: CheckinInfo;
-  file?: FileInfo | null;
-}
-
-interface ApiResponse {
-  scuess: boolean;
-  message: string;
-  data: StatusData;
-}
+import { getObjectUrl } from "@/services/cloud";
+import {
+  getCheckinStatus,
+  wxLogin,
+  setCheckinReady,
+  setCheckinOver,
+  setCheckinLinked,
+  deleteCheckin,
+  getQueryString,
+  type CheckinInfo,
+  type FileInfo,
+  type StatusData,
+  type ApiResponse,
+} from "@/services/checkin";
 
 const openid = ref<string | null>(null);
 const token = ref<string | null>(null);
@@ -48,11 +35,15 @@ const animationActive = ref(false);
 const showDevInfo = ref(false);
 const { safeAreaInsets } = uni.getWindowInfo();
 
-// 添加隐私协议状态变量
+// 隐私协议状态变量
 const showPrivacyModal = ref(false);
 const showDisclaimerModal = ref(false);
 const agreementType = ref("");
 const agreementContent = ref("");
+
+// 预览图URL
+const previewImageUrl = ref<string>("");
+const videoUrl = ref<string>("");
 
 // 测试进度
 const testProgressStep = () => {
@@ -110,132 +101,82 @@ watch(
   },
   { immediate: true },
 );
-const _refresh = async (token: string): Promise<ApiResponse> => {
-  return new Promise((resolve, reject) => {
-    console.error("refresh:");
-    wx.request({
-      url: "https://w.4mr.cn/v1/checkin/status?token=" + token,
-      method: "GET",
-      success: function (res) {
-        console.log("验证成功！" + JSON.stringify(res.data));
-        resolve(res.data as ApiResponse);
-      },
-      fail: function (res) {
-        console.log("请求失败！" + res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
-};
 
-//得到 token
-const getQueryString = (url: string, name: string): string | null => {
-  var reg = new RegExp("(^|&|/?)" + name + "=([^&|/?]*)(&|/?|$)", "i");
-  var r = url.substring(1).match(reg);
-  if (r != null) {
-    return r[2];
-  }
-  return null;
-};
-
+// 刷新打卡状态
 const refresh = async () => {
   if (token.value) {
-    const ret = await _refresh(token.value);
+    const ret = await getCheckinStatus(token.value);
     status.value = ret.data;
   }
 };
-const login = async (): Promise<{ openid: string }> => {
-  return new Promise((resolve, reject) => {
-    wx.login({
-      success: function (res) {
-        if (res.code) {
-          wx.request({
-            url: "https://w.4mr.cn/v1/we-chat/openid",
-            data: {
-              code: res.code,
-            },
-            method: "POST",
-            success: function (res) {
-              resolve(res.data as { openid: string });
-            },
-            fail: function (res) {
-              console.log("请求失败！" + res.errMsg);
-              reject(res.errMsg);
-            },
-          });
-        } else {
-          console.log("登录失败！" + res.errMsg);
-          reject(res.errMsg);
-        }
-      },
-      fail: function (res) {
-        console.log("登录失败！" + res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
-};
+
+// 开始录制
 const begin = async () => {
   animationActive.value = true;
   setTimeout(async () => {
-    const ret = await ready();
-    status.value = ret.data;
+    if (openid.value && token.value) {
+      const ret = await setCheckinReady(openid.value, token.value);
+      status.value = ret.data;
+    }
     animationActive.value = false;
   }, 800);
 };
+
+// 停止录制
 const stop = async () => {
   animationActive.value = true;
   setTimeout(async () => {
-    const ret = await over();
-    status.value = ret.data;
+    if (openid.value && token.value) {
+      const ret = await setCheckinOver(openid.value, token.value);
+      status.value = ret.data;
+    }
     animationActive.value = false;
   }, 800);
 };
-const over = async (): Promise<ApiResponse> => {
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: "https://w.4mr.cn/v1/checkin/status-over",
-      method: "POST",
-      data: {
-        openid: openid.value,
-        token: token.value,
-      },
-      success: function (res) {
-        console.log("openid" + openid.value);
-        resolve(res.data as ApiResponse);
-      },
-      fail: function (res) {
-        console.log("请求失败！" + res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
+
+// 获取签名后的URL
+const getSignedUrl = async (key: string, isPreview: boolean = false) => {
+  try {
+    const url = await getObjectUrl(key);
+    if (isPreview) {
+      // 预览图添加截图参数
+      previewImageUrl.value = `${url}&ci-process=snapshot&time=0.01`;
+    } else {
+      videoUrl.value = url;
+    }
+    return url;
+  } catch (error) {
+    console.error("获取签名URL失败:", error);
+    // 失败时使用默认无签名URL
+    const defaultUrl = `https://game-1251022382.cos.ap-nanjing.myqcloud.com/${key}`;
+    if (isPreview) {
+      previewImageUrl.value = `${defaultUrl}?ci-process=snapshot&time=0.01`;
+    } else {
+      videoUrl.value = defaultUrl;
+    }
+    return defaultUrl;
+  }
 };
-const linked = async (): Promise<ApiResponse> => {
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: "https://w.4mr.cn/v1/checkin/status-linked",
-      method: "POST",
-      data: {
-        openid: openid.value,
-        token: token.value,
-      },
-      success: function (res) {
-        console.log("openid" + openid.value);
-        resolve(res.data as ApiResponse);
-      },
-      fail: function (res) {
-        console.log("请求失败！" + res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
-};
+
+// 监听status.file变化，更新签名URL
+watch(
+  () => status.value?.file?.key,
+  async (newKey) => {
+    if (newKey) {
+      previewImageLoading.value = true;
+      await getSignedUrl(newKey, true); // 获取预览图URL
+      await getSignedUrl(newKey); // 获取视频URL
+    }
+  },
+);
+
 const show = (key: string) => {
   console.error(key); //recode/test123.mp4
-  // 跳转到网页端展示视频
+  // 跳转到网页端展示视频，使用已获取的签名URL
   uni.navigateTo({
-    url: `/pages/webview/index?key=${encodeURIComponent(key)}`,
+    url: `/pages/webview/index?key=${encodeURIComponent(key)}&url=${encodeURIComponent(
+      videoUrl.value,
+    )}`,
     success: () => {
       console.log(`成功跳转到视频页面，key: ${key}`);
     },
@@ -248,8 +189,13 @@ const show = (key: string) => {
     },
   });
 };
-const downloadVideo = (key: string) => {
-  const videoUrl = `https://game-1251022382.cos.ap-nanjing.myqcloud.com/${key}`;
+
+const downloadVideo = async (key: string) => {
+  // 确保我们有签名后的URL
+  let downloadUrl = videoUrl.value;
+  if (!downloadUrl) {
+    downloadUrl = await getSignedUrl(key);
+  }
 
   uni.showLoading({
     title: "正在下载视频...",
@@ -258,7 +204,7 @@ const downloadVideo = (key: string) => {
 
   // 下载视频文件
   uni.downloadFile({
-    url: videoUrl,
+    url: downloadUrl,
     success: (res) => {
       uni.hideLoading();
 
@@ -299,52 +245,10 @@ const downloadVideo = (key: string) => {
     },
   });
 };
-const ready = async (): Promise<ApiResponse> => {
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: "https://w.4mr.cn/v1/checkin/status-ready",
-      method: "POST",
-      data: {
-        openid: openid.value,
-        token: token.value,
-      },
-      success: function (res) {
-        console.log("openid" + openid.value);
-        resolve(res.data as ApiResponse);
-      },
-      fail: function (res) {
-        console.log("请求失败！" + res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
-};
-const close = async () => {
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: "https://w.4mr.cn/v1/checkin/close?openid=" + openid.value,
-      method: "DELETE",
-      success: function (res) {
-        console.log("删除成功！！！" + JSON.stringify(res.data));
-        resolve(res.data);
-      },
-      fail: function (res) {
-        console.log("请求失败！" + res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
-};
-
-interface PageInstance {
-  options: {
-    q: string;
-  };
-}
 
 const getToken = () => {
   const pages = getCurrentPages();
-  const currentPage = pages[pages.length - 1] as unknown as PageInstance;
+  const currentPage = pages[pages.length - 1] as unknown as { options: { q: string } };
   const query = currentPage.options;
   const decodedUrl = decodeURIComponent(query.q);
   const result = getQueryString(decodedUrl, "k");
@@ -353,29 +257,30 @@ const getToken = () => {
   }
   return result;
 };
+
 onLoad(async () => {
   token.value = getToken(); //得到token
   //本页面所有操作都具有token
   try {
-    const ret = await login();
-
+    const ret = await wxLogin();
     openid.value = ret.openid; //得到openid
-
     //本页面所有操作都得到openid
   } catch (error) {
     console.error("openid 请求失败！" + error);
     return;
   }
+
   try {
     if (token.value) {
-      const ret = await _refresh(token.value);
+      const ret = await getCheckinStatus(token.value);
 
       if (!ret.scuess || ret.data.checkin.openid != openid.value) {
         //没有状态，证明没有链接，这里要链接
-
-        const linkedRet = await linked();
-        console.log("链接成功！" + JSON.stringify(linkedRet));
-        status.value = linkedRet.data;
+        if (openid.value && token.value) {
+          const linkedRet = await setCheckinLinked(openid.value, token.value);
+          console.log("链接成功！" + JSON.stringify(linkedRet));
+          status.value = linkedRet.data;
+        }
       } else {
         //有状态，证明已经链接，这里要刷新
         status.value = ret.data;
@@ -538,11 +443,11 @@ const closeAgreementModal = () => {
                 <view class="loading-spinner"></view>
                 <text class="loading-text">加载预览中...</text>
               </view>
-              <!-- 预览图 -->
+              <!-- 预览图 - 使用签名后的URL -->
               <image
                 class="preview-image"
                 :class="{ 'image-loaded': !previewImageLoading }"
-                :src="`https://game-1251022382.cos.ap-nanjing.myqcloud.com/${status.file.key}?ci-process=snapshot&time=0.01`"
+                :src="previewImageUrl"
                 mode="aspectFill"
                 @click="show(status.file.key)"
                 @load="previewImageLoading = false"
