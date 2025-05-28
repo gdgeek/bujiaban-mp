@@ -15,6 +15,7 @@ import {
   type StatusData,
   type ApiResponse,
 } from "@/services/checkin";
+import { wxPay, generateOrderNo } from "@/services/pay"; // 导入支付相关函数
 
 const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID"; // 添加一个常量用于存储键名
 const openid = ref<string | null>(null);
@@ -213,59 +214,180 @@ const show = (key: string) => {
 };
 
 const downloadVideo = async (key: string) => {
-  // 确保我们有签名后的URL
-  let downloadUrl = videoUrl.value;
-  if (!downloadUrl) {
-    downloadUrl = await getSignedUrl(key);
+  // 先检查用户是否登录
+  if (!openid.value) {
+    uni.showToast({
+      title: "请先登录",
+      icon: "none",
+    });
+    return;
   }
 
-  uni.showLoading({
-    title: "正在下载视频...",
-    mask: true,
-  });
+  try {
+    // 先检查相册权限
+    const authSetting = await uni.getSetting();
+    if (!authSetting.authSetting["scope.writePhotosAlbum"]) {
+      // 没有权限，请求授权
+      uni.showLoading({
+        title: "正在请求授权...",
+        mask: true,
+      });
 
-  // 下载视频文件
-  uni.downloadFile({
-    url: downloadUrl,
-    success: (res) => {
-      uni.hideLoading();
-
-      if (res.statusCode === 200) {
-        // 保存视频到相册
-        uni.saveVideoToPhotosAlbum({
-          filePath: res.tempFilePath,
-          success: () => {
-            uni.showToast({
-              title: "视频已保存到相册",
-              icon: "success",
-              duration: 2000,
-            });
-          },
-          fail: (err) => {
-            console.error("保存到相册失败：", err);
-            uni.showModal({
-              title: "保存失败",
-              content: "无法保存视频到相册，请检查相册权限设置",
-              showCancel: false,
-            });
-          },
+      try {
+        await new Promise<void>((resolve, reject) => {
+          uni.authorize({
+            scope: "scope.writePhotosAlbum",
+            success: () => {
+              console.log("相册授权成功");
+              resolve();
+            },
+            fail: (err) => {
+              console.error("相册授权失败:", err);
+              uni.hideLoading();
+              uni.showModal({
+                title: "需要授权",
+                content: "保存视频需要访问您的相册权限",
+                confirmText: "前往设置",
+                cancelText: "取消",
+                success: (res) => {
+                  if (res.confirm) {
+                    uni.openSetting({
+                      success: (settingRes) => {
+                        if (settingRes.authSetting["scope.writePhotosAlbum"]) {
+                          resolve();
+                        } else {
+                          uni.showToast({
+                            title: "未获得权限，无法保存",
+                            icon: "none",
+                          });
+                          reject(new Error("用户拒绝授权"));
+                        }
+                      },
+                    });
+                  } else {
+                    uni.showToast({
+                      title: "未获得权限，无法保存",
+                      icon: "none",
+                    });
+                    reject(new Error("用户取消授权"));
+                  }
+                },
+              });
+            },
+          });
         });
-      } else {
-        uni.showToast({
-          title: "下载失败",
-          icon: "none",
-        });
+        uni.hideLoading();
+      } catch (error) {
+        console.error("相册授权过程中出错:", error);
+        return; // 如果授权失败，直接返回，不进行后续操作
       }
-    },
-    fail: (err) => {
-      uni.hideLoading();
-      console.error("下载失败：", err);
+    }
+
+    // 授权成功后，弹窗确认支付
+    const confirmRes = await new Promise<{ confirm: boolean }>((resolve) => {
+      uni.showModal({
+        title: "下载提示",
+        content: "下载视频到本地需支付1分钱，确认继续吗？",
+        confirmText: "确认支付",
+        cancelText: "取消",
+        success: (res) => {
+          resolve(res);
+        },
+      });
+    });
+
+    if (!confirmRes.confirm) {
+      return; // 用户取消支付
+    }
+
+    // 创建支付订单号
+    const orderNo = generateOrderNo();
+
+    // 显示支付中提示
+    uni.showLoading({
+      title: "正在发起支付...",
+      mask: true,
+    });
+
+    // 调用微信支付接口
+    const payResult = await wxPay({
+      openid: openid.value,
+      out_trade_no: orderNo,
+      amount: 1, // 支付金额1分钱
+      description: "AR打卡视频下载",
+    });
+
+    uni.hideLoading();
+
+    if (!payResult) {
       uni.showToast({
-        title: "网络异常，下载失败",
+        title: "支付已取消",
         icon: "none",
       });
-    },
-  });
+      return;
+    }
+
+    // 确保我们有签名后的URL
+    let downloadUrl = videoUrl.value;
+    if (!downloadUrl) {
+      downloadUrl = await getSignedUrl(key);
+    }
+
+    uni.showLoading({
+      title: "正在下载视频...",
+      mask: true,
+    });
+
+    // 下载视频文件
+    uni.downloadFile({
+      url: downloadUrl,
+      success: (res) => {
+        uni.hideLoading();
+
+        if (res.statusCode === 200) {
+          // 保存视频到相册
+          uni.saveVideoToPhotosAlbum({
+            filePath: res.tempFilePath,
+            success: () => {
+              uni.showToast({
+                title: "视频已保存到相册",
+                icon: "success",
+                duration: 2000,
+              });
+            },
+            fail: (err) => {
+              console.error("保存到相册失败：", err);
+              uni.showModal({
+                title: "保存失败",
+                content: "无法保存视频到相册，请检查相册权限设置",
+                showCancel: false,
+              });
+            },
+          });
+        } else {
+          uni.showToast({
+            title: "下载失败",
+            icon: "none",
+          });
+        }
+      },
+      fail: (err) => {
+        uni.hideLoading();
+        console.error("下载失败：", err);
+        uni.showToast({
+          title: "网络异常，下载失败",
+          icon: "none",
+        });
+      },
+    });
+  } catch (error) {
+    console.error("下载过程中出错:", error);
+    uni.hideLoading();
+    uni.showToast({
+      title: "下载视频失败",
+      icon: "none",
+    });
+  }
 };
 
 const getToken = () => {
@@ -336,15 +458,18 @@ const showPrivacyDetail = () => {
      我们会收集您的设备信息、摄像头权限和必要的位置信息，用于提供AR打卡视频录制服务。在您使用下载功能时，我们需要获取您的相册访问权限。
 
   2. 视频存储与使用
-     您在平台上录制的AR打卡视频将临时存储在我们的服务器上，方便您查看和下载。您可以自由下载这些视频到本地设备。
+     您在平台上录制的AR打卡视频将临时存储在我们的服务器上，方便您查看和下载。您可以通过支付少量费用下载这些视频到本地设备。
 
-  3. 视频分享
+  3. 付费内容
+     平台提供的视频下载功能需要支付少量费用(¥0.01)。我们使用微信支付进行安全交易，不会存储您的银行卡等支付敏感信息。支付成功后，您可以将视频永久保存到您的设备中。
+
+  4. 视频分享
      您可以将下载的视频自由分享给他人或发布到社交媒体。请注意，一旦您分享视频，我们无法控制他人对视频的使用方式。
 
-  4. 信息安全
+  5. 信息安全
      我们采取行业标准的安全措施保护您的个人信息和视频内容。您的视频将在您完成下载后的30天内从我们的服务器自动删除。
 
-  5. 用户权利
+  6. 用户权利
      您有权随时下载和删除您的AR打卡视频。如您对隐私保护有任何疑问，可随时联系我们。
   `;
   showPrivacyModal.value = true;
@@ -505,8 +630,14 @@ const closeAgreementModal = () => {
               <view class="button-icon"
                 ><image src="/static/icons/download.png" mode="aspectFit"></image
               ></view>
-              <text>下载视频</text>
+              <text>付费下载(¥0.01)</text>
             </button>
+          </view>
+
+          <!-- 支付说明 -->
+          <view class="payment-tips">
+            <image src="/static/icons/tip.png" mode="aspectFit" class="tip-icon"></image>
+            <text class="tip-text">下载视频需支付¥0.01，支付成功后即可永久保存到相册</text>
           </view>
         </block>
 
@@ -1519,6 +1650,30 @@ const closeAgreementModal = () => {
       &:active {
         background: #177ddc;
       }
+    }
+  }
+
+  // 支付提示样式
+  .payment-tips {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 16rpx 24rpx;
+    background: rgba(24, 144, 255, 0.05);
+    border-radius: 16rpx;
+    margin-bottom: 30rpx;
+
+    .tip-icon {
+      width: 32rpx;
+      height: 32rpx;
+      margin-right: 12rpx;
+      flex-shrink: 0;
+    }
+
+    .tip-text {
+      font-size: 24rpx;
+      color: #666;
+      line-height: 1.4;
     }
   }
 }
