@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
-import { getObjectUrl } from "@/services/cloud";
+// 从工具文件导入函数，移除不再需要的导入
+import {
+  getSignedVideoUrl,
+  getOpenidFromStorage,
+} from "@/utils/video";
 import {
   getCheckinStatus,
   wxLogin,
@@ -15,9 +19,10 @@ import {
   type StatusData,
   type ApiResponse,
 } from "@/services/checkin";
-import { wxPay, generateOrderNo } from "@/services/pay"; // 导入支付相关函数
+// 移除直接导入支付相关函数
+// import { wxPay, generateOrderNo } from "@/services/pay";
 
-const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID"; // 添加一个常量用于存储键名
+const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
 const openid = ref<string | null>(null);
 const token = ref<string | null>(null);
 const status = ref<StatusData | null>(null);
@@ -54,17 +59,6 @@ const saveOpenidToStorage = (id: string) => {
     console.log("openid已成功保存到本地存储");
   } catch (e) {
     console.error("保存openid到本地存储失败:", e);
-  }
-};
-
-// 从本地存储获取openid
-const getOpenidFromStorage = (): string | null => {
-  try {
-    const storedOpenid = uni.getStorageSync(OPENID_STORAGE_KEY);
-    return storedOpenid || null;
-  } catch (e) {
-    console.error("从本地存储获取openid失败:", e);
-    return null;
   }
 };
 
@@ -157,27 +151,19 @@ const stop = async () => {
   }, 800);
 };
 
-// 获取签名后的URL
+// 获取签名后的URL，使用工具函数
 const getSignedUrl = async (key: string, isPreview: boolean = false) => {
   try {
-    const url = await getObjectUrl(key);
+    const url = await getSignedVideoUrl(key, isPreview);
     if (isPreview) {
-      // 预览图添加截图参数
-      previewImageUrl.value = `${url}&ci-process=snapshot&time=0.01`;
+      previewImageUrl.value = url;
     } else {
       videoUrl.value = url;
     }
     return url;
   } catch (error) {
     console.error("获取签名URL失败:", error);
-    // 失败时使用默认无签名URL
-    const defaultUrl = `https://game-1251022382.cos.ap-nanjing.myqcloud.com/${key}`;
-    if (isPreview) {
-      previewImageUrl.value = `${defaultUrl}?ci-process=snapshot&time=0.01`;
-    } else {
-      videoUrl.value = defaultUrl;
-    }
-    return defaultUrl;
+    return "";
   }
 };
 
@@ -213,6 +199,7 @@ const show = (key: string) => {
   });
 };
 
+// 修改downloadVideo函数，改为跳转到payment页面
 const downloadVideo = async (key: string) => {
   // 先检查用户是否登录
   if (!openid.value) {
@@ -223,171 +210,25 @@ const downloadVideo = async (key: string) => {
     return;
   }
 
-  try {
-    // 先检查相册权限
-    const authSetting = await uni.getSetting();
-    if (!authSetting.authSetting["scope.writePhotosAlbum"]) {
-      // 没有权限，请求授权
-      uni.showLoading({
-        title: "正在请求授权...",
-        mask: true,
-      });
+  // 准备参数
+  const params = {
+    videoKey: key,
+    price: 1, // 1分钱
+    title: key.split("/").pop() || "AR打卡视频",
+    action: "download",
+  };
 
-      try {
-        await new Promise<void>((resolve, reject) => {
-          uni.authorize({
-            scope: "scope.writePhotosAlbum",
-            success: () => {
-              console.log("相册授权成功");
-              resolve();
-            },
-            fail: (err) => {
-              console.error("相册授权失败:", err);
-              uni.hideLoading();
-              uni.showModal({
-                title: "需要授权",
-                content: "保存视频需要访问您的相册权限",
-                confirmText: "前往设置",
-                cancelText: "取消",
-                success: (res) => {
-                  if (res.confirm) {
-                    uni.openSetting({
-                      success: (settingRes) => {
-                        if (settingRes.authSetting["scope.writePhotosAlbum"]) {
-                          resolve();
-                        } else {
-                          uni.showToast({
-                            title: "未获得权限，无法保存",
-                            icon: "none",
-                          });
-                          reject(new Error("用户拒绝授权"));
-                        }
-                      },
-                    });
-                  } else {
-                    uni.showToast({
-                      title: "未获得权限，无法保存",
-                      icon: "none",
-                    });
-                    reject(new Error("用户取消授权"));
-                  }
-                },
-              });
-            },
-          });
-        });
-        uni.hideLoading();
-      } catch (error) {
-        console.error("相册授权过程中出错:", error);
-        return; // 如果授权失败，直接返回，不进行后续操作
-      }
-    }
-
-    // 授权成功后，弹窗确认支付
-    const confirmRes = await new Promise<{ confirm: boolean }>((resolve) => {
-      uni.showModal({
-        title: "下载提示",
-        content: "下载视频到本地需支付1分钱，确认继续吗？",
-        confirmText: "确认支付",
-        cancelText: "取消",
-        success: (res) => {
-          resolve(res);
-        },
-      });
-    });
-
-    if (!confirmRes.confirm) {
-      return; // 用户取消支付
-    }
-
-    // 创建支付订单号
-    const orderNo = generateOrderNo();
-
-    // 显示支付中提示
-    uni.showLoading({
-      title: "正在发起支付...",
-      mask: true,
-    });
-
-    // 调用微信支付接口
-    const payResult = await wxPay({
-      openid: openid.value,
-      out_trade_no: orderNo,
-      amount: 1, // 支付金额1分钱
-      description: "AR打卡视频下载",
-    });
-
-    uni.hideLoading();
-
-    if (!payResult) {
+  // 跳转到支付页面
+  uni.navigateTo({
+    url: `/pages/payment/index?params=${encodeURIComponent(JSON.stringify(params))}`,
+    fail: (err) => {
+      console.error(`跳转到支付页面失败: ${JSON.stringify(err)}`);
       uni.showToast({
-        title: "支付已取消",
+        title: "页面跳转失败",
         icon: "none",
       });
-      return;
-    }
-
-    // 确保我们有签名后的URL
-    let downloadUrl = videoUrl.value;
-    if (!downloadUrl) {
-      downloadUrl = await getSignedUrl(key);
-    }
-
-    uni.showLoading({
-      title: "正在下载视频...",
-      mask: true,
-    });
-
-    // 下载视频文件
-    uni.downloadFile({
-      url: downloadUrl,
-      success: (res) => {
-        uni.hideLoading();
-
-        if (res.statusCode === 200) {
-          // 保存视频到相册
-          uni.saveVideoToPhotosAlbum({
-            filePath: res.tempFilePath,
-            success: () => {
-              uni.showToast({
-                title: "视频已保存到相册",
-                icon: "success",
-                duration: 2000,
-              });
-            },
-            fail: (err) => {
-              console.error("保存到相册失败：", err);
-              uni.showModal({
-                title: "保存失败",
-                content: "无法保存视频到相册，请检查相册权限设置",
-                showCancel: false,
-              });
-            },
-          });
-        } else {
-          uni.showToast({
-            title: "下载失败",
-            icon: "none",
-          });
-        }
-      },
-      fail: (err) => {
-        uni.hideLoading();
-        console.error("下载失败：", err);
-        uni.showToast({
-          title: "网络异常，下载失败",
-          icon: "none",
-        });
-      },
-    });
-  } catch (error) {
-    console.error("下载过程中出错:", error);
-    uni.hideLoading();
-    uni.showToast({
-      title: "下载视频失败",
-      icon: "none",
-    });
-  }
+    },
+  });
 };
 
 const getToken = () => {
@@ -396,9 +237,9 @@ const getToken = () => {
   const query = currentPage.options;
   const decodedUrl = decodeURIComponent(query.q);
   const result = getQueryString(decodedUrl, "k");
-  if (!result) {
-    return "test123";
-  }
+  // if (!result) {
+  //   return "test123";
+  // }
   return result;
 };
 
@@ -453,7 +294,6 @@ onLoad(async () => {
 const showPrivacyDetail = () => {
   agreementType.value = "不加班AR平台隐私协议";
   agreementContent.value = `
-
   1. 信息收集
      我们会收集您的设备信息、摄像头权限和必要的位置信息，用于提供AR打卡视频录制服务。在您使用下载功能时，我们需要获取您的相册访问权限。
 
@@ -479,7 +319,6 @@ const showPrivacyDetail = () => {
 const showDisclaimerDetail = () => {
   agreementType.value = "免责声明";
   agreementContent.value = `
-
   1. 内容责任
      您对使用本平台录制的AR打卡视频内容负有全部责任。请确保您录制和分享的内容不违反法律法规，不侵犯他人权益。
 
@@ -493,7 +332,7 @@ const showDisclaimerDetail = () => {
      在录制AR打卡视频时，请注意保护您自己和他人的隐私。避免在视频中包含敏感个人信息或未经许可的他人肖像。
 
   5. 最终解释权
-     本声明的最终解释权归不加班AR平台所有。使用本平台即表示您已阅读并同意本免责声明的全部内容。
+     本声明的最终解释权归不加班AR打卡平台（上海不加班网络科技有限公司）所有。使用本平台即表示您已阅读并同意本免责声明的全部内容。
   `;
   showDisclaimerModal.value = true;
 };
@@ -504,6 +343,7 @@ const closeAgreementModal = () => {
   showDisclaimerModal.value = false;
 };
 </script>
+
 <template>
   <view class="ar-checkin" :style="{ paddingTop: (safeAreaInsets?.top || 0) + 'px' }">
     <!-- 顶部导航栏 -->
@@ -761,7 +601,7 @@ const closeAgreementModal = () => {
   </view>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .ar-checkin {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
