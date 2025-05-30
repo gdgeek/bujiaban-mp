@@ -1,25 +1,28 @@
 <template>
   <view class="payment-page">
-    <view class="payment-card">
-      <view class="payment-header">
-        <text class="payment-title">视频下载</text>
-      </view>
-
-      <view class="payment-info">
-        <view class="info-item">
-          <text class="label">视频名称:</text>
-          <text class="value">{{ paymentInfo.title || "未知视频" }}</text>
+    <view class="content-wrapper">
+      <view class="payment-card">
+        <view class="payment-header">
+          <text class="payment-title">视频下载</text>
         </view>
-        <view class="info-item">
-          <text class="label">支付金额:</text>
-          <text class="value">¥{{ (paymentInfo.price || 0) / 100 }}</text>
+
+        <view class="payment-info">
+          <view class="info-item">
+            <text class="label">视频名称:</text>
+            <text class="value">{{ paymentInfo.title || "未知视频" }}</text>
+          </view>
+          <view class="info-item">
+            <text class="label">支付金额:</text>
+            <text class="value">¥{{ (paymentInfo.price || 0) / 100 }}</text>
+          </view>
         </view>
+
+        <button class="pay-button" @click="handlePay" :loading="loading">确认支付</button>
+
+        <button class="cancel-button" @click="handleCancel">取消</button>
       </view>
-
-      <button class="pay-button" @click="handlePay" :loading="loading">确认支付</button>
-
-      <button class="cancel-button" @click="handleCancel">取消</button>
     </view>
+    <FooterCopyright />
   </view>
 </template>
 
@@ -163,9 +166,15 @@ const handleCancel = () => {
   padding: 30rpx;
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-  // display: flex;
-  justify-content: center;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+
+  .content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
 
   .payment-card {
     background: #fff;
@@ -174,6 +183,7 @@ const handleCancel = () => {
     box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.08);
     width: 100%;
     max-width: 750rpx;
+    margin-bottom: 20rpx;
 
     .payment-header {
       text-align: center;
@@ -232,7 +242,7 @@ const handleCancel = () => {
     }
 
     .pay-button {
-      background: linear-gradient(to right, #4a90e2, #5a9de6);
+      background: #1890ff;
       color: #fff;
       margin-bottom: 30rpx;
       border-radius: 10px;
@@ -241,12 +251,13 @@ const handleCancel = () => {
       font-size: 32rpx;
       font-weight: 500;
       letter-spacing: 2rpx;
-      box-shadow: 0 8rpx 16rpx rgba(74, 144, 226, 0.2);
+      box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.15);
       transition: all 0.3s ease;
 
       &:active {
+        background: #177ddc;
         transform: translateY(2rpx);
-        box-shadow: 0 4rpx 8rpx rgba(74, 144, 226, 0.2);
+        box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.15);
       }
     }
 

@@ -1,33 +1,38 @@
 <template>
   <view class="video-page">
-    <!-- 视频列表 -->
-    <view class="video-list-container">
-      <block v-if="loading">
-        <view class="loading-tips">
-          <text>正在加载记录...</text>
-        </view>
-      </block>
-      <block v-else-if="videoStore.videos.length === 0">
-        <view class="empty-state">
-          <text>暂无记录</text>
-        </view>
-      </block>
-      <block v-else>
-        <view class="video-list">
-          <video-card
-            v-for="video in videoStore.videos"
-            :key="video.id"
-            :video="video"
-            :openid="openid"
-          />
-        </view>
-      </block>
+    <!-- 内容包裹器 -->
+    <view class="content-wrapper">
+      <!-- 视频列表 -->
+      <view class="video-list-container">
+        <block v-if="loading">
+          <view class="loading-tips">
+            <text>正在加载记录...</text>
+          </view>
+        </block>
+        <block v-else-if="videoStore.videos.length === 0">
+          <view class="empty-state">
+            <text>暂无记录</text>
+          </view>
+        </block>
+        <block v-else>
+          <view class="video-list">
+            <video-card
+              v-for="video in videoStore.videos"
+              :key="video.id"
+              :video="video"
+              :openid="openid"
+            />
+          </view>
+        </block>
+      </view>
+
+      <!-- 页面底部提示 -->
+      <view class="page-footer">
+        <text class="footer-text">录制更多精彩视频，记录美好瞬间</text>
+      </view>
     </view>
 
-    <!-- 页面底部提示 -->
-    <view class="page-footer">
-      <text class="footer-text">录制更多精彩视频，记录美好瞬间</text>
-    </view>
+    <FooterCopyright />
   </view>
 </template>
 
@@ -83,9 +88,15 @@ onShow(async () => {
 .video-page {
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
   min-height: 100vh;
-  padding: 20rpx 0 30rpx 0;
+  padding: 20rpx 0 0 0;
   box-sizing: border-box;
   position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-wrapper {
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
