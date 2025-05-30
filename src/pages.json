@@ -39,7 +39,9 @@
     {
       "path": "pages/video/index",
       "style": {
-        "navigationBarTitleText": "记录管理"
+        "navigationBarTitleText": "记录管理",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
       }
     },
     {
@@ -70,23 +72,23 @@
       //   "selectedIconPath": "static/tabs/home_selected.png"
       // },
       {
+        "text": "打卡",
+        "pagePath": "pages/checkin/index",
+        "iconPath": "static/tabs/user_default.png",
+        "selectedIconPath": "static/tabs/user_selected.png"
+      },
+      {
         "text": "记录管理",
         "pagePath": "pages/video/index",
         "iconPath": "static/tabs/video_default.png",
         "selectedIconPath": "static/tabs/video_selected.png"
-      },
+      }
       // {
       //   "text": "我的",
       //   "pagePath": "pages/my/index",
       //   "iconPath": "static/tabs/user_default.png",
       //   "selectedIconPath": "static/tabs/user_selected.png"
       // },
-      {
-        "text": "打卡",
-        "pagePath": "pages/checkin/index",
-        "iconPath": "static/tabs/user_default.png",
-        "selectedIconPath": "static/tabs/user_selected.png"
-      }
     ]
   }
 }

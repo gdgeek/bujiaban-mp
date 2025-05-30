@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
-// 从工具文件导入函数，移除不再需要的导入
-import {
-  getSignedVideoUrl,
-  getOpenidFromStorage,
-} from "@/utils/video";
+import { getSignedVideoUrl, getOpenidFromStorage } from "@/utils/video";
 import {
   getCheckinStatus,
   wxLogin,
@@ -19,8 +15,6 @@ import {
   type StatusData,
   type ApiResponse,
 } from "@/services/checkin";
-// 移除直接导入支付相关函数
-// import { wxPay, generateOrderNo } from "@/services/pay";
 
 const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
 const openid = ref<string | null>(null);
@@ -179,27 +173,6 @@ watch(
   },
 );
 
-const show = (key: string) => {
-  console.error(key); //recode/test123.mp4
-  // 跳转到网页端展示视频，使用已获取的签名URL
-  uni.navigateTo({
-    url: `/pages/webview/index?key=${encodeURIComponent(key)}&url=${encodeURIComponent(
-      videoUrl.value,
-    )}`,
-    success: () => {
-      console.log(`成功跳转到视频页面，key: ${key}`);
-    },
-    fail: (err) => {
-      console.error(`跳转失败: ${JSON.stringify(err)}`);
-      uni.showToast({
-        title: "页面跳转失败",
-        icon: "none",
-      });
-    },
-  });
-};
-
-// 修改downloadVideo函数，改为跳转到payment页面
 const downloadVideo = async (key: string) => {
   // 先检查用户是否登录
   if (!openid.value) {
@@ -237,9 +210,9 @@ const getToken = () => {
   const query = currentPage.options;
   const decodedUrl = decodeURIComponent(query.q);
   const result = getQueryString(decodedUrl, "k");
-  // if (!result) {
-  //   return "test123";
-  // }
+  if (!result) {
+    return "test123";
+  }
   return result;
 };
 
@@ -448,7 +421,6 @@ const closeAgreementModal = () => {
                 :class="{ 'image-loaded': !previewImageLoading }"
                 :src="previewImageUrl"
                 mode="aspectFill"
-                @click="show(status.file.key)"
                 @load="previewImageLoading = false"
                 @error="previewImageLoading = false"
               ></image>
@@ -457,16 +429,11 @@ const closeAgreementModal = () => {
 
           <!-- 按钮组 -->
           <view class="action-buttons">
-            <!-- 查看视频按钮 -->
-            <button class="action-button view-button" @click="show(status.file.key)">
-              <view class="button-icon"
-                ><image src="/static/icons/view_video.png" mode="aspectFit"></image
-              ></view>
-              <text>查看视频</text>
-            </button>
-
             <!-- 下载视频按钮 -->
-            <button class="action-button download-button" @click="downloadVideo(status.file.key)">
+            <button
+              class="action-button download-button full-width"
+              @click="downloadVideo(status.file.key)"
+            >
               <view class="button-icon"
                 ><image src="/static/icons/download.png" mode="aspectFit"></image
               ></view>
@@ -1475,13 +1442,6 @@ const closeAgreementModal = () => {
       background: #ff4d4f;
       &:active {
         background: #ff3a3d;
-      }
-    }
-
-    &.view-button {
-      background: #52c41a;
-      &:active {
-        background: #49ad17;
       }
     }
 
