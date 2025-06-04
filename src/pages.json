@@ -33,7 +33,6 @@
       "path": "pages/webview/index",
       "style": {
         "navigationBarTitleText": "打卡记录"
-
       }
     },
     {
@@ -47,7 +46,7 @@
     {
       "path": "pages/payment/index",
       "style": {
-        "navigationBarTitleText": "视频付费下载",
+        "navigationBarTitleText": "支付",
         "enablePullDownRefresh": false
       }
     }

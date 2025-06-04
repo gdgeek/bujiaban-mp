@@ -174,7 +174,7 @@ watch(
   },
 );
 
-const downloadVideo = async (key: string) => {
+const handleVideoService = async (key: string) => {
   // 先检查用户是否登录
   if (!openid.value) {
     uni.showToast({
@@ -188,15 +188,15 @@ const downloadVideo = async (key: string) => {
   const params = {
     videoKey: key,
     price: 1, // 1分钱
-    title: key.split("/").pop() || "AR打卡视频",
-    action: "download",
+    title: key.split("/").pop() || "AR打卡专业拍摄",
+    action: "service",
   };
 
   // 跳转到支付页面
   uni.navigateTo({
     url: `/pages/payment/index?params=${encodeURIComponent(JSON.stringify(params))}`,
     fail: (err) => {
-      console.error(`跳转到支付页面失败: ${JSON.stringify(err)}`);
+      console.error(`跳转到服务页面失败: ${JSON.stringify(err)}`);
       uni.showToast({
         title: "页面跳转失败",
         icon: "none",
@@ -269,13 +269,13 @@ const showPrivacyDetail = () => {
   agreementType.value = "不加班AR平台隐私协议";
   agreementContent.value = `
   1. 信息收集
-     我们会收集您的设备信息、摄像头权限和必要的位置信息，用于提供AR打卡视频录制服务。在您使用下载功能时，我们需要获取您的相册访问权限。
+     我们会收集您的设备信息、摄像头权限和必要的位置信息，用于提供AR打卡视频录制服务。在您使用拍摄服务时，我们需要获取您的相册访问权限。
 
   2. 视频存储与使用
-     您在平台上录制的AR打卡视频将临时存储在我们的服务器上，方便您查看和下载。您可以通过支付少量费用下载这些视频到本地设备。
+     您在平台上录制的AR打卡视频将临时存储在我们的服务器上，方便您查看和保存。您可以通过支付少量服务费获得专业拍摄服务并保存视频。
 
   3. 付费内容
-     平台提供的视频下载功能需要支付少量费用(¥0.01)。我们使用微信支付进行安全交易，不会存储您的银行卡等支付敏感信息。支付成功后，您可以将视频永久保存到您的设备中。
+     平台提供的专业拍摄服务需要支付少量服务费(¥0.01)。我们使用微信支付进行安全交易，不会存储您的银行卡等支付敏感信息。服务完成后，拍摄结果将保存到您的设备中。
 
   4. 视频分享
      您可以将下载的视频自由分享给他人或发布到社交媒体。请注意，一旦您分享视频，我们无法控制他人对视频的使用方式。
@@ -435,19 +435,19 @@ const closeAgreementModal = () => {
               <!-- 下载视频按钮 -->
               <button
                 class="action-button download-button full-width"
-                @click="downloadVideo(status.file.key)"
+                @click="handleVideoService(status.file.key)"
               >
                 <view class="button-icon"
                   ><image src="/static/icons/download.png" mode="aspectFit"></image
                 ></view>
-                <text>付费下载(¥0.01)</text>
+                <text>拍摄服务费(¥0.01)</text>
               </button>
             </view>
 
             <!-- 支付说明 -->
             <view class="payment-tips">
               <image src="/static/icons/tip.png" mode="aspectFit" class="tip-icon"></image>
-              <text class="tip-text">下载视频需支付¥0.01，支付成功后即可永久保存到相册</text>
+              <text class="tip-text">拍摄服务费¥0.01，支付完成后可获取打卡视频并保存到相册</text>
             </view>
           </block>
 

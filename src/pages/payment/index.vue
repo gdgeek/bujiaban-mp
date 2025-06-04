@@ -3,21 +3,21 @@
     <view class="content-wrapper">
       <view class="payment-card">
         <view class="payment-header">
-          <text class="payment-title">视频下载</text>
+          <text class="payment-title">拍摄服务</text>
         </view>
 
         <view class="payment-info">
           <view class="info-item">
-            <text class="label">视频名称:</text>
-            <text class="value">{{ paymentInfo.title || "未知视频" }}</text>
+            <text class="label">服务内容:</text>
+            <text class="value">{{ paymentInfo.title || "专业视频拍摄" }}</text>
           </view>
           <view class="info-item">
-            <text class="label">支付金额:</text>
+            <text class="label">服务费用:</text>
             <text class="value">¥{{ (paymentInfo.price || 0) / 100 }}</text>
           </view>
         </view>
 
-        <button class="pay-button" @click="handlePay" :loading="loading">确认支付</button>
+        <button class="pay-button" @click="handlePay" :loading="loading">支付服务费</button>
 
         <button class="cancel-button" @click="handleCancel">取消</button>
       </view>
@@ -29,7 +29,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
-// 使用抽离出的工具函数替代直接导入
+import FooterCopyright from "@/components/FooterCopyright.vue";
 import {
   getSignedVideoUrl,
   getOpenidFromStorage,
@@ -100,12 +100,12 @@ const handlePay = async () => {
     const paySuccess = await handlePayment({
       openid,
       amount: paymentInfo.value.price || 1,
-      description: `视频下载:${paymentInfo.value.title}`,
+      description: `拍摄服务:${paymentInfo.value.title}`,
     });
 
     if (paySuccess) {
       uni.showToast({
-        title: "支付成功，开始下载",
+        title: "支付成功，开始处理",
         icon: "success",
       });
 
@@ -121,8 +121,8 @@ const handlePay = async () => {
           // 显示成功提示并返回
           setTimeout(() => {
             uni.showModal({
-              title: "下载完成",
-              content: "视频已成功保存到相册",
+              title: "服务完成",
+              content: "拍摄服务已完成，视频已生成并保存到相册",
               showCancel: false,
               success: () => {
                 // 返回上一页
@@ -133,7 +133,7 @@ const handlePay = async () => {
         }
       } else {
         uni.showToast({
-          title: "视频信息不完整",
+          title: "服务信息不完整",
           icon: "error",
         });
       }

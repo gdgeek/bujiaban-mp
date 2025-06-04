@@ -43,70 +43,78 @@ export const checkAlbumPermission = async (): Promise<boolean> => {
       return true;
     }
 
-    // 如果之前未授权过（首次请求），直接通过authorize请求授权
-    try {
-      await new Promise<void>((resolve, reject) => {
-        uni.authorize({
-          scope: "scope.writePhotosAlbum",
-          success: () => {
-            console.log("相册授权成功");
-            resolve();
-          },
-          fail: (err) => {
-            console.error("相册授权失败:", err);
-            reject(err);
-          },
-        });
-      });
-      return true;
-    } catch (error) {
-      // 如果首次授权被拒绝，引导用户去设置页
+    // 判断是否是第一次授权，还是被拒绝过的授权
+    const isFirstAttempt = authSetting["scope.writePhotosAlbum"] === undefined;
+
+    // 如果是首次请求权限
+    if (isFirstAttempt) {
       try {
+        // 使用authorize进行首次授权
         await new Promise<void>((resolve, reject) => {
-          uni.showModal({
-            title: "需要授权",
-            content: "付费下载视频需要访问您的相册权限，请在设置中开启“相册”权限",
-            confirmText: "前往设置",
-            cancelText: "取消",
-            success: (res) => {
-              if (res.confirm) {
-                // 打开设置页面
-                uni.openSetting({
-                  success: (settingRes) => {
-                    if (settingRes.authSetting["scope.writePhotosAlbum"]) {
-                      uni.showToast({
-                        title: "授权成功",
-                        icon: "success",
-                      });
-                      resolve();
-                    } else {
-                      uni.showToast({
-                        title: "未获得权限，无法付费下载视频",
-                        icon: "none",
-                      });
-                      reject(new Error("用户拒绝授权"));
-                    }
-                  },
-                  fail: (err) => {
-                    console.error("打开设置页面失败:", err);
-                    reject(err);
-                  },
-                });
-              } else {
-                uni.showToast({
-                  title: "未获得权限，无法付费下载视频",
-                  icon: "none",
-                });
-                reject(new Error("用户取消授权"));
-              }
+          uni.authorize({
+            scope: "scope.writePhotosAlbum",
+            success: () => {
+              console.log("相册授权成功");
+              resolve();
+            },
+            fail: (err) => {
+              console.error("相册首次授权失败:", err);
+              reject(err);
             },
           });
         });
         return true;
       } catch (error) {
-        console.error("打开设置页面过程中出错:", error);
-        return false;
+        console.log("用户拒绝了首次授权，引导去设置页");
       }
+    }
+
+    // 已经被拒绝过授权，或首次授权失败，引导用户去设置页
+    try {
+      await new Promise<void>((resolve, reject) => {
+        uni.showModal({
+          title: "需要授权",
+          content: "保存视频到本地需要访问您的相册权限，请在设置中开启“添加到相册”权限",
+          confirmText: "前往设置",
+          cancelText: "取消",
+          success: (res) => {
+            if (res.confirm) {
+              // 打开设置页面
+              uni.openSetting({
+                success: (settingRes) => {
+                  if (settingRes.authSetting["scope.writePhotosAlbum"]) {
+                    uni.showToast({
+                      title: "授权成功",
+                      icon: "success",
+                    });
+                    resolve();
+                  } else {
+                    uni.showToast({
+                      title: "未获得权限，无法保存视频",
+                      icon: "none",
+                    });
+                    reject(new Error("用户拒绝授权"));
+                  }
+                },
+                fail: (err) => {
+                  console.error("打开设置页面失败:", err);
+                  reject(err);
+                },
+              });
+            } else {
+              uni.showToast({
+                title: "未获得权限，无法保存视频",
+                icon: "none",
+              });
+              reject(new Error("用户取消授权"));
+            }
+          },
+        });
+      });
+      return true;
+    } catch (error) {
+      console.error("授权过程中出错:", error);
+      return false;
     }
   } catch (error) {
     console.error("检查权限出错:", error);
@@ -122,7 +130,7 @@ export const checkAlbumPermission = async (): Promise<boolean> => {
 export const downloadAndSaveVideo = async (url: string): Promise<boolean> => {
   try {
     uni.showLoading({
-      title: "正在下载视频...",
+      title: "正在保存视频...",
       mask: true,
     });
 
@@ -147,7 +155,7 @@ export const downloadAndSaveVideo = async (url: string): Promise<boolean> => {
           filePath: downloadRes.tempFilePath,
           success: () => {
             uni.showToast({
-              title: "视频已保存到相册",
+              title: "保存视频成功",
               icon: "success",
               duration: 2000,
             });
@@ -156,7 +164,7 @@ export const downloadAndSaveVideo = async (url: string): Promise<boolean> => {
           fail: (err) => {
             console.error("保存到相册失败：", err);
             uni.showModal({
-              title: "保存失败",
+              title: "保存视频失败",
               content: "无法保存视频到相册，请检查相册权限设置",
               showCancel: false,
             });
@@ -167,16 +175,16 @@ export const downloadAndSaveVideo = async (url: string): Promise<boolean> => {
       return true;
     } else {
       uni.showToast({
-        title: "下载失败",
+        title: "保存视频失败",
         icon: "none",
       });
       return false;
     }
   } catch (error) {
-    console.error("下载过程中出错:", error);
+    console.error("视频处理过程中出错:", error);
     uni.hideLoading();
     uni.showToast({
-      title: "下载视频失败",
+      title: "保存视频失败",
       icon: "none",
     });
     return false;

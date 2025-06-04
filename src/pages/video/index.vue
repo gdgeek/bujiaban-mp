@@ -42,6 +42,7 @@ import { onShow } from "@dcloudio/uni-app";
 import { useVideoStore } from "@/stores/modules/video";
 import VideoCard from "@/components/video-card/index.vue";
 import { getOpenidFromStorage } from "@/utils/video";
+import FooterCopyright from "@/components/FooterCopyright.vue";
 
 // 加载状态
 const loading = ref(true);
