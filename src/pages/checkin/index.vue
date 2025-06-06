@@ -34,7 +34,6 @@ const currentStep = computed(() => {
 const loadingState = ref(true);
 const previewImageLoading = ref(true);
 const animationActive = ref(false);
-const showDevInfo = ref(false);
 const { safeAreaInsets } = uni.getWindowInfo();
 
 // 隐私协议状态变量
@@ -55,44 +54,6 @@ const saveOpenidToStorage = (id: string) => {
   } catch (e) {
     console.error("保存openid到本地存储失败:", e);
   }
-};
-
-// 测试进度
-const testProgressStep = () => {
-  // 首先重置到初始状态
-  status.value = {
-    checkin: {
-      created_at: new Date().toISOString(),
-      token: token.value || "test",
-      openid: openid.value || "test",
-      status: "",
-      updated_at: new Date().toISOString(),
-    },
-  };
-
-  // 使用延时器依次展示各个状态
-  setTimeout(() => {
-    if (status.value) {
-      status.value.checkin.status = "linked";
-    }
-
-    setTimeout(() => {
-      if (status.value) {
-        status.value.checkin.status = "ready";
-      }
-
-      setTimeout(() => {
-        if (status.value) {
-          status.value.file = {
-            token: status.value.checkin.token,
-            key: "recode/test123.mp4",
-            openid: status.value.checkin.openid,
-            created_at: new Date().toISOString(),
-          };
-        }
-      }, 5000);
-    }, 5000);
-  }, 5000);
 };
 
 let intervalId: number | null = null;
@@ -174,7 +135,7 @@ watch(
   },
 );
 
-const handleVideoService = async (key: string) => {
+const downloadVideo = async (key: string) => {
   // 先检查用户是否登录
   if (!openid.value) {
     uni.showToast({
@@ -188,15 +149,15 @@ const handleVideoService = async (key: string) => {
   const params = {
     videoKey: key,
     price: 1, // 1分钱
-    title: key.split("/").pop() || "AR打卡专业拍摄",
-    action: "service",
+    title: key.split("/").pop() || "AR打卡视频",
+    action: "download",
   };
 
   // 跳转到支付页面
   uni.navigateTo({
     url: `/pages/payment/index?params=${encodeURIComponent(JSON.stringify(params))}`,
     fail: (err) => {
-      console.error(`跳转到服务页面失败: ${JSON.stringify(err)}`);
+      console.error(`跳转到支付页面失败: ${JSON.stringify(err)}`);
       uni.showToast({
         title: "页面跳转失败",
         icon: "none",
@@ -316,6 +277,66 @@ const closeAgreementModal = () => {
   showPrivacyModal.value = false;
   showDisclaimerModal.value = false;
 };
+
+// 处理扫码功能
+const handleScan = () => {
+  uni.scanCode({
+    scanType: ["qrCode"],
+    success: (res) => {
+      console.log("扫码结果：", res.result);
+      // 解析扫码结果
+      if (res.result && res.result.includes("w.4mr.cn/t")) {
+        try {
+          // 从URL中提取k参数（小程序兼容方式）
+          const newToken = getQueryString(res.result, "k");
+
+          if (newToken) {
+            console.log("检测到AR打卡token:", newToken);
+            // 跳转到当前页面并带上新token
+            uni.reLaunch({
+              url: `/pages/checkin/index?q=${encodeURIComponent(
+                "https://w.4mr.cn/t?k=" + newToken,
+              )}`,
+              success: () => {
+                uni.showToast({
+                  title: "连接成功",
+                  icon: "success",
+                });
+              },
+              fail: (err) => {
+                console.error("页面跳转失败:", err);
+                uni.showToast({
+                  title: "连接失败",
+                  icon: "none",
+                });
+              },
+            });
+          }
+        } catch (error) {
+          console.error("解析扫码结果失败:", error);
+          uni.showToast({
+            title: "无效的二维码",
+            icon: "none",
+          });
+        }
+      } else {
+        uni.showToast({
+          title: "不支持的二维码格式",
+          icon: "none",
+        });
+      }
+    },
+    fail: (err) => {
+      console.error("扫码失败:", err);
+      if (err.errMsg !== "scanCode:fail cancel") {
+        uni.showToast({
+          title: "扫码失败",
+          icon: "none",
+        });
+      }
+    },
+  });
+};
 </script>
 
 <template>
@@ -331,6 +352,9 @@ const closeAgreementModal = () => {
       <view class="slogan">
         <image class="slogan-icon" src="/static/icons/slogan.png" mode="aspectFit"></image>
         <text class="slogan-text">科技赋能生活，记录每一次精彩时刻！</text>
+        <view class="scan-icon-wrapper" @click="handleScan">
+          <image class="scan-icon" src="/static/icons/scan.png" mode="aspectFit"></image>
+        </view>
       </view>
     </view>
 
@@ -435,19 +459,21 @@ const closeAgreementModal = () => {
               <!-- 下载视频按钮 -->
               <button
                 class="action-button download-button full-width"
-                @click="handleVideoService(status.file.key)"
+                @click="downloadVideo(status.file.key)"
               >
                 <view class="button-icon"
                   ><image src="/static/icons/download.png" mode="aspectFit"></image
                 ></view>
-                <text>拍摄服务费(¥0.01)</text>
+                <!-- <text>拍摄服务费(¥0.01)</text> -->
+                <text>文件下载</text>
               </button>
             </view>
 
             <!-- 支付说明 -->
             <view class="payment-tips">
               <image src="/static/icons/tip.png" mode="aspectFit" class="tip-icon"></image>
-              <text class="tip-text">拍摄服务费¥0.01，支付完成后可获取打卡视频并保存到相册</text>
+              <!-- <text class="tip-text">拍摄服务费¥0.01，支付完成后可获取打卡视频并保存到相册</text> -->
+              <text class="tip-text">文件下载免费，下载完成后可获取打卡视频并保存到相册</text>
             </view>
           </block>
 
@@ -523,30 +549,6 @@ const closeAgreementModal = () => {
               </view>
             </view>
           </block>
-        </view>
-
-        <!-- 开发信息 (可隐藏) -->
-        <view class="dev-info">
-          <view class="dev-info-toggle" @click="showDevInfo = !showDevInfo">
-            <text>{{ showDevInfo ? "隐藏" : "显示" }}开发信息</text>
-          </view>
-          <view class="dev-info-content" v-if="showDevInfo">
-            <view class="dev-info-item">
-              <text class="dev-info-label">OpenID:</text>
-              <text class="dev-info-value">{{ openid }}</text>
-            </view>
-            <view class="dev-info-item">
-              <text class="dev-info-label">Token:</text>
-              <text class="dev-info-value">{{ token }}</text>
-            </view>
-            <view class="dev-info-item">
-              <text class="dev-info-label">状态:</text>
-              <text class="dev-info-value">{{ status?.checkin.status }}</text>
-            </view>
-            <view class="test-progress-btn" @click="testProgressStep">
-              <text>测试进度条</text>
-            </view>
-          </view>
         </view>
       </view>
     </view>
@@ -720,6 +722,21 @@ const closeAgreementModal = () => {
       background-clip: text;
       letter-spacing: 0.5rpx;
       line-height: 1.3;
+      flex: 1;
+    }
+
+    .scan-icon-wrapper {
+      width: 48rpx;
+      height: 48rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 16rpx;
+
+      .scan-icon {
+        width: 36rpx;
+        height: 36rpx;
+      }
     }
   }
 }
@@ -1482,59 +1499,6 @@ const closeAgreementModal = () => {
       font-size: 24rpx;
       color: #666;
       line-height: 1.4;
-    }
-  }
-}
-
-// 开发信息
-.dev-info {
-  margin-top: auto;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-  padding-top: 20rpx;
-
-  .dev-info-toggle {
-    text-align: center;
-    font-size: 24rpx;
-    color: #999;
-    margin-bottom: 10rpx;
-  }
-
-  .dev-info-content {
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 16rpx;
-    padding: 20rpx;
-
-    .dev-info-item {
-      display: flex;
-      margin-bottom: 10rpx;
-      font-size: 24rpx;
-
-      .dev-info-label {
-        color: #999;
-        width: 120rpx;
-        flex-shrink: 0;
-      }
-
-      .dev-info-value {
-        color: #666;
-        word-break: break-all;
-      }
-    }
-
-    .test-progress-btn {
-      margin-top: 20rpx;
-      background: #4a90e2;
-      color: #fff;
-      text-align: center;
-      padding: 10rpx 0;
-      border-radius: 8rpx;
-      font-size: 24rpx;
-      transition: all 0.3s ease;
-
-      &:active {
-        background: #3a80d2;
-        transform: translateY(2rpx);
-      }
     }
   }
 }
