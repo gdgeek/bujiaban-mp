@@ -3,21 +3,23 @@
     <view class="content-wrapper">
       <view class="payment-card">
         <view class="payment-header">
-          <text class="payment-title">拍摄服务</text>
+          <!-- <text class="payment-title">拍摄服务</text> -->
+          <text class="payment-title">文件下载</text>
         </view>
 
         <view class="payment-info">
           <view class="info-item">
-            <text class="label">服务内容:</text>
-            <text class="value">{{ paymentInfo.title || "专业视频拍摄" }}</text>
+            <text class="label">文件名称:</text>
+            <text class="value">{{ paymentInfo.title || "视频文件" }}</text>
           </view>
-          <view class="info-item">
+          <!-- <view class="info-item">
             <text class="label">服务费用:</text>
             <text class="value">¥{{ (paymentInfo.price || 0) / 100 }}</text>
-          </view>
+          </view> -->
         </view>
 
-        <button class="pay-button" @click="handlePay" :loading="loading">支付服务费</button>
+        <!-- <button class="pay-button" @click="handlePay" :loading="loading">支付服务费</button> -->
+        <button class="pay-button" @click="handlePay" :loading="loading">下载文件(免费)</button>
 
         <button class="cancel-button" @click="handleCancel">取消</button>
       </view>
@@ -35,14 +37,14 @@ import {
   getOpenidFromStorage,
   checkAlbumPermission,
   downloadAndSaveVideo,
-  handlePayment,
+  // handlePayment, // 注释掉支付相关引用
 } from "@/utils/video";
 
 // 支付相关状态
 const paymentInfo = ref({
   videoId: 0,
   videoKey: "",
-  price: 1, // 默认1分钱
+  // price: 1, // 默认1分钱
   title: "",
   action: "",
 });
@@ -55,7 +57,7 @@ onLoad((query) => {
   try {
     if (query && query.params) {
       const params = JSON.parse(decodeURIComponent(query.params));
-      console.log("接收到支付参数:", params);
+      console.log("接收到参数:", params);
       paymentInfo.value = { ...paymentInfo.value, ...params };
     }
   } catch (error) {
@@ -67,7 +69,7 @@ onLoad((query) => {
   }
 });
 
-// 处理支付
+// 处理下载
 const handlePay = async () => {
   // 获取openid
   const openid = getOpenidFromStorage();
@@ -96,7 +98,8 @@ const handlePay = async () => {
       return;
     }
 
-    // 使用工具函数处理支付
+    /*
+    // 处理支付
     const paySuccess = await handlePayment({
       openid,
       amount: paymentInfo.value.price || 1,
@@ -108,43 +111,52 @@ const handlePay = async () => {
         title: "支付成功，开始处理",
         icon: "success",
       });
+    */
 
-      // 执行实际下载逻辑
-      if (paymentInfo.value.videoKey) {
-        // 获取签名URL
-        const signedUrl = await getSignedVideoUrl(paymentInfo.value.videoKey);
+    // 直接执行下载逻辑，无需支付
+    uni.showToast({
+      title: "准备下载文件",
+      icon: "loading",
+    });
 
-        // 下载并保存视频
-        const downloadSuccess = await downloadAndSaveVideo(signedUrl);
+    // 执行实际下载逻辑
+    if (paymentInfo.value.videoKey) {
+      // 获取签名URL
+      const signedUrl = await getSignedVideoUrl(paymentInfo.value.videoKey);
 
-        if (downloadSuccess) {
-          // 显示成功提示并返回
-          setTimeout(() => {
-            uni.showModal({
-              title: "服务完成",
-              content: "拍摄服务已完成，视频已生成并保存到相册",
-              showCancel: false,
-              success: () => {
-                // 返回上一页
-                uni.navigateBack();
-              },
-            });
-          }, 1000);
-        }
-      } else {
-        uni.showToast({
-          title: "服务信息不完整",
-          icon: "error",
-        });
+      // 下载并保存视频
+      const downloadSuccess = await downloadAndSaveVideo(signedUrl);
+
+      if (downloadSuccess) {
+        // 显示成功提示并返回
+        setTimeout(() => {
+          uni.showModal({
+            title: "下载完成",
+            content: "文件已成功下载并保存到相册",
+            showCancel: false,
+            success: () => {
+              // 返回上一页
+              uni.navigateBack();
+            },
+          });
+        }, 1000);
       }
+    } else {
+      uni.showToast({
+        title: "文件信息不完整",
+        icon: "error",
+      });
+    }
+    /* 
     } else {
       uni.showToast({
         title: "支付已取消",
         icon: "none",
       });
     }
+    */
   } catch (error) {
-    console.error("支付或下载过程中出错:", error);
+    console.error("下载过程中出错:", error);
     uni.hideLoading();
     uni.showToast({
       title: "操作失败",
@@ -155,7 +167,7 @@ const handlePay = async () => {
   }
 };
 
-// 取消支付
+// 取消下载
 const handleCancel = () => {
   uni.navigateBack();
 };

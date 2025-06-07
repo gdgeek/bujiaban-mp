@@ -45,7 +45,7 @@
     {
       "path": "pages/payment/index",
       "style": {
-        "navigationBarTitleText": "支付",
+        "navigationBarTitleText": "下载",
         "enablePullDownRefresh": false
       }
     }

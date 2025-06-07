@@ -14,11 +14,12 @@
       <text class="video-date">上传日期: {{ video.uploadDate }}</text>
     </view>
     <view class="video-actions">
-      <button class="action-button download-button full-width" @click="handleVideoService()">
+      <button class="action-button download-button full-width" @click="downloadVideo()">
         <view class="button-icon"
           ><image src="/static/icons/download.png" mode="aspectFit"></image
         ></view>
-        <text>拍摄服务费(¥0.01)</text>
+        <!-- <text>拍摄服务费(¥0.01)</text> -->
+        <text>文件下载</text>
       </button>
     </view>
   </view>
@@ -76,8 +77,8 @@ const onImageError = () => {
 };
 
 // 处理视频服务
-const handleVideoService = async () => {
-  console.log("准备处理视频拍摄服务:", props.video.id);
+const downloadVideo = async () => {
+  console.log("准备处理视频下载:", props.video.id);
 
   // 先检查用户是否登录
   const openid = getOpenidFromStorage();
@@ -96,8 +97,8 @@ const handleVideoService = async () => {
     const params = {
       videoKey: props.video.cosKey,
       price: 1, // 1分钱
-      title: videoTitle.value || "拍摄服务",
-      action: "service",
+      title: videoTitle.value || "AR打卡视频",
+      action: "download",
     };
 
     // 跳转到支付页面
@@ -107,7 +108,7 @@ const handleVideoService = async () => {
         loading.value = false;
       },
       fail: (err) => {
-        console.error(`跳转到服务页面失败: ${JSON.stringify(err)}`);
+        console.error(`跳转到支付页面失败: ${JSON.stringify(err)}`);
         uni.showToast({
           title: "页面跳转失败",
           icon: "none",
@@ -116,7 +117,7 @@ const handleVideoService = async () => {
       },
     });
   } catch (error) {
-    console.error("处理视频服务失败:", error);
+    console.error("处理视频下载失败:", error);
     uni.showToast({
       title: "操作失败",
       icon: "none",
