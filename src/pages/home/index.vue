@@ -1,7 +1,7 @@
 <template>
   <view class="container">
     <view class="title">微信支付功能测试</view>
-
+    {{ openid }}
     <!-- 支付测试 -->
     <view class="section">
       <view class="section-title">支付测试</view>
