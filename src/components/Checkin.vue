@@ -1,32 +1,114 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-
-import { getSignedVideoUrl } from "@/utils/video";
+import { ref, computed, watch } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
+import { getSignedVideoUrl, getOpenidFromStorage } from "@/utils/video";
 import {
   getCheckinStatus,
-  type StatusData,
+  wxLogin,
   setCheckinReady,
   setCheckinOver,
+  setCheckinLinked,
+  getQueryString,
+  type StatusData,
 } from "@/services/checkin";
-
+const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
+const openid = ref<string | null>(null);
+const token = ref<string | null>(null);
+const status = ref<StatusData | null>(null);
+const _ready = computed(() => {
+  return !!(status.value && status.value.checkin.status == "ready");
+});
+const currentStep = computed(() => {
+  if (!status.value) return 0;
+  if (status.value.file != null) return 3;
+  if (status.value.checkin.status == "ready") return 2;
+  if (status.value.checkin.status == "linked") return 1;
+  return 0;
+});
+const loadingState = ref(true);
 const previewImageLoading = ref(true);
+const animationActive = ref(false);
+const { safeAreaInsets } = uni.getWindowInfo();
+
+// 隐私协议状态变量
+const showPrivacyModal = ref(false);
+const showDisclaimerModal = ref(false);
+const agreementType = ref("");
+const agreementContent = ref("");
 
 // 预览图URL
 const previewImageUrl = ref<string>("");
 const videoUrl = ref<string>("");
-const animationActive = ref(false);
 
-// 监听status.file变化，更新签名URL
+// 保存openid到本地存储
+const saveOpenidToStorage = (id: string) => {
+  try {
+    uni.setStorageSync(OPENID_STORAGE_KEY, id);
+    console.log("openid已成功保存到本地存储");
+  } catch (e) {
+    console.error("保存openid到本地存储失败:", e);
+  }
+};
+const type = computed<undefined | null | string>(() => {
+  //检查 token.value  第一个字母，是E还是C
+  if (!token.value) return undefined;
+  if (token.value.startsWith("E")) {
+    return "E";
+  } else if (token.value.startsWith("C")) {
+    return "C";
+  }
+  return null;
+});
+let intervalId: number | null = null;
 watch(
-  () => status.value?.file?.key,
-  async (newKey) => {
-    if (newKey) {
-      previewImageLoading.value = true;
-      await getSignedUrl(newKey, true); // 获取预览图URL
-      await getSignedUrl(newKey); // 获取视频URL
+  () => _ready.value,
+  (newVal) => {
+    console.log("ready:" + newVal);
+    if (newVal) {
+      intervalId = setInterval(async () => {
+        await refresh();
+      }, 1800);
+    } else {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
     }
   },
+  { immediate: true },
 );
+
+// 刷新打卡状态
+const refresh = async () => {
+  if (token.value) {
+    const ret = await getCheckinStatus(token.value);
+    status.value = ret.data;
+  }
+};
+
+// 开始录制
+const begin = async () => {
+  animationActive.value = true;
+  setTimeout(async () => {
+    if (openid.value && token.value) {
+      const ret = await setCheckinReady(openid.value, token.value);
+      status.value = ret.data;
+    }
+    animationActive.value = false;
+  }, 800);
+};
+
+// 停止录制
+const stop = async () => {
+  animationActive.value = true;
+  setTimeout(async () => {
+    if (openid.value && token.value) {
+      const ret = await setCheckinOver(openid.value, token.value);
+      status.value = ret.data;
+    }
+    animationActive.value = false;
+  }, 800);
+};
 
 // 获取签名后的URL，使用工具函数
 const getSignedUrl = async (key: string, isPreview: boolean = false) => {
@@ -43,31 +125,22 @@ const getSignedUrl = async (key: string, isPreview: boolean = false) => {
     return "";
   }
 };
-// 开始录制
-const begin = async () => {
-  animationActive.value = true;
-  setTimeout(async () => {
-    if (props.openid && props.token) {
-      const ret = await setCheckinReady(props.openid, props.token);
-      status.value = ret.data;
+
+// 监听status.file变化，更新签名URL
+watch(
+  () => status.value?.file?.key,
+  async (newKey) => {
+    if (newKey) {
+      previewImageLoading.value = true;
+      await getSignedUrl(newKey, true); // 获取预览图URL
+      await getSignedUrl(newKey); // 获取视频URL
     }
-    animationActive.value = false;
-  }, 800);
-};
-// 停止录制
-const stop = async () => {
-  animationActive.value = true;
-  setTimeout(async () => {
-    if (props.openid && props.token) {
-      const ret = await setCheckinOver(props.openid, props.token);
-      status.value = ret.data;
-    }
-    animationActive.value = false;
-  }, 800);
-};
+  },
+);
+
 const downloadVideo = async (key: string) => {
   // 先检查用户是否登录
-  if (!props.openid) {
+  if (!openid.value) {
     uni.showToast({
       title: "请先登录",
       icon: "none",
@@ -95,11 +168,64 @@ const downloadVideo = async (key: string) => {
     },
   });
 };
-// 隐私协议状态变量
-const showPrivacyModal = ref(false);
-const showDisclaimerModal = ref(false);
-const agreementType = ref("");
-const agreementContent = ref("");
+
+const getToken = () => {
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1] as unknown as { options: { q: string } };
+  const query = currentPage.options;
+  const decodedUrl = decodeURIComponent(query.q);
+  const result = getQueryString(decodedUrl, "k");
+
+  return result;
+};
+
+onLoad(async () => {
+  token.value = getToken(); //得到token
+
+  //本页面所有操作都具有token
+
+  // 首先尝试从本地存储中获取openid
+  const storedOpenid = getOpenidFromStorage();
+  if (storedOpenid) {
+    console.log("从本地存储中恢复了openid");
+    openid.value = storedOpenid;
+  } else {
+    // 如果本地没有存储openid，则请求新的
+    try {
+      const ret = await wxLogin();
+      openid.value = ret.openid; //得到openid
+      // 将新获取的openid保存到本地存储
+      if (openid.value) {
+        saveOpenidToStorage(openid.value);
+      }
+    } catch (error) {
+      console.error("openid 请求失败！" + error);
+      return;
+    }
+  }
+
+  try {
+    if (token.value) {
+      const ret = await getCheckinStatus(token.value);
+
+      if (!ret.scuess || ret.data.checkin.openid != openid.value) {
+        //没有状态，证明没有链接，这里要链接
+        if (openid.value && token.value) {
+          const linkedRet = await setCheckinLinked(openid.value, token.value);
+          console.log("链接成功！" + JSON.stringify(linkedRet));
+          status.value = linkedRet.data;
+        }
+      } else {
+        //有状态，证明已经链接，这里要刷新
+        status.value = ret.data;
+      }
+    }
+  } catch (error) {
+    console.log("status 请求失败！" + error);
+  } finally {
+    loadingState.value = false;
+  }
+});
 
 // 显示隐私协议详情
 const showPrivacyDetail = () => {
@@ -154,45 +280,81 @@ const closeAgreementModal = () => {
   showDisclaimerModal.value = false;
 };
 
-let intervalId: number | null = null;
-//增加属性父级别属性
-const props = defineProps<{
-  openid: string | null;
-  token: string | null;
-}>();
+// 处理扫码功能
+const handleScan = () => {
+  uni.scanCode({
+    scanType: ["qrCode"],
+    success: (res) => {
+      console.log("扫码结果：", res.result);
+      // 解析扫码结果
+      if (res.result && res.result.includes("w.4mr.cn/t")) {
+        try {
+          // 从URL中提取k参数（小程序兼容方式）
+          const newToken = getQueryString(res.result, "k");
 
-const status = ref<StatusData | null>(null);
-const refresh = async () => {
-  if (props.token) {
-    const ret = await getCheckinStatus(props.token);
-    status.value = ret.data;
-  }
+          if (newToken) {
+            console.log("检测到AR打卡token:", newToken);
+            // 跳转到当前页面并带上新token
+            uni.reLaunch({
+              url: `/pages/checkin/index?q=${encodeURIComponent(
+                "https://w.4mr.cn/t?k=" + newToken,
+              )}`,
+              success: () => {
+                uni.showToast({
+                  title: "连接成功",
+                  icon: "success",
+                });
+              },
+              fail: (err) => {
+                console.error("页面跳转失败:", err);
+                uni.showToast({
+                  title: "连接失败",
+                  icon: "none",
+                });
+              },
+            });
+          }
+        } catch (error) {
+          console.error("解析扫码结果失败:", error);
+          uni.showToast({
+            title: "无效的二维码",
+            icon: "none",
+          });
+        }
+      } else {
+        uni.showToast({
+          title: "不支持的二维码格式",
+          icon: "none",
+        });
+      }
+    },
+    fail: (err) => {
+      console.error("扫码失败:", err);
+      if (err.errMsg !== "scanCode:fail cancel") {
+        uni.showToast({
+          title: "扫码失败",
+          icon: "none",
+        });
+      }
+    },
+  });
 };
-
-onMounted(() => {
-  refresh();
-  // 每5秒刷新一次状态
-  intervalId = setInterval(refresh, 1800);
-});
-onUnmounted(() => {
-  if (intervalId) {
-    clearInterval(intervalId);
-    intervalId = null;
-  }
-});
-const currentStep = computed<number>(() => {
-  return 0;
-  //return 0;
-});
 </script>
 
 <template>
   <view class="content-wrapper">
+    <!-- 加载状态 -->
+
+    <view class="loading-container" v-if="loadingState">
+      <view class="loading-spinner"></view>
+      <view class="loading-text">连接中...</view>
+    </view>
+
     <!-- 主内容区域 -->
-    <view class="main-content">
+    <view class="main-content" v-else>
       <!-- 进度指示器 -->
-      <view class="progress-tracker">
-        <view class="step" :class="{ active: true }">
+      <view v-if="type != undefined" class="progress-tracker">
+        <view class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
           <view class="step-circle">
             <image
               v-if="currentStep > 0"
@@ -202,10 +364,13 @@ const currentStep = computed<number>(() => {
             ></image>
             <text v-else>1</text>
           </view>
-          <view class="step-label">上传</view>
+          <view class="step-label">连接</view>
         </view>
-        <view class="step-line" :class="{ completed: true }"></view>
-        <view class="step" :class="{ active: true }">
+        <view
+          class="step-line"
+          :class="{ active: currentStep >= 1, completed: currentStep > 1 }"
+        ></view>
+        <view class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
           <view class="step-circle">
             <image
               v-if="currentStep > 1"
@@ -215,12 +380,26 @@ const currentStep = computed<number>(() => {
             ></image>
             <text v-else>2</text>
           </view>
+          <view class="step-label">准备</view>
+        </view>
+        <view
+          class="step-line"
+          :class="{ active: currentStep >= 2, completed: currentStep > 2 }"
+        ></view>
+        <view class="step" :class="{ active: currentStep >= 3, completed: currentStep > 3 }">
+          <view class="step-circle">
+            <image
+              v-if="currentStep > 2"
+              class="step-success-icon"
+              src="/static/icons/process_success.png"
+              mode="aspectFit"
+            ></image>
+            <text v-else>3</text>
+          </view>
           <view class="step-label">完成</view>
         </view>
       </view>
 
-      {{ status }}
-      {{ props.token }}
       <!-- 状态卡片 -->
       <view class="status-card" :class="{ 'animation-active': animationActive }">
         <block v-if="status && status.file != null">
@@ -338,15 +517,19 @@ const currentStep = computed<number>(() => {
         </block>
 
         <block v-else>
-          <view class="status-icon waiting-icon">
-            <image src="/static/icons/waiting.png" mode="aspectFit"></image>
+          <view class="status-icon" @click="handleScan">
+            <image src="/static/icons/scan.png" mode="aspectFit"></image>
           </view>
-          <view class="status-title">上传文件</view>
-          <view class="status-description">正在上传视频文件...</view>
+          <view @click="handleScan" class="status-title">扫描二维码</view>
+          <view class="status-description">扫描屏幕上二维码...</view>
           <view class="connection-tips">
             <view class="tip-item">
               <image src="/static/icons/tip.png" mode="aspectFit"></image>
-              <text>保持良好的网络连接状态</text>
+              <text>请确认打卡机已经录制完视频</text>
+            </view>
+            <view class="tip-item">
+              <image src="/static/icons/tip.png" mode="aspectFit"></image>
+              <text>扫描屏幕上二维码</text>
             </view>
           </view>
         </block>

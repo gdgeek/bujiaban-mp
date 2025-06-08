@@ -8,15 +8,12 @@ import {
   setCheckinReady,
   setCheckinOver,
   setCheckinLinked,
-  deleteCheckin,
   getQueryString,
-  type CheckinInfo,
-  type FileInfo,
   type StatusData,
-  type ApiResponse,
 } from "@/services/checkin";
 import FooterCopyright from "@/components/FooterCopyright.vue";
 import Exhibition from "@/components/Exhibition.vue";
+import Checkin from "@/components/Checkin.vue";
 
 const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
 const openid = ref<string | null>(null);
@@ -25,13 +22,7 @@ const status = ref<StatusData | null>(null);
 const _ready = computed(() => {
   return !!(status.value && status.value.checkin.status == "ready");
 });
-const currentStep = computed(() => {
-  if (!status.value) return 0;
-  if (status.value.file != null) return 3;
-  if (status.value.checkin.status == "ready") return 2;
-  if (status.value.checkin.status == "linked") return 1;
-  return 0;
-});
+
 const loadingState = ref(true);
 const previewImageLoading = ref(true);
 const animationActive = ref(false);
@@ -105,18 +96,6 @@ const begin = async () => {
   }, 800);
 };
 
-// 停止录制
-const stop = async () => {
-  animationActive.value = true;
-  setTimeout(async () => {
-    if (openid.value && token.value) {
-      const ret = await setCheckinOver(openid.value, token.value);
-      status.value = ret.data;
-    }
-    animationActive.value = false;
-  }, 800);
-};
-
 // 获取签名后的URL，使用工具函数
 const getSignedUrl = async (key: string, isPreview: boolean = false) => {
   try {
@@ -131,49 +110,6 @@ const getSignedUrl = async (key: string, isPreview: boolean = false) => {
     console.error("获取签名URL失败:", error);
     return "";
   }
-};
-
-// 监听status.file变化，更新签名URL
-watch(
-  () => status.value?.file?.key,
-  async (newKey) => {
-    if (newKey) {
-      previewImageLoading.value = true;
-      await getSignedUrl(newKey, true); // 获取预览图URL
-      await getSignedUrl(newKey); // 获取视频URL
-    }
-  },
-);
-
-const downloadVideo = async (key: string) => {
-  // 先检查用户是否登录
-  if (!openid.value) {
-    uni.showToast({
-      title: "请先登录",
-      icon: "none",
-    });
-    return;
-  }
-
-  // 准备参数
-  const params = {
-    videoKey: key,
-    price: 1, // 1分钱
-    title: key.split("/").pop() || "AR打卡视频",
-    action: "download",
-  };
-
-  // 跳转到支付页面
-  uni.navigateTo({
-    url: `/pages/payment/index?params=${encodeURIComponent(JSON.stringify(params))}`,
-    fail: (err) => {
-      console.error(`跳转到支付页面失败: ${JSON.stringify(err)}`);
-      uni.showToast({
-        title: "页面跳转失败",
-        icon: "none",
-      });
-    },
-  });
 };
 
 const getToken = () => {
@@ -361,210 +297,32 @@ const handleScan = () => {
       <view class="slogan">
         <image class="slogan-icon" src="/static/icons/slogan.png" mode="aspectFit"></image>
         <text class="slogan-text">科技赋能生活，记录每一次精彩时刻！</text>
-        <view class="scan-icon-wrapper" @click="handleScan">
-          <image class="scan-icon" src="/static/icons/scan.png" mode="aspectFit"></image>
-        </view>
       </view>
     </view>
 
-    <Exhibition v-if="type == 'E'" class="content-wrapper" />
-    {{ type }}
-    {{ openid }}
+    <Exhibition :openid="openid" :token="token" v-if="type == 'E'" class="content-wrapper" />
+    <Checkin :openid="openid" :token="token" v-else-if="type == 'C'" class="content-wrapper" />
 
+    <view v-else class="status-card" :class="{ 'animation-active': animationActive }">
+      <block>
+        <view class="status-icon" @click="handleScan">
+          <image src="/static/icons/scan.png" mode="aspectFit"></image>
+        </view>
+        <view @click="handleScan" class="status-title">扫描二维码</view>
+        <view class="status-description">扫描屏幕上二维码...</view>
+        <view class="connection-tips">
+          <view class="tip-item">
+            <image src="/static/icons/tip.png" mode="aspectFit"></image>
+            <text>请确认打卡机已经录制完视频</text>
+          </view>
+          <view class="tip-item">
+            <image src="/static/icons/tip.png" mode="aspectFit"></image>
+            <text>扫描屏幕上二维码</text>
+          </view>
+        </view>
+      </block>
+    </view>
     <!-- 内容包裹器 -->
-    <view class="content-wrapper">
-      <!-- 加载状态 -->
-      <view class="loading-container" v-if="loadingState">
-        <view class="loading-spinner"></view>
-        <view class="loading-text">连接中...</view>
-      </view>
-
-      <!-- 主内容区域 -->
-      <view class="main-content" v-else>
-        <!-- 进度指示器 -->
-        <view class="progress-tracker">
-          <view class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
-            <view class="step-circle">
-              <image
-                v-if="currentStep > 0"
-                class="step-success-icon"
-                src="/static/icons/process_success.png"
-                mode="aspectFit"
-              ></image>
-              <text v-else>1</text>
-            </view>
-            <view class="step-label">连接</view>
-          </view>
-          <view
-            class="step-line"
-            :class="{ active: currentStep >= 1, completed: currentStep > 1 }"
-          ></view>
-          <view class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
-            <view class="step-circle">
-              <image
-                v-if="currentStep > 1"
-                class="step-success-icon"
-                src="/static/icons/process_success.png"
-                mode="aspectFit"
-              ></image>
-              <text v-else>2</text>
-            </view>
-            <view class="step-label">准备</view>
-          </view>
-          <view
-            class="step-line"
-            :class="{ active: currentStep >= 2, completed: currentStep > 2 }"
-          ></view>
-          <view class="step" :class="{ active: currentStep >= 3, completed: currentStep > 3 }">
-            <view class="step-circle">
-              <image
-                v-if="currentStep > 2"
-                class="step-success-icon"
-                src="/static/icons/process_success.png"
-                mode="aspectFit"
-              ></image>
-              <text v-else>3</text>
-            </view>
-            <view class="step-label">完成</view>
-          </view>
-        </view>
-
-        <!-- 状态卡片 -->
-        <view class="status-card" :class="{ 'animation-active': animationActive }">
-          <block v-if="status && status.file != null">
-            <view class="status-icon success-icon">
-              <image src="/static/icons/success.png" mode="aspectFit"></image>
-            </view>
-            <view class="status-title">🎉 录制完成！</view>
-            <view class="status-description"
-              >恭喜您！AR打卡视频已成功生成，快来查看您的精彩时刻吧！</view
-            >
-            <view class="file-info">
-              <view class="file-icon">
-                <image src="/static/icons/video_icon.png" mode="aspectFit"></image>
-              </view>
-              <view class="file-name">{{ status.file.key.split("/").pop() }}</view>
-            </view>
-
-            <!-- 视频第一帧预览 -->
-            <view class="video-preview">
-              <view class="preview-title">视频预览</view>
-              <view class="preview-container">
-                <!-- 加载动画 -->
-                <view class="preview-loading" v-if="previewImageLoading">
-                  <view class="loading-spinner"></view>
-                  <text class="loading-text">加载预览中...</text>
-                </view>
-                <!-- 预览图 - 使用签名后的URL -->
-                <image
-                  class="preview-image"
-                  :class="{ 'image-loaded': !previewImageLoading }"
-                  :src="previewImageUrl"
-                  mode="aspectFill"
-                  @load="previewImageLoading = false"
-                  @error="previewImageLoading = false"
-                ></image>
-              </view>
-            </view>
-
-            <!-- 按钮组 -->
-            <view class="action-buttons">
-              <!-- 下载视频按钮 -->
-              <button
-                class="action-button download-button full-width"
-                @click="downloadVideo(status.file.key)"
-              >
-                <view class="button-icon"
-                  ><image src="/static/icons/download.png" mode="aspectFit"></image
-                ></view>
-                <!-- <text>拍摄服务费(¥0.01)</text> -->
-                <text>文件下载</text>
-              </button>
-            </view>
-
-            <!-- 支付说明 -->
-            <view class="payment-tips">
-              <image src="/static/icons/tip.png" mode="aspectFit" class="tip-icon"></image>
-              <!-- <text class="tip-text">拍摄服务费¥0.01，支付完成后可获取打卡视频并保存到相册</text> -->
-              <text class="tip-text">文件下载免费，下载完成后可获取打卡视频并保存到相册</text>
-            </view>
-          </block>
-
-          <block v-else-if="status && status.checkin.status == 'linked'">
-            <view class="status-icon linked-icon">
-              <image src="/static/icons/linked.png" mode="aspectFit"></image>
-            </view>
-            <view class="status-title">已连接</view>
-            <view class="status-description">您的设备已成功连接，准备好开始录制了吗？</view>
-            <view class="ar-instruction">
-              <view class="instruction-step">
-                <view class="instruction-number">1</view>
-                <view class="instruction-text">手机对准目标</view>
-              </view>
-              <view class="instruction-step">
-                <view class="instruction-number">2</view>
-                <view class="instruction-text">保持稳定录制</view>
-              </view>
-              <view class="instruction-step">
-                <view class="instruction-number">3</view>
-                <view class="instruction-text">完成AR打卡</view>
-              </view>
-            </view>
-
-            <view class="privacy-links">
-              <text class="link-text">点击开始录制表示您已同意</text>
-              <text class="link" @click="showPrivacyDetail">《不加班AR平台隐私协议》</text>
-              <text class="link-separator">和</text>
-              <text class="link" @click="showDisclaimerDetail">《免责声明》</text>
-            </view>
-
-            <button class="action-button begin-button full-width" @click="begin">
-              <view class="button-icon"
-                ><image src="/static/icons/start_recording.png" mode="aspectFit"></image
-              ></view>
-              <text>同意并开始录制</text>
-            </button>
-          </block>
-
-          <block v-else-if="status && status.checkin.status == 'ready'">
-            <view class="status-icon ready-icon">
-              <image src="/static/icons/recording.png" mode="aspectFit"></image>
-            </view>
-            <view class="status-title">录制进行中</view>
-            <view class="status-description">正在进行AR打卡录制，请保持设备稳定...</view>
-            <view class="recording-indicator">
-              <view class="recording-pulse"></view>
-              <view class="recording-ring"></view>
-              <view class="recording-time">● REC</view>
-            </view>
-            <button class="action-button cancel-button full-width" @click="stop">
-              <view class="button-icon"
-                ><image src="/static/icons/stop_recording.png" mode="aspectFit"></image
-              ></view>
-              <text>停止录制</text>
-            </button>
-          </block>
-
-          <block v-else>
-            <view class="status-icon waiting-icon">
-              <image src="/static/icons/waiting.png" mode="aspectFit"></image>
-            </view>
-            <view class="status-title">等待连接</view>
-            <view class="status-description">正在等待AR设备连接...</view>
-            <view class="connection-tips">
-              <view class="tip-item">
-                <image src="/static/icons/tip.png" mode="aspectFit"></image>
-                <text>请确保您的设备已开启AR功能</text>
-              </view>
-              <view class="tip-item">
-                <image src="/static/icons/tip.png" mode="aspectFit"></image>
-                <text>保持良好的网络连接状态</text>
-              </view>
-            </view>
-          </block>
-        </view>
-      </view>
-    </view>
 
     <!-- 隐私协议详情模态框 -->
     <view class="agreement-modal" v-if="showPrivacyModal || showDisclaimerModal">
