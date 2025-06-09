@@ -536,6 +536,20 @@ const handleScan = () => {
       </view>
     </view>
   </view>
+
+  <!-- 隐私协议详情模态框 -->
+  <view class="agreement-modal" v-if="showPrivacyModal || showDisclaimerModal">
+    <view class="modal-mask" @click="closeAgreementModal"></view>
+    <view class="modal-content">
+      <view class="modal-title">{{ agreementType }}</view>
+      <scroll-view class="modal-body" scroll-y>
+        <text class="modal-text">{{ agreementContent }}</text>
+      </scroll-view>
+      <view class="modal-footer">
+        <button class="modal-btn" @click="closeAgreementModal">知道了</button>
+      </view>
+    </view>
+  </view>
 </template>
 
 <style lang="scss" scoped>
