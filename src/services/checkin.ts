@@ -20,7 +20,7 @@ export interface StatusData {
 }
 
 export interface ApiResponse {
-  scuess: boolean;
+  success: boolean;
   message: string;
   data: StatusData;
 }

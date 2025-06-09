@@ -208,7 +208,7 @@ onLoad(async () => {
     if (token.value) {
       const ret = await getCheckinStatus(token.value);
 
-      if (!ret.scuess || ret.data.checkin.openid != openid.value) {
+      if (!ret.success || ret.data.checkin.openid != openid.value) {
         //没有状态，证明没有链接，这里要链接
         if (openid.value && token.value) {
           const linkedRet = await setCheckinLinked(openid.value, token.value);
