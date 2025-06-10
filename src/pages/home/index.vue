@@ -1,7 +1,9 @@
 <template>
   <view class="container">
-    <view class="title">微信支付功能测试</view>
-    {{ openid }}
+    <view class="title">接口功能测试</view>
+    <text class="openid-info" v-if="openid">当前用户OpenID: {{ openid }}</text>
+    <text class="openid-info" v-else>未获取到OpenID</text>
+
     <!-- 支付测试 -->
     <view class="section">
       <view class="section-title">支付测试</view>
@@ -33,6 +35,35 @@
       <text class="order-no" v-if="orderNo">当前订单号: {{ orderNo }}</text>
     </view>
 
+    <!-- 本地刷新接口测试 -->
+    <view class="section">
+      <view class="section-title">本地刷新接口测试</view>
+      <input v-model="refreshToken" type="text" placeholder="请输入token" class="input" />
+      <view class="selector-group">
+        <text>选择刷新类型:</text>
+        <radio-group @change="onRefreshTypeChange">
+          <label v-for="(item, index) in refreshTypes" :key="index" class="radio-item">
+            <radio :value="item.value" :checked="item.value === refreshType" />
+            <text>{{ item.label }}</text>
+          </label>
+        </radio-group>
+      </view>
+      <input
+        v-model="refreshParam"
+        type="text"
+        :placeholder="`请输入${refreshTypeLabel}`"
+        class="input"
+      />
+      <input v-model="refreshStatus" type="text" placeholder="请输入状态(可选)" class="input" />
+      <input
+        v-model="refreshData"
+        type="text"
+        placeholder="请输入数据(可选，JSON格式)"
+        class="input"
+      />
+      <button @click="testLocalRefresh" type="primary" class="btn">测试本地刷新</button>
+    </view>
+
     <!-- 结果展示 -->
     <view class="section result-section" v-if="result">
       <view class="section-title">操作结果</view>
@@ -44,8 +75,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { wxPay, generateOrderNo, queryWxPayOrder, isOrderPaid } from "@/services/pay";
+import { localRefresh } from "@/services/checkin";
 
 // 定义openid存储键名（与checkin页面保持一致）
 const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
@@ -56,6 +88,37 @@ const orderNo = ref<string>(generateOrderNo()); // 初始生成一个订单号
 const result = ref<string>(""); // 结果展示
 const isDevtools = ref<boolean>(false); // 是否在开发工具中运行
 const openid = ref<string | null>(null); // 用户openid
+
+// 本地刷新接口测试相关数据
+const refreshToken = ref<string>("A1234567890abcdef1234567890abcdef"); // 默认测试token
+const refreshType = ref<string>("openid"); // 默认刷新类型：微信用户
+const refreshParam = ref<string>(""); // 参数值
+const refreshStatus = ref<string>("active"); // 状态
+const refreshData = ref<string>('{"location":"北京"}'); // 附加数据
+
+// 定义刷新类型选项
+const refreshTypes = [
+  { label: "微信用户", value: "openid" },
+  { label: "设备", value: "device" },
+  { label: "文件", value: "key" },
+];
+
+// 计算当前选择的刷新类型标签
+const refreshTypeLabel = computed(() => {
+  const type = refreshTypes.find((item) => item.value === refreshType.value);
+  return type ? type.label : "参数";
+});
+
+// 刷新类型变更处理
+const onRefreshTypeChange = (e: any) => {
+  refreshType.value = e.detail.value;
+  // 如果选择了openid且已有用户openid，则自动填充
+  if (refreshType.value === "openid" && openid.value) {
+    refreshParam.value = openid.value;
+  } else {
+    refreshParam.value = "";
+  }
+};
 
 // 从本地存储获取openid
 const getOpenidFromStorage = (): string | null => {
@@ -79,6 +142,11 @@ onMounted(() => {
     openid.value = getOpenidFromStorage();
     if (!openid.value) {
       console.warn("未找到存储的openid，可能需要先访问打卡页面");
+    } else {
+      // 如果已有openid且当前选择的是openid类型，则自动填充
+      if (refreshType.value === "openid") {
+        refreshParam.value = openid.value;
+      }
     }
   } catch (err) {
     console.error("获取系统信息失败", err);
@@ -171,6 +239,66 @@ const generateNewOrderNo = () => {
   orderNo.value = generateOrderNo();
   result.value = `已生成新订单号: ${orderNo.value}`;
 };
+
+// 测试本地刷新接口
+const testLocalRefresh = async () => {
+  if (!refreshToken.value) {
+    result.value = "请输入Token";
+    return;
+  }
+
+  if (!refreshParam.value) {
+    result.value = `请输入${refreshTypeLabel.value}`;
+    return;
+  }
+
+  // 验证token格式
+  const tokenRegex = /^[A-Z][0-9a-f]{32}$/i;
+  if (!tokenRegex.test(refreshToken.value)) {
+    result.value = "Token格式错误，应为[A-Z][0-9a-f]{32}";
+    return;
+  }
+
+  try {
+    result.value = "发送本地刷新请求中...";
+
+    // 准备请求参数
+    const options: any = {
+      status: refreshStatus.value || undefined,
+    };
+
+    // 解析data字段
+    if (refreshData.value) {
+      try {
+        options.data = JSON.parse(refreshData.value);
+      } catch (e) {
+        // 如果不是有效的JSON，则作为字符串处理
+        options.data = refreshData.value;
+      }
+    }
+
+    // 根据选择的类型设置参数
+    if (refreshType.value === "openid") {
+      options.openid = refreshParam.value;
+    } else if (refreshType.value === "device") {
+      options.device = refreshParam.value;
+    } else if (refreshType.value === "key") {
+      options.key = refreshParam.value;
+    }
+
+    // 发送请求
+    const response = await localRefresh(refreshToken.value, options);
+
+    // 格式化结果显示
+    result.value = `
+      本地刷新成功:
+      ${JSON.stringify(response, null, 2)}
+    `;
+  } catch (error: any) {
+    result.value = `本地刷新出错: ${error.message || error || "未知错误"}`;
+    console.error("本地刷新错误:", error);
+  }
+};
 </script>
 
 <style lang="scss">
@@ -181,8 +309,16 @@ const generateNewOrderNo = () => {
 .title {
   font-size: 36rpx;
   font-weight: bold;
-  margin-bottom: 40rpx;
+  margin-bottom: 20rpx;
   text-align: center;
+}
+
+.openid-info {
+  font-size: 24rpx;
+  color: #666;
+  text-align: center;
+  margin-bottom: 30rpx;
+  word-break: break-all;
 }
 
 .section {
@@ -205,6 +341,7 @@ const generateNewOrderNo = () => {
   border-radius: 8rpx;
   margin-bottom: 20rpx;
   font-size: 28rpx;
+  padding: 10rpx;
 }
 
 .btn {
@@ -248,9 +385,15 @@ const generateNewOrderNo = () => {
 .tips {
   font-size: 24rpx;
   color: #ff9900;
-  margin-top: 10rpx;
-  padding: 10rpx;
-  background-color: rgba(255, 153, 0, 0.1);
-  border-radius: 6rpx;
+  margin-bottom: 10rpx;
+}
+
+.selector-group {
+  margin-bottom: 20rpx;
+}
+
+.radio-item {
+  margin-right: 20rpx;
+  font-size: 28rpx;
 }
 </style>
