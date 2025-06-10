@@ -95,6 +95,7 @@ export const wxLogin = async (): Promise<LoginResponse> => {
  * @returns 打卡状态信息
  */
 export const setCheckinReady = async (openid: string, token: string): Promise<ApiResponse> => {
+  /*
   return new Promise((resolve, reject) => {
     wx.request({
       url: "https://w.4mr.cn/v1/checkin/status-ready",
@@ -113,6 +114,12 @@ export const setCheckinReady = async (openid: string, token: string): Promise<Ap
       },
     });
   });
+  */
+
+  return localRefresh(token, {
+    openid,
+    status: "ready",
+  });
 };
 
 /**
@@ -122,6 +129,7 @@ export const setCheckinReady = async (openid: string, token: string): Promise<Ap
  * @returns 打卡状态信息
  */
 export const setCheckinOver = async (openid: string, token: string): Promise<ApiResponse> => {
+  /*
   return new Promise((resolve, reject) => {
     wx.request({
       url: "https://w.4mr.cn/v1/checkin/status-over",
@@ -140,6 +148,12 @@ export const setCheckinOver = async (openid: string, token: string): Promise<Api
       },
     });
   });
+  */
+
+  return localRefresh(token, {
+    openid,
+    status: "over",
+  });
 };
 
 /**
@@ -149,6 +163,7 @@ export const setCheckinOver = async (openid: string, token: string): Promise<Api
  * @returns 打卡状态信息
  */
 export const setCheckinLinked = async (openid: string, token: string): Promise<ApiResponse> => {
+  /*
   return new Promise((resolve, reject) => {
     wx.request({
       url: "https://w.4mr.cn/v1/checkin/status-linked",
@@ -166,6 +181,12 @@ export const setCheckinLinked = async (openid: string, token: string): Promise<A
         reject(res.errMsg);
       },
     });
+  });
+  */
+
+  return localRefresh(token, {
+    openid,
+    status: "linked",
   });
 };
 
