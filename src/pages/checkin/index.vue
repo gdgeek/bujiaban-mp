@@ -149,7 +149,13 @@ const handleScan = () => {
 </script>
 
 <template>
-  <view class="ar-checkin" :style="{ paddingTop: (safeAreaInsets?.top || 0) + 'px' }">
+  <view
+    class="ar-checkin"
+    :style="{
+      paddingTop: (safeAreaInsets?.top || 0) + 'px',
+      paddingBottom: (safeAreaInsets?.bottom || 0) + 'px',
+    }"
+  >
     <!-- 顶部导航栏 -->
     <view class="header">
       <view class="header-row">
@@ -187,6 +193,8 @@ const handleScan = () => {
       </block>
     </view>
 
+    <view class="flex-spacer"></view>
+
     <!-- 底部版权信息 -->
     <FooterCopyright />
   </view>
@@ -201,6 +209,10 @@ const handleScan = () => {
   position: relative;
   display: flex;
   flex-direction: column;
+}
+
+.flex-spacer {
+  flex-grow: 1;
 }
 
 .content-wrapper {
@@ -454,16 +466,6 @@ const handleScan = () => {
       }
     }
   }
-}
-
-// 底部装饰
-.footer-copyright {
-  width: 100%;
-  text-align: center;
-  color: #bbb;
-  font-size: 24rpx;
-  margin: 40rpx 0 10rpx 0;
-  letter-spacing: 1rpx;
 }
 
 // 提示项淡入动画

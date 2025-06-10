@@ -1,5 +1,5 @@
 <template>
-  <view class="video-page">
+  <view class="video-page" :style="{ paddingBottom: (safeAreaInsets?.bottom || 0) + 'px' }">
     <!-- 内容包裹器 -->
     <view class="content-wrapper">
       <!-- 视频列表 -->
@@ -32,6 +32,7 @@
       </view>
     </view>
 
+    <view class="flex-spacer"></view>
     <FooterCopyright />
   </view>
 </template>
@@ -43,6 +44,8 @@ import { useVideoStore } from "@/stores/modules/video";
 import VideoCard from "@/components/video-card/index.vue";
 import { getOpenidFromStorage } from "@/utils/video";
 import FooterCopyright from "@/components/FooterCopyright.vue";
+
+const { safeAreaInsets } = uni.getWindowInfo();
 
 // 加载状态
 const loading = ref(true);
@@ -100,6 +103,10 @@ onShow(async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+.flex-spacer {
+  flex-grow: 1;
 }
 
 .video-list-container {

@@ -1,5 +1,5 @@
 <template>
-  <view class="payment-page">
+  <view class="payment-page" :style="{ paddingBottom: (safeAreaInsets?.bottom || 0) + 'px' }">
     <view class="content-wrapper">
       <view class="payment-card">
         <view class="payment-header">
@@ -24,6 +24,8 @@
         <button class="cancel-button" @click="handleCancel">取消</button>
       </view>
     </view>
+
+    <view class="flex-spacer"></view>
     <FooterCopyright />
   </view>
 </template>
@@ -39,6 +41,9 @@ import {
   downloadAndSaveVideo,
   // handlePayment, // 注释掉支付相关引用
 } from "@/utils/video";
+
+// 获取安全区域信息
+const { safeAreaInsets } = uni.getWindowInfo();
 
 // 支付相关状态
 const paymentInfo = ref({
@@ -147,7 +152,7 @@ const handlePay = async () => {
         icon: "error",
       });
     }
-    /* 
+    /*
     } else {
       uni.showToast({
         title: "支付已取消",
@@ -186,6 +191,10 @@ const handleCancel = () => {
     flex: 1;
     display: flex;
     flex-direction: column;
+  }
+
+  .flex-spacer {
+    flex-grow: 1;
   }
 
   .payment-card {
