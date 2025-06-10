@@ -356,31 +356,6 @@ const handleScan = () => {
       line-height: 1.3;
       flex: 1;
     }
-
-    .scan-icon-wrapper {
-      width: 48rpx;
-      height: 48rpx;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-left: 16rpx;
-
-      .scan-icon {
-        width: 36rpx;
-        height: 36rpx;
-      }
-    }
-  }
-}
-
-// 添加图标浮动动画
-@keyframes gentle-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4rpx);
   }
 }
 
@@ -465,6 +440,17 @@ const handleScan = () => {
         letter-spacing: 0.5rpx;
       }
     }
+  }
+}
+
+// 添加图标浮动动画
+@keyframes gentle-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4rpx);
   }
 }
 

@@ -370,223 +370,10 @@ const currentStep = computed<number>(() => {
 </template>
 
 <style lang="scss" scoped>
-.footer-copyright {
-  width: 100%;
-  text-align: center;
-  color: #bbb;
-  font-size: 24rpx;
-  padding: 20rpx 0;
-  letter-spacing: 1rpx;
-  margin-top: auto;
-}
-
-.ar-checkin {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-  padding: 40rpx 30rpx 0;
-  box-sizing: border-box;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
 .content-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
-}
-
-// 顶部导航栏
-.header {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 0 0 32rpx 32rpx;
-  padding: 32rpx 24rpx 40rpx 24rpx;
-  margin: -40rpx -30rpx 50rpx -30rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
-  position: relative;
-  overflow: hidden;
-
-  // 背景装饰元素
-  &::before {
-    content: "";
-    position: absolute;
-    top: -50%;
-    right: -50rpx;
-    width: 300rpx;
-    height: 300rpx;
-    background: radial-gradient(circle, rgba(74, 144, 226, 0.06) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    bottom: -100rpx;
-    left: -50rpx;
-    width: 200rpx;
-    height: 200rpx;
-    background: radial-gradient(circle, rgba(82, 196, 26, 0.04) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  .header-row {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 20rpx;
-    position: relative;
-    z-index: 2;
-  }
-
-  .logo-container {
-    width: 88rpx;
-    height: 88rpx;
-    border-radius: 24rpx;
-    overflow: hidden;
-    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
-    box-shadow: 0 8rpx 20rpx rgba(74, 144, 226, 0.12), 0 2rpx 4rpx rgba(0, 0, 0, 0.05),
-      inset 0 1rpx 0 rgba(255, 255, 255, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 24rpx;
-    position: relative;
-
-    // 添加微妙的边框效果
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 24rpx;
-      padding: 1rpx;
-      background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(82, 196, 26, 0.2));
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask-composite: xor;
-      -webkit-mask-composite: xor;
-    }
-
-    .logo {
-      width: 72rpx;
-      height: 72rpx;
-      filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
-    }
-  }
-
-  .title {
-    font-size: 40rpx;
-    font-weight: 700;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    letter-spacing: 1rpx;
-    line-height: 1.2;
-    position: relative;
-
-    // 添加微妙的文字阴影效果
-    &::after {
-      content: attr(data-text);
-      position: absolute;
-      top: 0;
-      left: 0;
-      background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(82, 196, 26, 0.1));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      z-index: -1;
-      transform: translate(1rpx, 1rpx);
-    }
-  }
-
-  .slogan {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    background: linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 100%);
-    padding: 16rpx 20rpx;
-    border-radius: 20rpx;
-    box-shadow: 0 4rpx 12rpx rgba(74, 144, 226, 0.08), inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
-    border: 1rpx solid rgba(74, 144, 226, 0.08);
-    position: relative;
-    z-index: 2;
-
-    .slogan-icon {
-      width: 48rpx;
-      height: 48rpx;
-      filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
-      animation: gentle-float 3s ease-in-out infinite;
-    }
-
-    .slogan-text {
-      margin-left: 12rpx;
-      font-size: 26rpx;
-      font-weight: 600;
-      background: linear-gradient(135deg, #4a90e2 0%, #52c41a 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: 0.5rpx;
-      line-height: 1.3;
-      flex: 1;
-    }
-
-    .scan-icon-wrapper {
-      width: 48rpx;
-      height: 48rpx;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-left: 16rpx;
-
-      .scan-icon {
-        width: 36rpx;
-        height: 36rpx;
-      }
-    }
-  }
-}
-
-// 添加图标浮动动画
-@keyframes gentle-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4rpx);
-  }
-}
-
-// 加载状态
-.loading-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  .loading-spinner {
-    width: 80rpx;
-    height: 80rpx;
-    border: 4rpx solid rgba(0, 0, 0, 0.1);
-    border-radius: 50%;
-    border-top-color: #4a90e2;
-    animation: spin 1s linear infinite;
-    margin-bottom: 20rpx;
-  }
-
-  .loading-text {
-    font-size: 28rpx;
-    color: #666;
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 // 主内容区域
@@ -1310,251 +1097,6 @@ const currentStep = computed<number>(() => {
   }
 }
 
-// 底部装饰
-.footer-copyright {
-  width: 100%;
-  text-align: center;
-  color: #bbb;
-  font-size: 24rpx;
-  margin: 40rpx 0 10rpx 0;
-  letter-spacing: 1rpx;
-}
-
-// 动画效果
-@keyframes recording-pulse {
-  0% {
-    transform: scale(0.95);
-    opacity: 1;
-  }
-  70% {
-    transform: scale(1.1);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(0.95);
-    opacity: 1;
-  }
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 20rpx rgba(250, 173, 20, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0);
-  }
-}
-
-// 成功庆祝缩放动画
-@keyframes success-celebrate {
-  0% {
-    transform: scale(0.3);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-// 成功弹跳动画
-@keyframes success-bounce {
-  0%,
-  100% {
-    transform: scale(1);
-    filter: brightness(1.2) drop-shadow(0 6rpx 15rpx rgba(82, 196, 26, 0.4));
-  }
-  50% {
-    transform: scale(1.05);
-    filter: brightness(1.3) drop-shadow(0 8rpx 20rpx rgba(82, 196, 26, 0.5));
-  }
-}
-
-// 成功庆祝波纹动画
-@keyframes success-wave {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
-
-// 成功光晕动画
-@keyframes success-glow {
-  0% {
-    filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(82, 196, 26, 0.2));
-  }
-  100% {
-    filter: brightness(1.3) drop-shadow(0 4rpx 12rpx rgba(82, 196, 26, 0.4));
-  }
-}
-
-// 进度条发光动画
-@keyframes line-glow {
-  0%,
-  100% {
-    box-shadow: 0 2rpx 8rpx rgba(82, 196, 26, 0.3);
-  }
-  50% {
-    box-shadow: 0 2rpx 12rpx rgba(82, 196, 26, 0.5);
-  }
-}
-
-// 雷达扫描动画
-@keyframes radar-scan {
-  0% {
-    transform: rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(360deg);
-    opacity: 1;
-  }
-}
-
-// 脉冲波纹动画
-@keyframes pulse-ring {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-}
-
-// 图标轻微发光动画
-@keyframes gentle-glow {
-  0% {
-    filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(74, 144, 226, 0.2));
-  }
-  100% {
-    filter: brightness(1.3) drop-shadow(0 4rpx 12rpx rgba(74, 144, 226, 0.4));
-  }
-}
-
-// 提示项淡入动画
-@keyframes tip-fade-in {
-  0% {
-    opacity: 0;
-    transform: translateX(-10rpx);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-// 连接成功背景脉冲动画
-@keyframes connected-pulse {
-  0%,
-  100% {
-    background: rgba(74, 144, 226, 0.1);
-    box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.1);
-  }
-  50% {
-    background: rgba(74, 144, 226, 0.15);
-    box-shadow: 0 0 15rpx 5rpx rgba(74, 144, 226, 0.1);
-  }
-}
-
-// 连接波纹扩散动画
-@keyframes connection-wave {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
-
-// 成功指示圆环动画
-@keyframes success-ring {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-}
-
-// 图标呼吸动画
-@keyframes icon-breath {
-  0%,
-  100% {
-    transform: scale(1);
-    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(74, 144, 226, 0.3));
-  }
-  50% {
-    transform: scale(1.05);
-    filter: brightness(1.2) drop-shadow(0 6rpx 12rpx rgba(74, 144, 226, 0.4));
-  }
-}
-
-// 录制指示闪烁动画
-@keyframes recording-blink {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-// 录制扫描旋转动画
-@keyframes recording-scan {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-// 录制呼吸动画
-@keyframes recording-breath {
-  0% {
-    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
-  }
-  50% {
-    filter: brightness(1.2) drop-shadow(0 6rpx 12rpx rgba(250, 173, 20, 0.6));
-  }
-  100% {
-    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
-  }
-}
-
 // 隐私协议和免责声明链接样式
 .privacy-links {
   width: 100%;
@@ -1666,6 +1208,231 @@ const currentStep = computed<number>(() => {
         box-shadow: 0 4rpx 15rpx rgba(74, 144, 226, 0.2);
       }
     }
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// 动画效果
+@keyframes recording-pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 20rpx rgba(250, 173, 20, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0);
+  }
+}
+
+@keyframes success-celebrate {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes success-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1.2) drop-shadow(0 6rpx 15rpx rgba(82, 196, 26, 0.4));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.3) drop-shadow(0 8rpx 20rpx rgba(82, 196, 26, 0.5));
+  }
+}
+
+@keyframes success-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+@keyframes success-glow {
+  0% {
+    filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(82, 196, 26, 0.2));
+  }
+  100% {
+    filter: brightness(1.3) drop-shadow(0 4rpx 12rpx rgba(82, 196, 26, 0.4));
+  }
+}
+
+@keyframes line-glow {
+  0%,
+  100% {
+    box-shadow: 0 2rpx 8rpx rgba(82, 196, 26, 0.3);
+  }
+  50% {
+    box-shadow: 0 2rpx 12rpx rgba(82, 196, 26, 0.5);
+  }
+}
+
+@keyframes radar-scan {
+  0% {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes gentle-glow {
+  0% {
+    filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(74, 144, 226, 0.2));
+  }
+  100% {
+    filter: brightness(1.3) drop-shadow(0 4rpx 12rpx rgba(74, 144, 226, 0.4));
+  }
+}
+
+@keyframes tip-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-10rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes connected-pulse {
+  0%,
+  100% {
+    background: rgba(74, 144, 226, 0.1);
+    box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.1);
+  }
+  50% {
+    background: rgba(74, 144, 226, 0.15);
+    box-shadow: 0 0 15rpx 5rpx rgba(74, 144, 226, 0.1);
+  }
+}
+
+@keyframes connection-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+@keyframes success-ring {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes icon-breath {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(74, 144, 226, 0.3));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.2) drop-shadow(0 6rpx 12rpx rgba(74, 144, 226, 0.4));
+  }
+}
+
+@keyframes recording-blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes recording-scan {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes recording-breath {
+  0% {
+    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
+  }
+  50% {
+    filter: brightness(1.2) drop-shadow(0 6rpx 12rpx rgba(250, 173, 20, 0.6));
+  }
+  100% {
+    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
   }
 }
 

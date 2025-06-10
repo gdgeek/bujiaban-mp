@@ -553,193 +553,10 @@ const handleScan = () => {
 </template>
 
 <style lang="scss" scoped>
-.footer-copyright {
-  width: 100%;
-  text-align: center;
-  color: #bbb;
-  font-size: 24rpx;
-  padding: 20rpx 0;
-  letter-spacing: 1rpx;
-  margin-top: auto;
-}
-
-.ar-checkin {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-  padding: 40rpx 30rpx 0;
-  box-sizing: border-box;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
 .content-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
-}
-
-// 顶部导航栏
-.header {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 0 0 32rpx 32rpx;
-  padding: 32rpx 24rpx 40rpx 24rpx;
-  margin: -40rpx -30rpx 50rpx -30rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
-  position: relative;
-  overflow: hidden;
-
-  // 背景装饰元素
-  &::before {
-    content: "";
-    position: absolute;
-    top: -50%;
-    right: -50rpx;
-    width: 300rpx;
-    height: 300rpx;
-    background: radial-gradient(circle, rgba(74, 144, 226, 0.06) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    bottom: -100rpx;
-    left: -50rpx;
-    width: 200rpx;
-    height: 200rpx;
-    background: radial-gradient(circle, rgba(82, 196, 26, 0.04) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  .header-row {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 20rpx;
-    position: relative;
-    z-index: 2;
-  }
-
-  .logo-container {
-    width: 88rpx;
-    height: 88rpx;
-    border-radius: 24rpx;
-    overflow: hidden;
-    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
-    box-shadow: 0 8rpx 20rpx rgba(74, 144, 226, 0.12), 0 2rpx 4rpx rgba(0, 0, 0, 0.05),
-      inset 0 1rpx 0 rgba(255, 255, 255, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 24rpx;
-    position: relative;
-
-    // 添加微妙的边框效果
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 24rpx;
-      padding: 1rpx;
-      background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(82, 196, 26, 0.2));
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask-composite: xor;
-      -webkit-mask-composite: xor;
-    }
-
-    .logo {
-      width: 72rpx;
-      height: 72rpx;
-      filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
-    }
-  }
-
-  .title {
-    font-size: 40rpx;
-    font-weight: 700;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    letter-spacing: 1rpx;
-    line-height: 1.2;
-    position: relative;
-
-    // 添加微妙的文字阴影效果
-    &::after {
-      content: attr(data-text);
-      position: absolute;
-      top: 0;
-      left: 0;
-      background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(82, 196, 26, 0.1));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      z-index: -1;
-      transform: translate(1rpx, 1rpx);
-    }
-  }
-
-  .slogan {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    background: linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 100%);
-    padding: 16rpx 20rpx;
-    border-radius: 20rpx;
-    box-shadow: 0 4rpx 12rpx rgba(74, 144, 226, 0.08), inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
-    border: 1rpx solid rgba(74, 144, 226, 0.08);
-    position: relative;
-    z-index: 2;
-
-    .slogan-icon {
-      width: 48rpx;
-      height: 48rpx;
-      filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
-      animation: gentle-float 3s ease-in-out infinite;
-    }
-
-    .slogan-text {
-      margin-left: 12rpx;
-      font-size: 26rpx;
-      font-weight: 600;
-      background: linear-gradient(135deg, #4a90e2 0%, #52c41a 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: 0.5rpx;
-      line-height: 1.3;
-      flex: 1;
-    }
-
-    .scan-icon-wrapper {
-      width: 48rpx;
-      height: 48rpx;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-left: 16rpx;
-
-      .scan-icon {
-        width: 36rpx;
-        height: 36rpx;
-      }
-    }
-  }
-}
-
-// 添加图标浮动动画
-@keyframes gentle-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4rpx);
-  }
 }
 
 // 加载状态
@@ -792,7 +609,6 @@ const handleScan = () => {
   position: relative;
   overflow: hidden;
 
-  // 添加背景装饰
   &::before {
     content: "";
     position: absolute;
@@ -828,7 +644,6 @@ const handleScan = () => {
       position: relative;
       overflow: hidden;
 
-      // 添加光泽效果
       &::before {
         content: "";
         position: absolute;
@@ -986,7 +801,6 @@ const handleScan = () => {
       overflow: visible;
       animation: connected-pulse 3s ease-in-out infinite;
 
-      // 连接成功波纹效果
       &::before {
         content: "";
         position: absolute;
@@ -999,7 +813,6 @@ const handleScan = () => {
         animation: connection-wave 2s ease-out infinite;
       }
 
-      // 内层成功指示圆环
       &::after {
         content: "";
         position: absolute;
@@ -1028,7 +841,6 @@ const handleScan = () => {
       position: relative;
       overflow: visible;
 
-      // 录制指示闪烁灯
       &::before {
         content: "";
         position: absolute;
@@ -1043,7 +855,6 @@ const handleScan = () => {
         animation: recording-blink 1s ease-in-out infinite;
       }
 
-      // 扫描旋转圈
       &::after {
         content: "";
         position: absolute;
@@ -1072,7 +883,6 @@ const handleScan = () => {
       overflow: visible;
       animation: success-celebrate 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 
-      // 成功庆祝波纹效果
       &::before {
         content: "";
         position: absolute;
@@ -1085,7 +895,6 @@ const handleScan = () => {
         animation: success-wave 1.5s ease-out infinite;
       }
 
-      // 成功光晕效果
       &::after {
         content: "";
         position: absolute;
@@ -1103,47 +912,6 @@ const handleScan = () => {
         z-index: 2;
         filter: brightness(1.2) drop-shadow(0 6rpx 15rpx rgba(82, 196, 26, 0.4));
         animation: success-bounce 2s ease-in-out infinite;
-      }
-    }
-
-    &.waiting-icon {
-      background: rgba(74, 144, 226, 0.08);
-      position: relative;
-      overflow: visible;
-
-      // 外围扫描圆环
-      &::before {
-        content: "";
-        position: absolute;
-        top: -20rpx;
-        left: -20rpx;
-        right: -20rpx;
-        bottom: -20rpx;
-        border: 3rpx solid transparent;
-        border-top: 3rpx solid #4a90e2;
-        border-radius: 50%;
-        animation: radar-scan 2s linear infinite;
-        opacity: 0.8;
-      }
-
-      // 内层扫描波纹
-      &::after {
-        content: "";
-        position: absolute;
-        top: -10rpx;
-        left: -10rpx;
-        right: -10rpx;
-        bottom: -10rpx;
-        border: 2rpx solid rgba(74, 144, 226, 0.3);
-        border-radius: 50%;
-        animation: pulse-ring 3s ease-in-out infinite;
-      }
-
-      image {
-        position: relative;
-        z-index: 2;
-        filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(74, 144, 226, 0.2));
-        animation: gentle-glow 2s ease-in-out infinite alternate;
       }
     }
   }
@@ -1440,7 +1208,6 @@ const handleScan = () => {
       align-items: center;
     }
 
-    // 统一的激活状态效果
     &:active {
       transform: translateY(2rpx);
       box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.15);
@@ -1490,251 +1257,6 @@ const handleScan = () => {
       color: #666;
       line-height: 1.4;
     }
-  }
-}
-
-// 底部装饰
-.footer-copyright {
-  width: 100%;
-  text-align: center;
-  color: #bbb;
-  font-size: 24rpx;
-  margin: 40rpx 0 10rpx 0;
-  letter-spacing: 1rpx;
-}
-
-// 动画效果
-@keyframes recording-pulse {
-  0% {
-    transform: scale(0.95);
-    opacity: 1;
-  }
-  70% {
-    transform: scale(1.1);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(0.95);
-    opacity: 1;
-  }
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 20rpx rgba(250, 173, 20, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0);
-  }
-}
-
-// 成功庆祝缩放动画
-@keyframes success-celebrate {
-  0% {
-    transform: scale(0.3);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-// 成功弹跳动画
-@keyframes success-bounce {
-  0%,
-  100% {
-    transform: scale(1);
-    filter: brightness(1.2) drop-shadow(0 6rpx 15rpx rgba(82, 196, 26, 0.4));
-  }
-  50% {
-    transform: scale(1.05);
-    filter: brightness(1.3) drop-shadow(0 8rpx 20rpx rgba(82, 196, 26, 0.5));
-  }
-}
-
-// 成功庆祝波纹动画
-@keyframes success-wave {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
-
-// 成功光晕动画
-@keyframes success-glow {
-  0% {
-    filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(82, 196, 26, 0.2));
-  }
-  100% {
-    filter: brightness(1.3) drop-shadow(0 4rpx 12rpx rgba(82, 196, 26, 0.4));
-  }
-}
-
-// 进度条发光动画
-@keyframes line-glow {
-  0%,
-  100% {
-    box-shadow: 0 2rpx 8rpx rgba(82, 196, 26, 0.3);
-  }
-  50% {
-    box-shadow: 0 2rpx 12rpx rgba(82, 196, 26, 0.5);
-  }
-}
-
-// 雷达扫描动画
-@keyframes radar-scan {
-  0% {
-    transform: rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(360deg);
-    opacity: 1;
-  }
-}
-
-// 脉冲波纹动画
-@keyframes pulse-ring {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-}
-
-// 图标轻微发光动画
-@keyframes gentle-glow {
-  0% {
-    filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(74, 144, 226, 0.2));
-  }
-  100% {
-    filter: brightness(1.3) drop-shadow(0 4rpx 12rpx rgba(74, 144, 226, 0.4));
-  }
-}
-
-// 提示项淡入动画
-@keyframes tip-fade-in {
-  0% {
-    opacity: 0;
-    transform: translateX(-10rpx);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-// 连接成功背景脉冲动画
-@keyframes connected-pulse {
-  0%,
-  100% {
-    background: rgba(74, 144, 226, 0.1);
-    box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.1);
-  }
-  50% {
-    background: rgba(74, 144, 226, 0.15);
-    box-shadow: 0 0 15rpx 5rpx rgba(74, 144, 226, 0.1);
-  }
-}
-
-// 连接波纹扩散动画
-@keyframes connection-wave {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
-
-// 成功指示圆环动画
-@keyframes success-ring {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-}
-
-// 图标呼吸动画
-@keyframes icon-breath {
-  0%,
-  100% {
-    transform: scale(1);
-    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(74, 144, 226, 0.3));
-  }
-  50% {
-    transform: scale(1.05);
-    filter: brightness(1.2) drop-shadow(0 6rpx 12rpx rgba(74, 144, 226, 0.4));
-  }
-}
-
-// 录制指示闪烁动画
-@keyframes recording-blink {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-// 录制扫描旋转动画
-@keyframes recording-scan {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-// 录制呼吸动画
-@keyframes recording-breath {
-  0% {
-    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
-  }
-  50% {
-    filter: brightness(1.2) drop-shadow(0 6rpx 12rpx rgba(250, 173, 20, 0.6));
-  }
-  100% {
-    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
   }
 }
 
@@ -1849,6 +1371,222 @@ const handleScan = () => {
         box-shadow: 0 4rpx 15rpx rgba(74, 144, 226, 0.2);
       }
     }
+  }
+}
+
+@keyframes recording-pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 20rpx rgba(250, 173, 20, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0);
+  }
+}
+
+@keyframes success-celebrate {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes success-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1.2) drop-shadow(0 6rpx 15rpx rgba(82, 196, 26, 0.4));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.3) drop-shadow(0 8rpx 20rpx rgba(82, 196, 26, 0.5));
+  }
+}
+
+@keyframes success-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+@keyframes success-glow {
+  0% {
+    filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(82, 196, 26, 0.2));
+  }
+  100% {
+    filter: brightness(1.3) drop-shadow(0 4rpx 12rpx rgba(82, 196, 26, 0.4));
+  }
+}
+
+@keyframes line-glow {
+  0%,
+  100% {
+    box-shadow: 0 2rpx 8rpx rgba(82, 196, 26, 0.3);
+  }
+  50% {
+    box-shadow: 0 2rpx 12rpx rgba(82, 196, 26, 0.5);
+  }
+}
+
+@keyframes radar-scan {
+  0% {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes tip-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-10rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// 连接成功背景脉冲动画
+@keyframes connected-pulse {
+  0%,
+  100% {
+    background: rgba(74, 144, 226, 0.1);
+    box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.1);
+  }
+  50% {
+    background: rgba(74, 144, 226, 0.15);
+    box-shadow: 0 0 15rpx 5rpx rgba(74, 144, 226, 0.1);
+  }
+}
+
+// 连接波纹扩散动画
+@keyframes connection-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+// 成功指示圆环动画
+@keyframes success-ring {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+// 图标呼吸动画
+@keyframes icon-breath {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(74, 144, 226, 0.3));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.2) drop-shadow(0 6rpx 12rpx rgba(74, 144, 226, 0.4));
+  }
+}
+
+// 录制指示闪烁动画
+@keyframes recording-blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+// 录制扫描旋转动画
+@keyframes recording-scan {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+// 录制呼吸动画
+@keyframes recording-breath {
+  0% {
+    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
+  }
+  50% {
+    filter: brightness(1.2) drop-shadow(0 6rpx 12rpx rgba(250, 173, 20, 0.6));
+  }
+  100% {
+    filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
   }
 }
 
