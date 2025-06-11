@@ -44,6 +44,18 @@ const getSignedUrl = async (key: string, isPreview: boolean = false) => {
     return "";
   }
 };
+
+watch(
+  () => result.value?.file?.key,
+  async (newKey) => {
+    if (newKey) {
+      console.log("获取到文件key", newKey);
+      previewImageLoading.value = true;
+      await getSignedUrl(newKey, true); // 获取预览图URL
+      await getSignedUrl(newKey); // 获取视频URL
+    }
+  },
+);
 const downloadVideo = async (key: string) => {
   // 先检查用户是否登录
   if (!props.openid) {
@@ -147,7 +159,7 @@ const props = defineProps<{
  * @returns 打卡状态信息
  */
 const _refresh = async (): Promise<ApiResponse> => {
-  https: return new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const time: string = Math.floor(Date.now() / 1000).toString();
     const hash = calculateHash(props.token!, time, props.openid!);
     const url = "https://w.4mr.cn/v1/local/refresh?time=" + time + "&hash=" + hash;
@@ -196,8 +208,10 @@ onUnmounted(() => {
   }
 });
 const currentStep = computed<number>(() => {
+  if (!result.value) return 0;
+  if (result.value.file != null) return 2;
+  if (result.value.checkin.status == "linked") return 1;
   return 0;
-  //return 0;
 });
 </script>
 
@@ -207,7 +221,7 @@ const currentStep = computed<number>(() => {
     <view class="main-content">
       <!-- 进度指示器 -->
       <view class="progress-tracker">
-        <view class="step" :class="{ active: true }">
+        <view class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
           <view class="step-circle">
             <image
               v-if="currentStep > 0"
@@ -221,9 +235,9 @@ const currentStep = computed<number>(() => {
         </view>
         <view
           class="step-line"
-          :class="{ completed: result != null && result.file != null }"
+          :class="{ active: currentStep >= 1, completed: currentStep > 1 }"
         ></view>
-        <view class="step" :class="{ active: result != null && result.file != null }">
+        <view class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
           <view class="step-circle">
             <image
               v-if="currentStep > 1"
@@ -300,7 +314,7 @@ const currentStep = computed<number>(() => {
 
         <block v-else-if="result && result.checkin.status == 'linked'">
           <view class="status-icon linked-icon">
-            <image src="/static/icons/linked.png" mode="aspectFit"></image>
+            <image src="/static/icons/file_handling.png" mode="aspectFit"></image>
           </view>
           <view class="status-title">文件处理中</view>
           <view class="status-description">文件已经录制完成，正在进行最后的处理！</view>
@@ -746,9 +760,9 @@ const currentStep = computed<number>(() => {
       font-size: 28rpx;
       color: #333;
       flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: nowrap; // 不换行
+      overflow: hidden; // 超出隐藏
+      text-overflow: ellipsis; // 超出显示省略号
     }
   }
 

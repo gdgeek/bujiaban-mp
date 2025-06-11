@@ -28,7 +28,6 @@ const currentStep = computed(() => {
 const loadingState = ref(true);
 const previewImageLoading = ref(true);
 const animationActive = ref(false);
-const { safeAreaInsets } = uni.getWindowInfo();
 
 // 隐私协议状态变量
 const showPrivacyModal = ref(false);
@@ -281,64 +280,64 @@ const closeAgreementModal = () => {
 };
 
 // 处理扫码功能
-const handleScan = () => {
-  uni.scanCode({
-    scanType: ["qrCode"],
-    success: (res) => {
-      console.log("扫码结果：", res.result);
-      // 解析扫码结果
-      if (res.result && res.result.includes("w.4mr.cn/t")) {
-        try {
-          // 从URL中提取k参数（小程序兼容方式）
-          const newToken = getQueryString(res.result, "k");
+// const handleScan = () => {
+//   uni.scanCode({
+//     scanType: ["qrCode"],
+//     success: (res) => {
+//       console.log("扫码结果：", res.result);
+//       // 解析扫码结果
+//       if (res.result && res.result.includes("w.4mr.cn/t")) {
+//         try {
+//           // 从URL中提取k参数（小程序兼容方式）
+//           const newToken = getQueryString(res.result, "k");
 
-          if (newToken) {
-            console.log("检测到AR打卡token:", newToken);
-            // 跳转到当前页面并带上新token
-            uni.reLaunch({
-              url: `/pages/checkin/index?q=${encodeURIComponent(
-                "https://w.4mr.cn/t?k=" + newToken,
-              )}`,
-              success: () => {
-                uni.showToast({
-                  title: "连接成功",
-                  icon: "success",
-                });
-              },
-              fail: (err) => {
-                console.error("页面跳转失败:", err);
-                uni.showToast({
-                  title: "连接失败",
-                  icon: "none",
-                });
-              },
-            });
-          }
-        } catch (error) {
-          console.error("解析扫码结果失败:", error);
-          uni.showToast({
-            title: "无效的二维码",
-            icon: "none",
-          });
-        }
-      } else {
-        uni.showToast({
-          title: "不支持的二维码格式",
-          icon: "none",
-        });
-      }
-    },
-    fail: (err) => {
-      console.error("扫码失败:", err);
-      if (err.errMsg !== "scanCode:fail cancel") {
-        uni.showToast({
-          title: "扫码失败",
-          icon: "none",
-        });
-      }
-    },
-  });
-};
+//           if (newToken) {
+//             console.log("检测到AR打卡token:", newToken);
+//             // 跳转到当前页面并带上新token
+//             uni.reLaunch({
+//               url: `/pages/checkin/index?q=${encodeURIComponent(
+//                 "https://w.4mr.cn/t?k=" + newToken,
+//               )}`,
+//               success: () => {
+//                 uni.showToast({
+//                   title: "连接成功",
+//                   icon: "success",
+//                 });
+//               },
+//               fail: (err) => {
+//                 console.error("页面跳转失败:", err);
+//                 uni.showToast({
+//                   title: "连接失败",
+//                   icon: "none",
+//                 });
+//               },
+//             });
+//           }
+//         } catch (error) {
+//           console.error("解析扫码结果失败:", error);
+//           uni.showToast({
+//             title: "无效的二维码",
+//             icon: "none",
+//           });
+//         }
+//       } else {
+//         uni.showToast({
+//           title: "不支持的二维码格式",
+//           icon: "none",
+//         });
+//       }
+//     },
+//     fail: (err) => {
+//       console.error("扫码失败:", err);
+//       if (err.errMsg !== "scanCode:fail cancel") {
+//         uni.showToast({
+//           title: "扫码失败",
+//           icon: "none",
+//         });
+//       }
+//     },
+//   });
+// };
 </script>
 
 <template>
@@ -516,7 +515,7 @@ const handleScan = () => {
           </button>
         </block>
 
-        <block v-else>
+        <!-- <block v-else>
           <view class="status-icon" @click="handleScan">
             <image src="/static/icons/scan.png" mode="aspectFit"></image>
           </view>
@@ -532,7 +531,7 @@ const handleScan = () => {
               <text>扫描屏幕上二维码</text>
             </view>
           </view>
-        </block>
+        </block> -->
       </view>
     </view>
   </view>

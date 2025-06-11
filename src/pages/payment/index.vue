@@ -258,6 +258,9 @@ const handleCancel = () => {
           flex: 1;
           font-size: 30rpx;
           font-weight: 500;
+          white-space: nowrap; // 不换行
+          overflow: hidden; // 超出隐藏
+          text-overflow: ellipsis; // 超出显示省略号
         }
       }
     }
