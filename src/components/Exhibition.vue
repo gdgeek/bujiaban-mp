@@ -1,13 +1,24 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import CryptoJS from "crypto-js";
 
+/**
+ * 计算hash值
+ * @param token 设备/用户标识符
+ * @param time 时间戳
+ * @param param 参数值(device/openid/key其中之一)
+ * @returns hash值
+ */
+const calculateHash = (token: string, time: string, param: string): string => {
+  const salt = "buj1aban.c0m";
+  const str = token + time + param + salt;
+  console.log("hash", CryptoJS.MD5(str).toString());
+  return CryptoJS.MD5(str).toString();
+};
+
+// 定义组件属性
 import { getSignedVideoUrl } from "@/utils/video";
-import {
-  getCheckinStatus,
-  type StatusData,
-  setCheckinReady,
-  setCheckinOver,
-} from "@/services/checkin";
+import { type StatusData, type ApiResponse } from "@/services/checkin";
 
 const previewImageLoading = ref(true);
 
@@ -15,18 +26,8 @@ const previewImageLoading = ref(true);
 const previewImageUrl = ref<string>("");
 const videoUrl = ref<string>("");
 const animationActive = ref(false);
-
-// 监听status.file变化，更新签名URL
-watch(
-  () => status.value?.file?.key,
-  async (newKey) => {
-    if (newKey) {
-      previewImageLoading.value = true;
-      await getSignedUrl(newKey, true); // 获取预览图URL
-      await getSignedUrl(newKey); // 获取视频URL
-    }
-  },
-);
+const status = ref<string>("linked");
+const result = ref<StatusData | null>(null);
 
 // 获取签名后的URL，使用工具函数
 const getSignedUrl = async (key: string, isPreview: boolean = false) => {
@@ -42,28 +43,6 @@ const getSignedUrl = async (key: string, isPreview: boolean = false) => {
     console.error("获取签名URL失败:", error);
     return "";
   }
-};
-// 开始录制
-const begin = async () => {
-  animationActive.value = true;
-  setTimeout(async () => {
-    if (props.openid && props.token) {
-      const ret = await setCheckinReady(props.openid, props.token);
-      status.value = ret.data;
-    }
-    animationActive.value = false;
-  }, 800);
-};
-// 停止录制
-const stop = async () => {
-  animationActive.value = true;
-  setTimeout(async () => {
-    if (props.openid && props.token) {
-      const ret = await setCheckinOver(props.openid, props.token);
-      status.value = ret.data;
-    }
-    animationActive.value = false;
-  }, 800);
 };
 const downloadVideo = async (key: string) => {
   // 先检查用户是否登录
@@ -161,17 +140,53 @@ const props = defineProps<{
   token: string | null;
 }>();
 
-const status = ref<StatusData | null>(null);
+//const status = ref<StatusData | null>(null);
+/**
+ * 获取打卡状态
+ * @param token 打卡token
+ * @returns 打卡状态信息
+ */
+const _refresh = async (): Promise<ApiResponse> => {
+  https: return new Promise((resolve, reject) => {
+    const time: string = Math.floor(Date.now() / 1000).toString();
+    const hash = calculateHash(props.token!, time, props.openid!);
+    const url = "https://w.4mr.cn/v1/local/refresh?time=" + time + "&hash=" + hash;
+    //  console.error(url);
+
+    // 准备请求数据
+    const data: any = {
+      openid: props.openid,
+      token: props.token,
+      status: status.value,
+    };
+    // 发送请求
+    wx.request({
+      url: url,
+      method: "POST",
+      data,
+      success: function (res) {
+        console.log("本地状态刷新成功！", res.data);
+        //console.error(res.data);
+        resolve(res.data as ApiResponse);
+      },
+      fail: function (res) {
+        console.log("本地状态刷新失败！", res.errMsg);
+        reject(res.errMsg);
+      },
+    });
+  });
+};
+//await _refresh();
+
 const refresh = async () => {
   if (props.token) {
-    const ret = await getCheckinStatus(props.token);
-    status.value = ret.data;
+    const ret = await _refresh();
+    result.value = ret.data as StatusData;
   }
 };
 
-onMounted(() => {
-  refresh();
-  // 每5秒刷新一次状态
+onMounted(async () => {
+  await refresh();
   intervalId = setInterval(refresh, 1800);
 });
 onUnmounted(() => {
@@ -202,10 +217,13 @@ const currentStep = computed<number>(() => {
             ></image>
             <text v-else>1</text>
           </view>
-          <view class="step-label">上传</view>
+          <view class="step-label">处理中</view>
         </view>
-        <view class="step-line" :class="{ completed: true }"></view>
-        <view class="step" :class="{ active: true }">
+        <view
+          class="step-line"
+          :class="{ completed: result != null && result.file != null }"
+        ></view>
+        <view class="step" :class="{ active: result != null && result.file != null }">
           <view class="step-circle">
             <image
               v-if="currentStep > 1"
@@ -219,11 +237,9 @@ const currentStep = computed<number>(() => {
         </view>
       </view>
 
-      {{ status }}
-      {{ props.token }}
-      <!-- 状态卡片 -->
+      <!--   {{ result }}状态卡片 -->
       <view class="status-card" :class="{ 'animation-active': animationActive }">
-        <block v-if="status && status.file != null">
+        <block v-if="result && result.file != null">
           <view class="status-icon success-icon">
             <image src="/static/icons/success.png" mode="aspectFit"></image>
           </view>
@@ -235,7 +251,7 @@ const currentStep = computed<number>(() => {
             <view class="file-icon">
               <image src="/static/icons/video_icon.png" mode="aspectFit"></image>
             </view>
-            <view class="file-name">{{ status.file.key.split("/").pop() }}</view>
+            <view class="file-name">{{ result.file.key.split("/").pop() }}</view>
           </view>
 
           <!-- 视频第一帧预览 -->
@@ -264,7 +280,7 @@ const currentStep = computed<number>(() => {
             <!-- 下载视频按钮 -->
             <button
               class="action-button download-button full-width"
-              @click="downloadVideo(status.file.key)"
+              @click="downloadVideo(result.file.key)"
             >
               <view class="button-icon"
                 ><image src="/static/icons/download.png" mode="aspectFit"></image
@@ -282,73 +298,12 @@ const currentStep = computed<number>(() => {
           </view>
         </block>
 
-        <block v-else-if="status && status.checkin.status == 'linked'">
+        <block v-else-if="result && result.checkin.status == 'linked'">
           <view class="status-icon linked-icon">
             <image src="/static/icons/linked.png" mode="aspectFit"></image>
           </view>
-          <view class="status-title">已连接</view>
-          <view class="status-description">您的设备已成功连接，准备好开始录制了吗？</view>
-          <view class="ar-instruction">
-            <view class="instruction-step">
-              <view class="instruction-number">1</view>
-              <view class="instruction-text">手机对准目标</view>
-            </view>
-            <view class="instruction-step">
-              <view class="instruction-number">2</view>
-              <view class="instruction-text">保持稳定录制</view>
-            </view>
-            <view class="instruction-step">
-              <view class="instruction-number">3</view>
-              <view class="instruction-text">完成AR打卡</view>
-            </view>
-          </view>
-
-          <view class="privacy-links">
-            <text class="link-text">点击开始录制表示您已同意</text>
-            <text class="link" @click="showPrivacyDetail">《不加班AR平台隐私协议》</text>
-            <text class="link-separator">和</text>
-            <text class="link" @click="showDisclaimerDetail">《免责声明》</text>
-          </view>
-
-          <button class="action-button begin-button full-width" @click="begin">
-            <view class="button-icon"
-              ><image src="/static/icons/start_recording.png" mode="aspectFit"></image
-            ></view>
-            <text>同意并开始录制</text>
-          </button>
-        </block>
-
-        <block v-else-if="status && status.checkin.status == 'ready'">
-          <view class="status-icon ready-icon">
-            <image src="/static/icons/recording.png" mode="aspectFit"></image>
-          </view>
-          <view class="status-title">录制进行中</view>
-          <view class="status-description">正在进行AR打卡录制，请保持设备稳定...</view>
-          <view class="recording-indicator">
-            <view class="recording-pulse"></view>
-            <view class="recording-ring"></view>
-            <view class="recording-time">● REC</view>
-          </view>
-          <button class="action-button cancel-button full-width" @click="stop">
-            <view class="button-icon"
-              ><image src="/static/icons/stop_recording.png" mode="aspectFit"></image
-            ></view>
-            <text>停止录制</text>
-          </button>
-        </block>
-
-        <block v-else>
-          <view class="status-icon waiting-icon">
-            <image src="/static/icons/waiting.png" mode="aspectFit"></image>
-          </view>
-          <view class="status-title">上传文件</view>
-          <view class="status-description">正在上传视频文件...</view>
-          <view class="connection-tips">
-            <view class="tip-item">
-              <image src="/static/icons/tip.png" mode="aspectFit"></image>
-              <text>保持良好的网络连接状态</text>
-            </view>
-          </view>
+          <view class="status-title">文件处理中</view>
+          <view class="status-description">文件已经录制完成，正在进行最后的处理！</view>
         </block>
       </view>
     </view>

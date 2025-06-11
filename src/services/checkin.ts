@@ -7,16 +7,25 @@ export interface CheckinInfo {
   status: string;
   updated_at: string;
 }
-
+export interface ReportInfo {
+  token: string;
+  device: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  data?: string | null; // 附加数据，可以是字符串或null
+}
 export interface FileInfo {
   token: string;
   key: string;
   openid: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface StatusData {
   checkin: CheckinInfo;
+  report?: ReportInfo | null;
   file?: FileInfo | null;
 }
 
