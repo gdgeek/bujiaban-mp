@@ -86,64 +86,6 @@ const downloadVideo = async (key: string) => {
     },
   });
 };
-// 隐私协议状态变量
-const showPrivacyModal = ref(false);
-const showDisclaimerModal = ref(false);
-const agreementType = ref("");
-const agreementContent = ref("");
-
-// 显示隐私协议详情
-const showPrivacyDetail = () => {
-  agreementType.value = "不加班AR平台隐私协议";
-  agreementContent.value = `
-  1. 信息收集
-     我们会收集您的设备信息、摄像头权限和必要的位置信息，用于提供AR打卡视频录制服务。在您使用拍摄服务时，我们需要获取您的相册访问权限。
-
-  2. 视频存储与使用
-     您在平台上录制的AR打卡视频将临时存储在我们的服务器上，方便您查看和保存。您可以通过支付少量服务费获得专业拍摄服务并保存视频。
-
-  3. 付费内容
-     平台提供的专业拍摄服务需要支付少量服务费(¥0.01)。我们使用微信支付进行安全交易，不会存储您的银行卡等支付敏感信息。服务完成后，拍摄结果将保存到您的设备中。
-
-  4. 视频分享
-     您可以将下载的视频自由分享给他人或发布到社交媒体。请注意，一旦您分享视频，我们无法控制他人对视频的使用方式。
-
-  5. 信息安全
-     我们采取行业标准的安全措施保护您的个人信息和视频内容。您的视频将在您完成下载后的30天内从我们的服务器自动删除。
-
-  6. 用户权利
-     您有权随时下载和删除您的AR打卡视频。如您对隐私保护有任何疑问，可随时联系我们。
-  `;
-  showPrivacyModal.value = true;
-};
-
-// 显示免责声明详情
-const showDisclaimerDetail = () => {
-  agreementType.value = "免责声明";
-  agreementContent.value = `
-  1. 内容责任
-     您对使用本平台录制的AR打卡视频内容负有全部责任。请确保您录制和分享的内容不违反法律法规，不侵犯他人权益。
-
-  2. 服务可用性
-     我们努力确保AR打卡服务的稳定性，但受网络环境和设备兼容性影响，无法保证服务在任何情况下都能正常运行。
-
-  3. 视频分享风险
-     您通过分享功能将视频分享给他人或发布到社交媒体时，应了解并承担可能带来的风险，包括但不限于视频被他人下载、修改或传播。
-
-  4. 隐私保护
-     在录制AR打卡视频时，请注意保护您自己和他人的隐私。避免在视频中包含敏感个人信息或未经许可的他人肖像。
-
-  5. 最终解释权
-     本声明的最终解释权归不加班AR打卡平台（上海不加班网络科技有限公司）所有。使用本平台即表示您已阅读并同意本免责声明的全部内容。
-  `;
-  showDisclaimerModal.value = true;
-};
-
-// 关闭协议详情弹窗
-const closeAgreementModal = () => {
-  showPrivacyModal.value = false;
-  showDisclaimerModal.value = false;
-};
 
 let intervalId: number | null = null;
 //增加属性父级别属性
@@ -319,20 +261,6 @@ const currentStep = computed<number>(() => {
           <view class="status-title">文件处理中</view>
           <view class="status-description">文件已经录制完成，正在进行最后的处理！</view>
         </block>
-      </view>
-    </view>
-  </view>
-
-  <!-- 隐私协议详情模态框 -->
-  <view class="agreement-modal" v-if="showPrivacyModal || showDisclaimerModal">
-    <view class="modal-mask" @click="closeAgreementModal"></view>
-    <view class="modal-content">
-      <view class="modal-title">{{ agreementType }}</view>
-      <scroll-view class="modal-body" scroll-y>
-        <text class="modal-text">{{ agreementContent }}</text>
-      </scroll-view>
-      <view class="modal-footer">
-        <button class="modal-btn" @click="closeAgreementModal">知道了</button>
       </view>
     </view>
   </view>
@@ -1066,120 +994,6 @@ const currentStep = computed<number>(() => {
   }
 }
 
-// 隐私协议和免责声明链接样式
-.privacy-links {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 20rpx;
-  text-align: center;
-  flex-wrap: wrap;
-  padding: 10rpx 0;
-
-  .link-text {
-    font-size: 24rpx;
-    color: #666;
-    margin-bottom: 8rpx;
-    width: 100%;
-    text-align: center;
-  }
-
-  .link {
-    color: #4a90e2;
-    font-size: 24rpx;
-    font-weight: 500;
-  }
-
-  .link-separator {
-    font-size: 24rpx;
-    color: #666;
-    margin: 0 5rpx;
-  }
-}
-
-// 隐私协议模态框样式
-.agreement-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9999;
-
-  .modal-mask {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-  }
-
-  .modal-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80%;
-    max-height: 80%;
-    background: #fff;
-    border-radius: 20rpx;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.2);
-    animation: modal-in 0.3s ease-out;
-  }
-
-  .modal-title {
-    padding: 30rpx;
-    font-size: 32rpx;
-    font-weight: 600;
-    text-align: center;
-    color: #333;
-    border-bottom: 1rpx solid #f0f0f0;
-  }
-
-  .modal-body {
-    flex: 1;
-    padding: 20rpx 30rpx;
-    max-height: 800rpx;
-
-    .modal-text {
-      font-size: 28rpx;
-      line-height: 1.6;
-      color: #333;
-      white-space: pre-wrap;
-    }
-  }
-
-  .modal-footer {
-    padding: 20rpx;
-    border-top: 1rpx solid #f0f0f0;
-    display: flex;
-    justify-content: center;
-
-    .modal-btn {
-      background: #4a90e2;
-      color: #fff;
-      font-size: 28rpx;
-      font-weight: 500;
-      padding: 10rpx 24rpx;
-      border-radius: 20rpx;
-      border: none;
-      min-width: 200rpx;
-      text-align: center;
-      box-shadow: 0 6rpx 20rpx rgba(74, 144, 226, 0.25);
-
-      &:active {
-        transform: translateY(2rpx);
-        box-shadow: 0 4rpx 15rpx rgba(74, 144, 226, 0.2);
-      }
-    }
-  }
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1402,17 +1216,6 @@ const currentStep = computed<number>(() => {
   }
   100% {
     filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
-  }
-}
-
-@keyframes modal-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -60%);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%);
   }
 }
 </style>

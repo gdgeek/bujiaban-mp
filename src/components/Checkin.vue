@@ -29,13 +29,6 @@ const loadingState = ref(true);
 const previewImageLoading = ref(true);
 const animationActive = ref(false);
 
-// 隐私协议状态变量
-const showPrivacyModal = ref(false);
-const showDisclaimerModal = ref(false);
-const agreementType = ref("");
-const agreementContent = ref("");
-
-// 预览图URL
 const previewImageUrl = ref<string>("");
 const videoUrl = ref<string>("");
 
@@ -225,119 +218,6 @@ onLoad(async () => {
     loadingState.value = false;
   }
 });
-
-// 显示隐私协议详情
-const showPrivacyDetail = () => {
-  agreementType.value = "不加班AR平台隐私协议";
-  agreementContent.value = `
-  1. 信息收集
-     我们会收集您的设备信息、摄像头权限和必要的位置信息，用于提供AR打卡视频录制服务。在您使用拍摄服务时，我们需要获取您的相册访问权限。
-
-  2. 视频存储与使用
-     您在平台上录制的AR打卡视频将临时存储在我们的服务器上，方便您查看和保存。您可以通过支付少量服务费获得专业拍摄服务并保存视频。
-
-  3. 付费内容
-     平台提供的专业拍摄服务需要支付少量服务费(¥0.01)。我们使用微信支付进行安全交易，不会存储您的银行卡等支付敏感信息。服务完成后，拍摄结果将保存到您的设备中。
-
-  4. 视频分享
-     您可以将下载的视频自由分享给他人或发布到社交媒体。请注意，一旦您分享视频，我们无法控制他人对视频的使用方式。
-
-  5. 信息安全
-     我们采取行业标准的安全措施保护您的个人信息和视频内容。您的视频将在您完成下载后的30天内从我们的服务器自动删除。
-
-  6. 用户权利
-     您有权随时下载和删除您的AR打卡视频。如您对隐私保护有任何疑问，可随时联系我们。
-  `;
-  showPrivacyModal.value = true;
-};
-
-// 显示免责声明详情
-const showDisclaimerDetail = () => {
-  agreementType.value = "免责声明";
-  agreementContent.value = `
-  1. 内容责任
-     您对使用本平台录制的AR打卡视频内容负有全部责任。请确保您录制和分享的内容不违反法律法规，不侵犯他人权益。
-
-  2. 服务可用性
-     我们努力确保AR打卡服务的稳定性，但受网络环境和设备兼容性影响，无法保证服务在任何情况下都能正常运行。
-
-  3. 视频分享风险
-     您通过分享功能将视频分享给他人或发布到社交媒体时，应了解并承担可能带来的风险，包括但不限于视频被他人下载、修改或传播。
-
-  4. 隐私保护
-     在录制AR打卡视频时，请注意保护您自己和他人的隐私。避免在视频中包含敏感个人信息或未经许可的他人肖像。
-
-  5. 最终解释权
-     本声明的最终解释权归不加班AR打卡平台（上海不加班网络科技有限公司）所有。使用本平台即表示您已阅读并同意本免责声明的全部内容。
-  `;
-  showDisclaimerModal.value = true;
-};
-
-// 关闭协议详情弹窗
-const closeAgreementModal = () => {
-  showPrivacyModal.value = false;
-  showDisclaimerModal.value = false;
-};
-
-// 处理扫码功能
-// const handleScan = () => {
-//   uni.scanCode({
-//     scanType: ["qrCode"],
-//     success: (res) => {
-//       console.log("扫码结果：", res.result);
-//       // 解析扫码结果
-//       if (res.result && res.result.includes("w.4mr.cn/t")) {
-//         try {
-//           // 从URL中提取k参数（小程序兼容方式）
-//           const newToken = getQueryString(res.result, "k");
-
-//           if (newToken) {
-//             console.log("检测到AR打卡token:", newToken);
-//             // 跳转到当前页面并带上新token
-//             uni.reLaunch({
-//               url: `/pages/checkin/index?q=${encodeURIComponent(
-//                 "https://w.4mr.cn/t?k=" + newToken,
-//               )}`,
-//               success: () => {
-//                 uni.showToast({
-//                   title: "连接成功",
-//                   icon: "success",
-//                 });
-//               },
-//               fail: (err) => {
-//                 console.error("页面跳转失败:", err);
-//                 uni.showToast({
-//                   title: "连接失败",
-//                   icon: "none",
-//                 });
-//               },
-//             });
-//           }
-//         } catch (error) {
-//           console.error("解析扫码结果失败:", error);
-//           uni.showToast({
-//             title: "无效的二维码",
-//             icon: "none",
-//           });
-//         }
-//       } else {
-//         uni.showToast({
-//           title: "不支持的二维码格式",
-//           icon: "none",
-//         });
-//       }
-//     },
-//     fail: (err) => {
-//       console.error("扫码失败:", err);
-//       if (err.errMsg !== "scanCode:fail cancel") {
-//         uni.showToast({
-//           title: "扫码失败",
-//           icon: "none",
-//         });
-//       }
-//     },
-//   });
-// };
 </script>
 
 <template>
@@ -481,18 +361,11 @@ const closeAgreementModal = () => {
             </view>
           </view>
 
-          <view class="privacy-links">
-            <text class="link-text">点击开始录制表示您已同意</text>
-            <text class="link" @click="showPrivacyDetail">《不加班AR平台隐私协议》</text>
-            <text class="link-separator">和</text>
-            <text class="link" @click="showDisclaimerDetail">《免责声明》</text>
-          </view>
-
           <button class="action-button begin-button full-width" @click="begin">
             <view class="button-icon"
               ><image src="/static/icons/start_recording.png" mode="aspectFit"></image
             ></view>
-            <text>同意并开始录制</text>
+            <text>开始录制</text>
           </button>
         </block>
 
@@ -514,38 +387,6 @@ const closeAgreementModal = () => {
             <text>停止录制</text>
           </button>
         </block>
-
-        <!-- <block v-else>
-          <view class="status-icon" @click="handleScan">
-            <image src="/static/icons/scan.png" mode="aspectFit"></image>
-          </view>
-          <view @click="handleScan" class="status-title">扫描二维码</view>
-          <view class="status-description">扫描屏幕上二维码...</view>
-          <view class="connection-tips">
-            <view class="tip-item">
-              <image src="/static/icons/tip.png" mode="aspectFit"></image>
-              <text>请确认打卡机已经录制完视频</text>
-            </view>
-            <view class="tip-item">
-              <image src="/static/icons/tip.png" mode="aspectFit"></image>
-              <text>扫描屏幕上二维码</text>
-            </view>
-          </view>
-        </block> -->
-      </view>
-    </view>
-  </view>
-
-  <!-- 隐私协议详情模态框 -->
-  <view class="agreement-modal" v-if="showPrivacyModal || showDisclaimerModal">
-    <view class="modal-mask" @click="closeAgreementModal"></view>
-    <view class="modal-content">
-      <view class="modal-title">{{ agreementType }}</view>
-      <scroll-view class="modal-body" scroll-y>
-        <text class="modal-text">{{ agreementContent }}</text>
-      </scroll-view>
-      <view class="modal-footer">
-        <button class="modal-btn" @click="closeAgreementModal">知道了</button>
       </view>
     </view>
   </view>
@@ -1259,120 +1100,6 @@ const closeAgreementModal = () => {
   }
 }
 
-// 隐私协议和免责声明链接样式
-.privacy-links {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 20rpx;
-  text-align: center;
-  flex-wrap: wrap;
-  padding: 10rpx 0;
-
-  .link-text {
-    font-size: 24rpx;
-    color: #666;
-    margin-bottom: 8rpx;
-    width: 100%;
-    text-align: center;
-  }
-
-  .link {
-    color: #4a90e2;
-    font-size: 24rpx;
-    font-weight: 500;
-  }
-
-  .link-separator {
-    font-size: 24rpx;
-    color: #666;
-    margin: 0 5rpx;
-  }
-}
-
-// 隐私协议模态框样式
-.agreement-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9999;
-
-  .modal-mask {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-  }
-
-  .modal-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80%;
-    max-height: 80%;
-    background: #fff;
-    border-radius: 20rpx;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.2);
-    animation: modal-in 0.3s ease-out;
-  }
-
-  .modal-title {
-    padding: 30rpx;
-    font-size: 32rpx;
-    font-weight: 600;
-    text-align: center;
-    color: #333;
-    border-bottom: 1rpx solid #f0f0f0;
-  }
-
-  .modal-body {
-    flex: 1;
-    padding: 20rpx 30rpx;
-    max-height: 800rpx;
-
-    .modal-text {
-      font-size: 28rpx;
-      line-height: 1.6;
-      color: #333;
-      white-space: pre-wrap;
-    }
-  }
-
-  .modal-footer {
-    padding: 20rpx;
-    border-top: 1rpx solid #f0f0f0;
-    display: flex;
-    justify-content: center;
-
-    .modal-btn {
-      background: #4a90e2;
-      color: #fff;
-      font-size: 28rpx;
-      font-weight: 500;
-      padding: 10rpx 24rpx;
-      border-radius: 20rpx;
-      border: none;
-      min-width: 200rpx;
-      text-align: center;
-      box-shadow: 0 6rpx 20rpx rgba(74, 144, 226, 0.25);
-
-      &:active {
-        transform: translateY(2rpx);
-        box-shadow: 0 4rpx 15rpx rgba(74, 144, 226, 0.2);
-      }
-    }
-  }
-}
-
 @keyframes recording-pulse {
   0% {
     transform: scale(0.95);
@@ -1586,17 +1313,6 @@ const closeAgreementModal = () => {
   }
   100% {
     filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));
-  }
-}
-
-@keyframes modal-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -60%);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%);
   }
 }
 </style>
