@@ -1,13 +1,13 @@
 {
   "pages": [
     //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
-    {
-      "path": "pages/home/index",
-      "style": {
-        "navigationBarTitleText": "首页",
-        "enablePullDownRefresh": false
-      }
-    },
+    // {
+    //   "path": "pages/home/index",
+    //   "style": {
+    //     "navigationBarTitleText": "首页",
+    //     "enablePullDownRefresh": false
+    //   }
+    // },
     // {
     //   "path": "pages/my/index",
     //   "style": {
@@ -63,12 +63,12 @@
     "backgroundColor": "#fff",
     "borderStyle": "white",
     "list": [
-      {
-        "text": "首页",
-        "pagePath": "pages/home/index",
-        "iconPath": "static/tabs/home_default.png",
-        "selectedIconPath": "static/tabs/home_selected.png"
-      },
+      // {
+      //   "text": "首页",
+      //   "pagePath": "pages/home/index",
+      //   "iconPath": "static/tabs/home_default.png",
+      //   "selectedIconPath": "static/tabs/home_selected.png"
+      // },
       {
         "text": "打卡",
         "pagePath": "pages/checkin/index",

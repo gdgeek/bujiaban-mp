@@ -175,8 +175,18 @@ const handleScan = () => {
 
     <view v-else class="status-card" :class="{ 'animation-active': animationActive }">
       <block>
-        <view class="status-icon" @click="handleScan">
-          <image src="/static/icons/scan.png" mode="aspectFit"></image>
+        <view class="scan-code-container" @click="handleScan">
+          <view class="scan-code-box">
+            <!-- 四个角 -->
+            <view class="corner top-left"></view>
+            <view class="corner top-right"></view>
+            <view class="corner bottom-left"></view>
+            <view class="corner bottom-right"></view>
+            <!-- 扫描线 -->
+            <view class="scan-line"></view>
+            <!-- 中心图标 -->
+            <image class="scan-icon" src="/static/icons/qrcode.png" mode="aspectFit"></image>
+          </view>
         </view>
         <view @click="handleScan" class="status-title">扫描二维码</view>
         <view class="status-description">扫描屏幕上二维码...</view>
@@ -378,19 +388,91 @@ const handleScan = () => {
     opacity: 0.7;
   }
 
-  .status-icon {
-    width: 120rpx;
-    height: 120rpx;
-    border-radius: 60rpx;
+  // 新的扫码容器样式
+  .scan-code-container {
+    width: 200rpx;
+    height: 200rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 30rpx;
+    position: relative;
+    cursor: pointer;
+  }
 
-    image {
-      width: 100rpx;
-      height: 100rpx;
-    }
+  .scan-code-box {
+    width: 160rpx;
+    height: 160rpx;
+    position: relative;
+    background-color: rgba(74, 144, 226, 0.05);
+    border-radius: 8rpx;
+    overflow: hidden;
+  }
+
+  // 四个角样式
+  .corner {
+    position: absolute;
+    width: 30rpx;
+    height: 30rpx;
+    border-color: #4a90e2;
+    border-style: solid;
+    border-width: 0;
+  }
+
+  .top-left {
+    top: 0;
+    left: 0;
+    border-top-width: 8rpx;
+    border-left-width: 8rpx;
+  }
+
+  .top-right {
+    top: 0;
+    right: 0;
+    border-top-width: 8rpx;
+    border-right-width: 8rpx;
+  }
+
+  .bottom-left {
+    bottom: 0;
+    left: 0;
+    border-bottom-width: 8rpx;
+    border-left-width: 8rpx;
+  }
+
+  .bottom-right {
+    bottom: 0;
+    right: 0;
+    border-bottom-width: 8rpx;
+    border-right-width: 8rpx;
+  }
+
+  // 扫描线
+  .scan-line {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 8rpx;
+    background: linear-gradient(
+      90deg,
+      rgba(74, 144, 226, 0),
+      rgba(74, 144, 226, 0.9),
+      rgba(74, 144, 226, 0)
+    );
+    box-shadow: 0 0 10rpx rgba(74, 144, 226, 0.5);
+    animation: scan-animation 2s ease-in-out infinite;
+  }
+
+  // 扫码图标
+  .scan-icon {
+    position: absolute;
+    width: 100rpx;
+    height: 100rpx;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.7;
+    z-index: 2;
   }
 
   .status-title {
@@ -463,6 +545,22 @@ const handleScan = () => {
   100% {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+// 扫描线动画
+@keyframes scan-animation {
+  0% {
+    top: 10rpx;
+    opacity: 0.3;
+  }
+  50% {
+    top: 150rpx;
+    opacity: 1;
+  }
+  100% {
+    top: 10rpx;
+    opacity: 0.3;
   }
 }
 </style>
