@@ -1,5 +1,14 @@
 <template>
   <view class="payment-page" :style="{ paddingBottom: (safeAreaInsets?.bottom || 0) + 'px' }">
+    <!-- 隐藏的视频元素，用于获取视频时长 -->
+    <video
+      id="videoPlayer"
+      :src="tempVideoUrl"
+      style="width: 0; height: 0; position: absolute; opacity: 0"
+      @loadedmetadata="onVideoMetadataLoaded"
+      @error="onVideoError"
+    ></video>
+
     <view class="content-wrapper">
       <view class="payment-card">
         <view class="payment-header">
@@ -18,8 +27,53 @@
           </view> -->
         </view>
 
+        <!-- 视频截帧图片选择 -->
+        <view class="frame-select-section">
+          <view class="frame-select-header">
+            <text class="frame-title">视频截帧</text>
+            <view class="select-actions">
+              <text class="select-all" :class="{ active: isAllSelected }" @tap="toggleSelectAll">{{
+                isAllSelected ? "取消全选" : "全选"
+              }}</text>
+            </view>
+          </view>
+
+          <view class="frames-container">
+            <view
+              v-for="(frame, index) in frameImages"
+              :key="index"
+              class="frame-item"
+              :class="{ selected: frame.selected }"
+              @tap="toggleSelectFrame(index)"
+            >
+              <view class="frame-image-container">
+                <view class="frame-loading" v-if="frame.loading">
+                  <view class="loading-spinner"></view>
+                </view>
+                <image
+                  class="frame-image"
+                  :src="frame.url"
+                  mode="aspectFill"
+                  @load="frame.loading = false"
+                  @error="onFrameError(index)"
+                ></image>
+                <view class="frame-select-indicator">
+                  <view class="select-circle">
+                    <view class="select-icon" v-if="frame.selected"></view>
+                  </view>
+                </view>
+              </view>
+              <text class="frame-time">{{ frame.timeLabel }}</text>
+            </view>
+          </view>
+        </view>
+
         <!-- <button class="pay-button" @click="handlePay" :loading="loading">支付服务费</button> -->
-        <button class="pay-button" @click="handlePay" :loading="loading">下载文件(免费)</button>
+        <button class="pay-button" @click="handlePay" :loading="loading">
+          下载文件{{
+            getSelectedFramesCount() > 0 ? `(含${getSelectedFramesCount()}张截图)` : "(免费)"
+          }}
+        </button>
 
         <button class="cancel-button" @click="handleCancel">取消</button>
       </view>
@@ -31,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import FooterCopyright from "@/components/FooterCopyright.vue";
 import {
@@ -52,10 +106,222 @@ const paymentInfo = ref({
   // price: 1, // 默认1分钱
   title: "",
   action: "",
+  duration: 0, // 添加视频时长属性
 });
 const loading = ref(false);
 // 视频签名URL
 const videoUrl = ref<string>("");
+
+// 视频截帧相关
+interface FrameImage {
+  url: string;
+  time: number; // 时间点（秒）
+  timeLabel: string; // 显示的时间标签
+  selected: boolean;
+  loading: boolean;
+}
+
+const frameImages = ref<FrameImage[]>([]);
+const isAllSelected = computed(() => {
+  return frameImages.value.length > 0 && frameImages.value.every((frame) => frame.selected);
+});
+
+// 获取选中的截帧数量
+const getSelectedFramesCount = () => {
+  return frameImages.value.filter((frame) => frame.selected).length;
+};
+
+// 切换全选/取消全选
+const toggleSelectAll = () => {
+  const newSelectedState = !isAllSelected.value;
+  frameImages.value.forEach((frame) => {
+    frame.selected = newSelectedState;
+  });
+};
+
+// 切换单个截帧的选中状态
+const toggleSelectFrame = (index: number) => {
+  frameImages.value[index].selected = !frameImages.value[index].selected;
+};
+
+// 处理截帧图片加载错误
+const onFrameError = (index: number) => {
+  console.log("截帧图片加载失败:", index);
+  frameImages.value[index].loading = false;
+  // 错误占位图
+  frameImages.value[index].url = "/static/images/video_placeholder.png";
+};
+
+// 格式化时间为分:秒格式
+const formatTime = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+};
+
+// 加载视频URL和时长相关
+const tempVideoUrl = ref<string>("");
+const videoDurationResolved = ref<boolean>(false);
+const videoLoadTimeout = ref<number | null>(null);
+const videoLoadResolve = ref<((duration: number | null) => void) | null>(null);
+
+// 获取视频的不同时间点截帧
+const loadVideoFrames = async () => {
+  if (!paymentInfo.value.videoKey) return;
+
+  try {
+    // 获取视频URL
+    const videoUrl = await getSignedVideoUrl(paymentInfo.value.videoKey);
+
+    // 动态获取视频时长
+    const duration = await getVideoDuration(videoUrl);
+
+    if (!duration) {
+      uni.showToast({
+        title: "无法获取视频时长",
+        icon: "error",
+      });
+      return;
+    }
+
+    generateFramePoints(duration);
+  } catch (error) {
+    console.error("加载视频帧出错:", error);
+    uni.showToast({
+      title: "获取视频信息失败",
+      icon: "error",
+    });
+  }
+};
+
+// 生成帧点并获取截帧
+const generateFramePoints = async (duration: number) => {
+  const framePoints = [
+    duration * 0.1, // 10% 处的截帧
+    duration * 0.3, // 30% 处的截帧
+    duration * 0.6, // 60% 处的截帧
+    duration * 0.9, // 90% 处的截帧
+  ];
+
+  const frames: FrameImage[] = [];
+  for (const time of framePoints) {
+    try {
+      // 获取特定时间点的视频截帧
+      const url = await getSignedVideoUrl(paymentInfo.value.videoKey, true, time);
+      frames.push({
+        url,
+        time,
+        timeLabel: formatTime(time),
+        selected: false,
+        loading: true,
+      });
+    } catch (error) {
+      console.error(`获取时间 ${time} 的截帧失败:`, error);
+    }
+  }
+  frameImages.value = frames;
+};
+
+// 视频元数据加载完成事件
+const onVideoMetadataLoaded = (event: any) => {
+  clearVideoTimeout();
+  const videoElement = event.target;
+  if (videoElement && videoElement.duration && !videoDurationResolved.value) {
+    console.log("视频元数据加载完成，时长:", videoElement.duration);
+    videoDurationResolved.value = true;
+
+    if (videoLoadResolve.value) {
+      videoLoadResolve.value(videoElement.duration);
+      videoLoadResolve.value = null;
+    }
+
+    tempVideoUrl.value = ""; // 重置视频URL
+  }
+};
+
+// 视频加载错误事件
+const onVideoError = (error: any) => {
+  console.error("视频加载错误:", error);
+  clearVideoTimeout();
+
+  if (videoLoadResolve.value && !videoDurationResolved.value) {
+    videoDurationResolved.value = true;
+    videoLoadResolve.value(null);
+    videoLoadResolve.value = null;
+  }
+
+  tempVideoUrl.value = "";
+};
+
+// 清除超时定时器
+const clearVideoTimeout = () => {
+  if (videoLoadTimeout.value) {
+    clearTimeout(videoLoadTimeout.value);
+    videoLoadTimeout.value = null;
+  }
+};
+
+// 获取视频时长
+const getVideoDuration = (url: string): Promise<number | null> => {
+  return new Promise((resolve) => {
+    // 重置状态
+    videoDurationResolved.value = false;
+    videoLoadResolve.value = resolve;
+    tempVideoUrl.value = url;
+
+    // 设置超时处理
+    videoLoadTimeout.value = setTimeout(() => {
+      if (!videoDurationResolved.value) {
+        console.log("获取视频时长超时");
+        videoDurationResolved.value = true;
+        if (videoLoadResolve.value) {
+          videoLoadResolve.value(null);
+          videoLoadResolve.value = null;
+        }
+        tempVideoUrl.value = "";
+      }
+    }, 3000);
+  });
+};
+
+// 下载并保存图片到相册
+const downloadAndSaveImage = async (url: string): Promise<boolean> => {
+  try {
+    // 下载图片文件
+    const downloadRes = await new Promise<{
+      statusCode: number;
+      tempFilePath: string;
+    }>((resolve, reject) => {
+      uni.downloadFile({
+        url,
+        success: (res) => resolve(res),
+        fail: (err) => reject(err),
+      });
+    });
+
+    if (downloadRes.statusCode === 200) {
+      // 保存图片到相册
+      await new Promise<void>((resolve, reject) => {
+        uni.saveImageToPhotosAlbum({
+          filePath: downloadRes.tempFilePath,
+          success: () => {
+            resolve();
+          },
+          fail: (err) => {
+            console.error("保存图片到相册失败：", err);
+            reject(err);
+          },
+        });
+      });
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    console.error("图片处理过程中出错:", error);
+    return false;
+  }
+};
 
 // 接收页面参数
 onLoad((query) => {
@@ -64,6 +330,9 @@ onLoad((query) => {
       const params = JSON.parse(decodeURIComponent(query.params));
       console.log("接收到参数:", params);
       paymentInfo.value = { ...paymentInfo.value, ...params };
+
+      // 加载视频截帧
+      loadVideoFrames();
     }
   } catch (error) {
     console.error("解析参数错误:", error);
@@ -132,12 +401,36 @@ const handlePay = async () => {
       // 下载并保存视频
       const downloadSuccess = await downloadAndSaveVideo(signedUrl);
 
+      // 下载选中的截帧图片
+      const selectedFrames = frameImages.value.filter((frame) => frame.selected);
+      let imageSuccessCount = 0;
+
+      if (selectedFrames.length > 0) {
+        uni.showLoading({
+          title: "正在保存截图...",
+          mask: true,
+        });
+
+        // 依次下载选中的截帧图片
+        for (const frame of selectedFrames) {
+          const success = await downloadAndSaveImage(frame.url);
+          if (success) imageSuccessCount++;
+        }
+
+        uni.hideLoading();
+      }
+
       if (downloadSuccess) {
         // 显示成功提示并返回
         setTimeout(() => {
+          const successMessage =
+            selectedFrames.length > 0
+              ? `文件已成功下载并保存到相册，${imageSuccessCount}张截图已保存`
+              : "文件已成功下载并保存到相册";
+
           uni.showModal({
             title: "下载完成",
-            content: "文件已成功下载并保存到相册",
+            content: successMessage,
             showCancel: false,
             success: () => {
               // 返回上一页
@@ -232,7 +525,7 @@ const handleCancel = () => {
     }
 
     .payment-info {
-      margin-bottom: 60rpx;
+      margin-bottom: 30rpx;
       background: #f9fafc;
       border-radius: 16rpx;
       padding: 20rpx 30rpx;
@@ -261,6 +554,138 @@ const handleCancel = () => {
           white-space: nowrap; // 不换行
           overflow: hidden; // 超出隐藏
           text-overflow: ellipsis; // 超出显示省略号
+        }
+      }
+    }
+
+    // 视频截帧选择部分
+    .frame-select-section {
+      margin-bottom: 40rpx;
+
+      .frame-select-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20rpx;
+
+        .frame-title {
+          font-size: 28rpx;
+          font-weight: 500;
+          color: #333;
+        }
+
+        .select-actions {
+          .select-all {
+            font-size: 24rpx;
+            color: #1890ff;
+            padding: 8rpx 16rpx;
+
+            &.active {
+              color: #ff4d4f;
+            }
+          }
+        }
+      }
+
+      .frames-container {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+
+        .frame-item {
+          width: 48%; /* 设置为小于50%的值，确保一行能放下两个 */
+          margin-bottom: 16rpx;
+          border-radius: 12rpx;
+          overflow: hidden;
+          position: relative;
+
+          &.selected {
+            .frame-image-container {
+              border: 2px solid #1890ff;
+
+              .frame-select-indicator {
+                .select-circle {
+                  background: #1890ff;
+
+                  .select-icon {
+                    display: block;
+                  }
+                }
+              }
+            }
+          }
+
+          .frame-image-container {
+            position: relative;
+            height: 180rpx;
+            border-radius: 12rpx;
+            border: 2px solid transparent;
+            overflow: hidden;
+
+            .frame-loading {
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background: rgba(245, 247, 250, 0.8);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              z-index: 2;
+
+              .loading-spinner {
+                width: 40rpx;
+                height: 40rpx;
+                border: 3rpx solid rgba(24, 144, 255, 0.1);
+                border-radius: 50%;
+                border-top-color: #1890ff;
+                animation: spin 0.8s linear infinite;
+              }
+            }
+
+            .frame-image {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+            }
+
+            .frame-select-indicator {
+              position: absolute;
+              top: 8rpx;
+              right: 8rpx;
+              z-index: 3;
+
+              .select-circle {
+                width: 36rpx;
+                height: 36rpx;
+                border-radius: 50%;
+                border: 2px solid #fff;
+                background: rgba(255, 255, 255, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.15);
+
+                .select-icon {
+                  display: none;
+                  width: 18rpx;
+                  height: 18rpx;
+                  border-radius: 50%;
+                  background: #fff;
+                }
+              }
+            }
+          }
+
+          .frame-time {
+            display: block;
+            text-align: center;
+            font-size: 24rpx;
+            color: #666;
+            margin-top: 8rpx;
+          }
         }
       }
     }
@@ -299,6 +724,12 @@ const handleCancel = () => {
         background: #eef1f6;
       }
     }
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

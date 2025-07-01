@@ -5,17 +5,19 @@ import { wxPay, generateOrderNo } from "@/services/pay";
  * 获取视频对象的签名URL
  * @param key 视频在对象存储中的键值
  * @param isPreview 是否为预览图（添加截图参数）
+ * @param time 时间点（秒），默认为0.01秒，用于获取特定时间的截帧
  * @returns 签名后的URL
  */
 export const getSignedVideoUrl = async (
   key: string,
   isPreview: boolean = false,
+  time: number = 0.01,
 ): Promise<string> => {
   try {
     const url = await getObjectUrl(key);
     // 如果是预览图，添加截图参数
     if (isPreview) {
-      return `${url}&ci-process=snapshot&time=0.01`;
+      return `${url}&ci-process=snapshot&time=${time}`;
     }
     return url;
   } catch (error) {
@@ -23,7 +25,7 @@ export const getSignedVideoUrl = async (
     // 失败时使用默认无签名URL
     const defaultUrl = `https://game-1251022382.cos.ap-nanjing.myqcloud.com/${key}`;
     if (isPreview) {
-      return `${defaultUrl}?ci-process=snapshot&time=0.01`;
+      return `${defaultUrl}?ci-process=snapshot&time=${time}`;
     }
     return defaultUrl;
   }
@@ -74,7 +76,7 @@ export const checkAlbumPermission = async (): Promise<boolean> => {
       await new Promise<void>((resolve, reject) => {
         uni.showModal({
           title: "需要授权",
-          content: "保存视频到本地需要访问您的相册权限，请在设置中开启“添加到相册”权限",
+          content: '保存视频到本地需要访问您的相册权限，请在设置中开启"添加到相册"权限',
           confirmText: "前往设置",
           cancelText: "取消",
           success: (res) => {

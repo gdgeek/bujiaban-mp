@@ -29,7 +29,7 @@ const animationActive = ref(false);
 const status = ref<string>("linked");
 const result = ref<StatusData | null>(null);
 
-// 获取签名后的URL，使用工具函数
+// 获取签名后的URL
 const getSignedUrl = async (key: string, isPreview: boolean = false) => {
   try {
     const url = await getSignedVideoUrl(key, isPreview);
