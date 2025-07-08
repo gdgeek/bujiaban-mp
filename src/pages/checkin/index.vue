@@ -5,6 +5,7 @@ import { getOpenidFromStorage } from "@/utils/video";
 import { getCheckinStatus, wxLogin, setCheckinLinked, getQueryString } from "@/services/checkin";
 import FooterCopyright from "@/components/FooterCopyright.vue";
 import Exhibition from "@/components/Exhibition.vue";
+import Recode from "@/components/Recode.vue";
 import Checkin from "@/components/Checkin.vue";
 
 const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
@@ -66,6 +67,8 @@ const type = computed<undefined | null | string>(() => {
     return "E";
   } else if (token.value.startsWith("C")) {
     return "C";
+  } else if (token.value.startsWith("R")) {
+    return "R";
   }
   return null;
 });
@@ -268,10 +271,12 @@ const handleScan = () => {
       <view class="slogan">
         <image class="slogan-icon" src="/static/icons/slogan.png" mode="aspectFit"></image>
         <text class="slogan-text">科技赋能生活，记录每一次精彩时刻！</text>
+        {{ type }}
       </view>
     </view>
 
     <Exhibition :openid="openid" :token="token" v-if="type == 'E'" class="content-wrapper" />
+    <Recode :openid="openid" :token="token" v-else-if="type == 'R'" class="content-wrapper" />
     <Checkin :openid="openid" :token="token" v-else-if="type == 'C'" class="content-wrapper" />
 
     <view v-else class="status-card" :class="{ 'animation-active': animationActive }">
