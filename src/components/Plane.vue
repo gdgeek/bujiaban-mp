@@ -139,7 +139,7 @@ const steps = [
       <view class="progress-tracker">
         <step :currentStep="currentStep" :steps="steps" style="width: 100%" />
       </view>
-
+      <!-- 状态卡片 -->
       <!--   {{ result }}状态卡片 -->
       <view class="status-card" :class="{ 'animation-active': animationActive }">
         <block v-if="result && result.file != null">
