@@ -1,20 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import CryptoJS from "crypto-js";
-
-/**
- * 计算hash值
- * @param token 设备/用户标识符
- * @param time 时间戳
- * @param param 参数值(device/openid/key其中之一)
- * @returns hash值
- */
-const calculateHash = (token: string, time: string, param: string): string => {
-  const salt = "buj1aban.c0m";
-  const str = token + time + param + salt;
-  console.log("hash", CryptoJS.MD5(str).toString());
-  return CryptoJS.MD5(str).toString();
-};
+import { calculateHash, getUrl, postData } from "@/utils/common";
 
 // 定义组件属性
 import { getSignedVideoUrl } from "@/utils/video";
@@ -101,36 +88,13 @@ const props = defineProps<{
  * @returns 打卡状态信息
  */
 const _refresh = async (): Promise<ApiResponse> => {
-  return new Promise((resolve, reject) => {
-    const time: string = Math.floor(Date.now() / 1000).toString();
-    const hash = calculateHash(props.token!, time, props.openid!);
-    const url = "https://w.4mr.cn/v1/local/refresh?time=" + time + "&hash=" + hash;
-    //  console.error(url);
-
-    // 准备请求数据
-    const data: any = {
-      openid: props.openid,
-      token: props.token,
-      status: status.value,
-    };
-    // 发送请求
-    wx.request({
-      url: url,
-      method: "POST",
-      data,
-      success: function (res) {
-        console.log("本地状态刷新成功！", res.data);
-        //console.error(res.data);
-        resolve(res.data as ApiResponse);
-      },
-      fail: function (res) {
-        console.log("本地状态刷新失败！", res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
+  const data: any = {
+    openid: props.openid,
+    token: props.token,
+    status: status.value,
+  };
+  return postData(data);
 };
-//await _refresh();
 
 const refresh = async () => {
   if (props.token) {

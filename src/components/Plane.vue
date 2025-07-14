@@ -1,21 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-import CryptoJS from "crypto-js";
 
-/**
- * 计算hash值
- * @param token 设备/用户标识符
- * @param time 时间戳
- * @param param 参数值(device/openid/key其中之一)
- * @returns hash值
- */
-const calculateHash = (token: string, time: string, param: string): string => {
-  const salt = "buj1aban.c0m";
-  const str = token + time + param + salt;
-  console.log("hash", CryptoJS.MD5(str).toString());
-  return CryptoJS.MD5(str).toString();
-};
-
+import { postData } from "@/utils/common";
+import Step from "@/components/Step.vue";
 // 定义组件属性
 import { getSignedVideoUrl } from "@/utils/video";
 import { type StatusData, type ApiResponse } from "@/services/checkin";
@@ -101,36 +88,13 @@ const props = defineProps<{
  * @returns 打卡状态信息
  */
 const _refresh = async (): Promise<ApiResponse> => {
-  return new Promise((resolve, reject) => {
-    const time: string = Math.floor(Date.now() / 1000).toString();
-    const hash = calculateHash(props.token!, time, props.openid!);
-    const url = "https://w.4mr.cn/v1/local/refresh?time=" + time + "&hash=" + hash;
-    //  console.error(url);
-
-    // 准备请求数据
-    const data: any = {
-      openid: props.openid,
-      token: props.token,
-      status: status.value,
-    };
-    // 发送请求
-    wx.request({
-      url: url,
-      method: "POST",
-      data,
-      success: function (res) {
-        console.log("本地状态刷新成功！", res.data);
-        //console.error(res.data);
-        resolve(res.data as ApiResponse);
-      },
-      fail: function (res) {
-        console.log("本地状态刷新失败！", res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
+  const data: any = {
+    openid: props.openid,
+    token: props.token,
+    status: status.value,
+  };
+  return postData(data);
 };
-//await _refresh();
 
 const refresh = async () => {
   if (props.token) {
@@ -155,69 +119,26 @@ const currentStep = computed<number>(() => {
   if (result.value.checkin.status == "linked") return 1;
   return 0;
 });
+/*
+
+// 当前步骤（0开始）
+const currentStep = ref(props.currentStep);
+*/
+// 步骤列表
+const steps = [
+  { title: "开始", desc: "准备录制" },
+  { title: "录制中", desc: "正在处理" },
+  { title: "完成", desc: "处理完毕" },
+];
 </script>
 
 <template>
   <view class="content-wrapper">
-    {{ result }}
-
-    <!-- 输入部分容区域 -->
-    <view class="input-area">
-      <view class="input-title">AR打卡</view>
-        <view class="uni-form-item uni-column">
-          <view class="title">可自动聚焦的input</view>
-          <input class="uni-input" focus placeholder="自动获得焦点" />
-        </view>
-    <!-- 输入框 -->
-      <input type="text" value="asdf">1</input>
-
-
-      <view class="input-description"> 通过AR技术记录您的精彩时刻，生成独一无二的打卡视频！ </view>
-      <view class="input-tips">
-        <image src="/static/icons/tip.png" mode="aspectFit" class="tip-icon"></image>
-        <text class="tip-text">请确保您的设备已连接网络，并允许访问摄像头和麦克风。</text>
-      </view>
-    </view>
     <!-- 主内容区域 -->
-
     <view class="main-content">
-
-      <!-- 进度指示器 -->
-      <input class="progress-tracker">
-
-        </input>
-      <!-- 进度指示器 -->
       <view class="progress-tracker">
-        <view class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
-          <view class="step-circle">
-            <image
-              v-if="currentStep > 0"
-              class="step-success-icon"
-              src="/static/icons/process_success.png"
-              mode="aspectFit"
-            ></image>
-            <text v-else>1</text>
-          </view>
-          <view class="step-label">处理中</view>
-        </view>
-        <view
-          class="step-line"
-          :class="{ active: currentStep >= 1, completed: currentStep > 1 }"
-        ></view>
-        <view class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
-          <view class="step-circle">
-            <image
-              v-if="currentStep > 1"
-              class="step-success-icon"
-              src="/static/icons/process_success.png"
-              mode="aspectFit"
-            ></image>
-            <text v-else>2</text>
-          </view>
-          <view class="step-label">完成</view>
-        </view>
+        <step :currentStep="currentStep" :steps="steps" style="width: 100%" />
       </view>
-
       <!--   {{ result }}状态卡片 -->
       <view class="status-card" :class="{ 'animation-active': animationActive }">
         <block v-if="result && result.file != null">
