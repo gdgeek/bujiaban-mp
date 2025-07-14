@@ -161,7 +161,7 @@ onLoad(async () => {
       return;
     }
   }
-
+  /*
   try {
     if (token.value) {
       const ret = await getCheckinStatus(token.value);
@@ -178,7 +178,9 @@ onLoad(async () => {
     console.log("status 请求失败！" + error);
   } finally {
     loadingState.value = false;
-  }
+  }*/
+
+  loadingState.value = false;
 });
 
 // 处理扫码功能
