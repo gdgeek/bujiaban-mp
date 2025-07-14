@@ -28,7 +28,6 @@ const submit = async (data: any) => {
 
 <template>
   <view>
-    {{ result }}
     <Submit v-if="result == null" @submit="submit" :openid="openid" :token="token"></Submit>
     <Plane v-else :openid="openid" :token="token"></Plane>
   </view>
