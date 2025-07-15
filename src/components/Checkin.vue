@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { getSignedVideoUrl, getOpenidFromStorage } from "@/utils/video";
+import Step from "@/components/Step.vue";
 import {
   getCheckinStatus,
   wxLogin,
@@ -143,7 +144,7 @@ const downloadVideo = async (key: string) => {
   // 准备参数
   const params = {
     videoKey: key,
-    price: 1, // 1分钱
+    price: 0,
     title: key.split("/").pop() || "AR打卡视频",
     action: "download",
   };
@@ -170,6 +171,14 @@ const getToken = () => {
 
   return result;
 };
+
+// 步骤列表
+const steps = [
+  { title: "连接", desc: "设备连接" },
+  { title: "准备", desc: "点击开始" },
+  { title: "录制中", desc: "视频制作" },
+  { title: "完成", desc: "处理完毕" },
+];
 
 onLoad(async () => {
   token.value = getToken(); //得到token
@@ -223,7 +232,6 @@ onLoad(async () => {
 <template>
   <view class="content-wrapper">
     <!-- 加载状态 -->
-
     <view class="loading-container" v-if="loadingState">
       <view class="loading-spinner"></view>
       <view class="loading-text">连接中...</view>
@@ -233,50 +241,7 @@ onLoad(async () => {
     <view class="main-content" v-else>
       <!-- 进度指示器 -->
       <view v-if="type != undefined" class="progress-tracker">
-        <view class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
-          <view class="step-circle">
-            <image
-              v-if="currentStep > 0"
-              class="step-success-icon"
-              src="/static/icons/process_success.png"
-              mode="aspectFit"
-            ></image>
-            <text v-else>1</text>
-          </view>
-          <view class="step-label">连接</view>
-        </view>
-        <view
-          class="step-line"
-          :class="{ active: currentStep >= 1, completed: currentStep > 1 }"
-        ></view>
-        <view class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
-          <view class="step-circle">
-            <image
-              v-if="currentStep > 1"
-              class="step-success-icon"
-              src="/static/icons/process_success.png"
-              mode="aspectFit"
-            ></image>
-            <text v-else>2</text>
-          </view>
-          <view class="step-label">准备</view>
-        </view>
-        <view
-          class="step-line"
-          :class="{ active: currentStep >= 2, completed: currentStep > 2 }"
-        ></view>
-        <view class="step" :class="{ active: currentStep >= 3, completed: currentStep > 3 }">
-          <view class="step-circle">
-            <image
-              v-if="currentStep > 2"
-              class="step-success-icon"
-              src="/static/icons/process_success.png"
-              mode="aspectFit"
-            ></image>
-            <text v-else>3</text>
-          </view>
-          <view class="step-label">完成</view>
-        </view>
+        <step :currentStep="currentStep" :steps="steps" style="width: 100%" />
       </view>
 
       <!-- 状态卡片 -->

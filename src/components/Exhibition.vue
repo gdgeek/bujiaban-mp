@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import CryptoJS from "crypto-js";
 import { calculateHash, getUrl, postData } from "@/utils/common";
+import Step from "@/components/Step.vue";
 
 // 定义组件属性
 import { getSignedVideoUrl } from "@/utils/video";
@@ -56,7 +57,7 @@ const downloadVideo = async (key: string) => {
   // 准备参数
   const params = {
     videoKey: key,
-    price: 1, // 1分钱
+    price: 0,
     title: key.split("/").pop() || "AR打卡视频",
     action: "download",
   };
@@ -115,10 +116,16 @@ onUnmounted(() => {
 });
 const currentStep = computed<number>(() => {
   if (!result.value) return 0;
-  if (result.value.file != null) return 2;
-  if (result.value.checkin.status == "linked") return 1;
+  if (result.value.file != null) return 1;
+  if (result.value.checkin.status == "linked") return 0;
   return 0;
 });
+
+// 步骤列表
+const steps = [
+  { title: "处理中", desc: "文件处理" },
+  { title: "完成", desc: "处理完毕" },
+];
 </script>
 
 <template>
@@ -127,34 +134,7 @@ const currentStep = computed<number>(() => {
     <view class="main-content">
       <!-- 进度指示器 -->
       <view class="progress-tracker">
-        <view class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
-          <view class="step-circle">
-            <image
-              v-if="currentStep > 0"
-              class="step-success-icon"
-              src="/static/icons/process_success.png"
-              mode="aspectFit"
-            ></image>
-            <text v-else>1</text>
-          </view>
-          <view class="step-label">处理中</view>
-        </view>
-        <view
-          class="step-line"
-          :class="{ active: currentStep >= 1, completed: currentStep > 1 }"
-        ></view>
-        <view class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
-          <view class="step-circle">
-            <image
-              v-if="currentStep > 1"
-              class="step-success-icon"
-              src="/static/icons/process_success.png"
-              mode="aspectFit"
-            ></image>
-            <text v-else>2</text>
-          </view>
-          <view class="step-label">完成</view>
-        </view>
+        <step :currentStep="currentStep" :steps="steps" style="width: 100%" />
       </view>
 
       <!--   {{ result }}状态卡片 -->

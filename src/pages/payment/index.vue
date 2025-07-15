@@ -21,10 +21,10 @@
             <text class="label">文件名称:</text>
             <text class="value">{{ paymentInfo.title || "视频文件" }}</text>
           </view>
-          <!-- <view class="info-item">
+          <view class="info-item">
             <text class="label">服务费用:</text>
-            <text class="value">¥{{ (paymentInfo.price || 0) / 100 }}</text>
-          </view> -->
+            <text class="value">¥{{ ((paymentInfo.price || 0) / 100).toFixed(2) }}</text>
+          </view>
         </view>
 
         <!-- 视频截帧图片选择 -->
@@ -57,10 +57,8 @@
                   @load="frame.loading = false"
                   @error="onFrameError(index)"
                 ></image>
-                <view class="frame-select-indicator">
-                  <view class="select-circle">
-                    <view class="select-icon" v-if="frame.selected"></view>
-                  </view>
+                <view class="selection-indicator" :class="{ selected: frame.selected }">
+                  <text v-if="frame.selected">{{ frame.selectionIndex }}</text>
                 </view>
               </view>
               <text class="frame-time">{{ frame.timeLabel }}</text>
@@ -70,9 +68,7 @@
 
         <!-- <button class="pay-button" @click="handlePay" :loading="loading">支付服务费</button> -->
         <button class="pay-button" @click="handlePay" :loading="loading">
-          下载文件{{
-            getSelectedFramesCount() > 0 ? `(含${getSelectedFramesCount()}张截图)` : "(免费)"
-          }}
+          下载文件{{ getSelectedFramesCount() > 0 ? `(含${getSelectedFramesCount()}张截图)` : "" }}
         </button>
 
         <button class="cancel-button" @click="handleCancel">取消</button>
@@ -85,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import FooterCopyright from "@/components/FooterCopyright.vue";
 import {
@@ -93,7 +89,7 @@ import {
   getOpenidFromStorage,
   checkAlbumPermission,
   downloadAndSaveVideo,
-  // handlePayment, // 注释掉支付相关引用
+  handlePayment,
 } from "@/utils/video";
 
 // 获取安全区域信息
@@ -103,7 +99,7 @@ const { safeAreaInsets } = uni.getWindowInfo();
 const paymentInfo = ref({
   videoId: 0,
   videoKey: "",
-  // price: 1, // 默认1分钱
+  price: 0,
   title: "",
   action: "",
   duration: 0, // 添加视频时长属性
@@ -119,12 +115,36 @@ interface FrameImage {
   timeLabel: string; // 显示的时间标签
   selected: boolean;
   loading: boolean;
+  selectionIndex: number; // 选中顺序编号
 }
 
 const frameImages = ref<FrameImage[]>([]);
 const isAllSelected = computed(() => {
   return frameImages.value.length > 0 && frameImages.value.every((frame) => frame.selected);
 });
+
+// 获取下一个可用的编号
+const getNextSelectionIndex = () => {
+  let maxIndex = 0;
+  frameImages.value.forEach((frame) => {
+    if (frame.selected && frame.selectionIndex > maxIndex) {
+      maxIndex = frame.selectionIndex;
+    }
+  });
+  return maxIndex + 1;
+};
+
+// 重新排序编号
+const reorderSelectionIndexes = () => {
+  // 获取所有选中的帧
+  const selectedFrames = frameImages.value.filter((frame) => frame.selected);
+  // 按现有编号排序
+  selectedFrames.sort((a, b) => a.selectionIndex - b.selectionIndex);
+  // 重新分配编号
+  selectedFrames.forEach((frame, index) => {
+    frame.selectionIndex = index + 1;
+  });
+};
 
 // 获取选中的截帧数量
 const getSelectedFramesCount = () => {
@@ -134,14 +154,36 @@ const getSelectedFramesCount = () => {
 // 切换全选/取消全选
 const toggleSelectAll = () => {
   const newSelectedState = !isAllSelected.value;
-  frameImages.value.forEach((frame) => {
-    frame.selected = newSelectedState;
-  });
+  if (newSelectedState) {
+    // 全选时按顺序分配编号
+    frameImages.value.forEach((frame, index) => {
+      frame.selected = true;
+      frame.selectionIndex = index + 1;
+    });
+  } else {
+    // 取消全选时重置编号
+    frameImages.value.forEach((frame) => {
+      frame.selected = false;
+      frame.selectionIndex = 0;
+    });
+  }
 };
 
 // 切换单个截帧的选中状态
 const toggleSelectFrame = (index: number) => {
-  frameImages.value[index].selected = !frameImages.value[index].selected;
+  const frame = frameImages.value[index];
+
+  if (!frame.selected) {
+    // 选中时分配下一个编号
+    frame.selected = true;
+    frame.selectionIndex = getNextSelectionIndex();
+  } else {
+    // 取消选中时重置编号
+    frame.selected = false;
+    frame.selectionIndex = 0;
+    // 重新排序其他已选中的帧
+    reorderSelectionIndexes();
+  }
 };
 
 // 处理截帧图片加载错误
@@ -214,6 +256,7 @@ const generateFramePoints = async (duration: number) => {
         timeLabel: formatTime(time),
         selected: false,
         loading: true,
+        selectionIndex: 0,
       });
     } catch (error) {
       console.error(`获取时间 ${time} 的截帧失败:`, error);
@@ -372,7 +415,6 @@ const handlePay = async () => {
       return;
     }
 
-    /*
     // 处理支付
     const paySuccess = await handlePayment({
       openid,
@@ -385,74 +427,71 @@ const handlePay = async () => {
         title: "支付成功，开始处理",
         icon: "success",
       });
-    */
 
-    // 直接执行下载逻辑，无需支付
-    uni.showToast({
-      title: "准备下载文件",
-      icon: "loading",
-    });
+      // 直接执行下载逻辑，无需支付
+      uni.showToast({
+        title: "准备下载文件",
+        icon: "loading",
+      });
 
-    // 执行实际下载逻辑
-    if (paymentInfo.value.videoKey) {
-      // 获取签名URL
-      const signedUrl = await getSignedVideoUrl(paymentInfo.value.videoKey);
+      // 执行实际下载逻辑
+      if (paymentInfo.value.videoKey) {
+        // 获取签名URL
+        const signedUrl = await getSignedVideoUrl(paymentInfo.value.videoKey);
 
-      // 下载并保存视频
-      const downloadSuccess = await downloadAndSaveVideo(signedUrl);
+        // 下载并保存视频
+        const downloadSuccess = await downloadAndSaveVideo(signedUrl);
 
-      // 下载选中的截帧图片
-      const selectedFrames = frameImages.value.filter((frame) => frame.selected);
-      let imageSuccessCount = 0;
+        // 下载选中的截帧图片
+        const selectedFrames = frameImages.value.filter((frame) => frame.selected);
+        let imageSuccessCount = 0;
 
-      if (selectedFrames.length > 0) {
-        uni.showLoading({
-          title: "正在保存截图...",
-          mask: true,
-        });
+        if (selectedFrames.length > 0) {
+          uni.showLoading({
+            title: "正在保存截图...",
+            mask: true,
+          });
 
-        // 依次下载选中的截帧图片
-        for (const frame of selectedFrames) {
-          const success = await downloadAndSaveImage(frame.url);
-          if (success) imageSuccessCount++;
+          // 依次下载选中的截帧图片
+          for (const frame of selectedFrames) {
+            const success = await downloadAndSaveImage(frame.url);
+            if (success) imageSuccessCount++;
+          }
+
+          uni.hideLoading();
         }
 
-        uni.hideLoading();
-      }
+        if (downloadSuccess) {
+          // 显示成功提示并返回
+          setTimeout(() => {
+            const successMessage =
+              selectedFrames.length > 0
+                ? `文件已成功下载并保存到相册，${imageSuccessCount}张截图已保存`
+                : "文件已成功下载并保存到相册";
 
-      if (downloadSuccess) {
-        // 显示成功提示并返回
-        setTimeout(() => {
-          const successMessage =
-            selectedFrames.length > 0
-              ? `文件已成功下载并保存到相册，${imageSuccessCount}张截图已保存`
-              : "文件已成功下载并保存到相册";
-
-          uni.showModal({
-            title: "下载完成",
-            content: successMessage,
-            showCancel: false,
-            success: () => {
-              // 返回上一页
-              uni.navigateBack();
-            },
-          });
-        }, 1000);
+            uni.showModal({
+              title: "下载完成",
+              content: successMessage,
+              showCancel: false,
+              success: () => {
+                // 返回上一页
+                uni.navigateBack();
+              },
+            });
+          }, 1000);
+        }
+      } else {
+        uni.showToast({
+          title: "文件信息不完整",
+          icon: "error",
+        });
       }
-    } else {
-      uni.showToast({
-        title: "文件信息不完整",
-        icon: "error",
-      });
-    }
-    /*
     } else {
       uni.showToast({
         title: "支付已取消",
         icon: "none",
       });
     }
-    */
   } catch (error) {
     console.error("下载过程中出错:", error);
     uni.hideLoading();
@@ -594,7 +633,8 @@ const handleCancel = () => {
         justify-content: space-between;
 
         .frame-item {
-          width: 48%; /* 设置为小于50%的值，确保一行能放下两个 */
+          width: 48%;
+          /* 设置为小于50%的值，确保一行能放下两个 */
           margin-bottom: 16rpx;
           border-radius: 12rpx;
           overflow: hidden;
@@ -603,16 +643,6 @@ const handleCancel = () => {
           &.selected {
             .frame-image-container {
               border: 2px solid #1890ff;
-
-              .frame-select-indicator {
-                .select-circle {
-                  background: #1890ff;
-
-                  .select-icon {
-                    display: block;
-                  }
-                }
-              }
             }
           }
 
@@ -651,30 +681,34 @@ const handleCancel = () => {
               object-fit: cover;
             }
 
-            .frame-select-indicator {
+            // 修改选择指示器样式
+            .selection-indicator {
               position: absolute;
               top: 8rpx;
               right: 8rpx;
-              z-index: 3;
+              width: 40rpx;
+              height: 40rpx;
+              border-radius: 50%;
+              border: 2px solid #fff;
+              background: rgba(255, 255, 255, 0.8);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.15);
+              z-index: 4;
+              box-sizing: border-box;
 
-              .select-circle {
-                width: 36rpx;
-                height: 36rpx;
-                border-radius: 50%;
-                border: 2px solid #fff;
-                background: rgba(255, 255, 255, 0.8);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.15);
-
-                .select-icon {
-                  display: none;
-                  width: 18rpx;
-                  height: 18rpx;
-                  border-radius: 50%;
-                  background: #fff;
-                }
+              // 选中状态样式
+              &.selected {
+                width: 40rpx;
+                height: 40rpx;
+                background: #1890ff;
+                color: #fff;
+                font-size: 24rpx;
+                font-weight: bold;
+                line-height: 40rpx;
+                text-align: center;
+                border: none; // 移除边框
               }
             }
           }
