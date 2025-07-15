@@ -46,7 +46,6 @@
               :class="{ selected: frame.selected }"
               @tap="toggleSelectFrame(index)"
             >
-              <!-- 修改截帧选择指示器，未选中显示空圈，选中显示编号 -->
               <view class="frame-image-container">
                 <view class="frame-loading" v-if="frame.loading">
                   <view class="loading-spinner"></view>
@@ -58,7 +57,6 @@
                   @load="frame.loading = false"
                   @error="onFrameError(index)"
                 ></image>
-                <!-- 选择指示器：未选中显示空白圆圈，选中显示编号 -->
                 <view class="selection-indicator" :class="{ selected: frame.selected }">
                   <text v-if="frame.selected">{{ frame.selectionIndex }}</text>
                 </view>

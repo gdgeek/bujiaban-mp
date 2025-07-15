@@ -6,15 +6,26 @@ import { calculateHash } from "@/utils/common";
 const props = defineProps<{
   openid: string | null;
   token: string | null;
+  savedSlogan?: string;
 }>();
 
-const input = ref("");
-const emits = defineEmits<{ (e: "submit", val: any): void }>();
-const formSubmit = (e: any) => {
-  e.preventDefault();
-  emits("submit", { success: true, text: input.value });
-  console.error("Form submit");
+const input = ref(props.savedSlogan || "");
+const emits = defineEmits<{ (e: "next", val: string): void; (e: "submit", val: any): void }>();
+
+watch(
+  () => props.savedSlogan,
+  (newVal) => {
+    if (newVal) {
+      input.value = newVal;
+    }
+  },
+);
+
+const nextStep = () => {
+  emits("next", input.value);
+  console.error("前往下一步");
 };
+
 const formReset = (e: any) => {
   e.preventDefault();
   input.value = ""; // 清空输入
@@ -96,9 +107,9 @@ const activeSlogan = computed(() => {
           <image class="btn-icon" src="/static/icons/reset.png" mode="aspectFit"></image>
           <text>重置</text>
         </button>
-        <button class="btn submit-btn" size="mini" @click="formSubmit">
-          <image class="btn-icon" src="/static/icons/process_success.png" mode="aspectFit"></image>
-          <text>提交</text>
+        <button class="btn next-btn" size="mini" @click="nextStep" :disabled="!input.length">
+          <image class="btn-icon" src="/static/icons/arrow-right.png" mode="aspectFit"></image>
+          <text>下一步</text>
         </button>
       </view>
     </form>
@@ -139,10 +150,11 @@ const activeSlogan = computed(() => {
   margin-bottom: 40rpx;
 }
 
+// 为标语选中时添加过渡效果
 .slogan-item {
   padding: 24rpx;
   border-radius: 16rpx;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: relative;
   border: 2rpx solid transparent;
   display: flex;
@@ -175,6 +187,7 @@ const activeSlogan = computed(() => {
   left: 24rpx;
   top: 50%;
   transform: translateY(-50%);
+  animation: rotateIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
 .slogan-text {
@@ -249,7 +262,7 @@ const activeSlogan = computed(() => {
   }
 }
 
-.submit-btn {
+.next-btn {
   background: #1890ff;
   color: #fff;
   border: none;
@@ -259,6 +272,24 @@ const activeSlogan = computed(() => {
     background: #177ddc;
     transform: translateY(2rpx);
     box-shadow: 0 4rpx 8rpx rgba(24, 144, 255, 0.15);
+  }
+
+  &[disabled] {
+    background: #91caff;
+    color: #ffffff;
+    box-shadow: none;
+    opacity: 0.7;
+  }
+}
+
+@keyframes rotateIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) rotate(-180deg) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) rotate(0deg) scale(1);
   }
 }
 </style>
