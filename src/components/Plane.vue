@@ -53,10 +53,23 @@ const downloadVideo = async (key: string) => {
     return;
   }
 
+  // 获取价格设置
+  let price = 0;
+  try {
+    if (result.value?.report?.setup) {
+      const setupData = JSON.parse(result.value.report.setup);
+      if (setupData.money) {
+        price = setupData.money;
+      }
+    }
+  } catch (error) {
+    console.error("解析价格设置失败", error);
+  }
+
   // 准备参数
   const params = {
     videoKey: key,
-    price: 1, // 1分钱
+    price: price,
     title: key.split("/").pop() || "AR打卡视频",
     action: "download",
   };
@@ -100,6 +113,7 @@ const refresh = async () => {
   if (props.token) {
     const ret = await _refresh();
     result.value = ret.data as StatusData;
+    console.error("获取打卡状态", result.value);
   }
 };
 
@@ -130,6 +144,21 @@ const steps = [
   { title: "录制中", desc: "正在处理" },
   { title: "完成", desc: "处理完毕" },
 ];
+
+const getPriceDisplay = () => {
+  if (!result.value?.report?.setup) {
+    return "0.00";
+  }
+  try {
+    const setupData = JSON.parse(result.value.report.setup);
+    if (setupData.money) {
+      return (setupData.money / 100).toFixed(2);
+    }
+  } catch (error) {
+    console.error("解析价格设置失败", error);
+  }
+  return "0.00";
+};
 </script>
 
 <template>
@@ -196,8 +225,9 @@ const steps = [
           <!-- 支付说明 -->
           <view class="payment-tips">
             <image src="/static/icons/tip.png" mode="aspectFit" class="tip-icon"></image>
-            <!-- <text class="tip-text">拍摄服务费¥0.01，支付完成后可获取打卡视频并保存到相册</text> -->
-            <text class="tip-text">文件下载免费，下载完成后可获取打卡视频并保存到相册</text>
+            <text class="tip-text"
+              >拍摄服务费¥{{ getPriceDisplay() }}，支付完成后可获取打卡文件并保存到相册</text
+            >
           </view>
         </block>
 
