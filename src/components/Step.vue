@@ -14,13 +14,21 @@ const props = defineProps<{
       :key="index"
       class="step-item"
       :class="{
-        active: index === props.currentStep,
-        completed: index < props.currentStep,
+        active: index === props.currentStep && index !== props.steps.length - 1,
+        completed:
+          index < props.currentStep ||
+          (index === props.currentStep && index === props.steps.length - 1),
       }"
     >
       <!-- 步骤圆圈 -->
       <view class="step-circle">
-        <text v-if="index < props.currentStep">✓</text>
+        <text
+          v-if="
+            index < props.currentStep ||
+            (index === props.currentStep && index === props.steps.length - 1)
+          "
+          >✓</text
+        >
         <text v-else>{{ index + 1 }}</text>
       </view>
 
@@ -31,7 +39,11 @@ const props = defineProps<{
       <view
         v-if="index < props.steps.length - 1"
         class="step-line"
-        :class="{ completed: index < props.currentStep }"
+        :class="{
+          completed:
+            index < props.currentStep ||
+            (index === props.currentStep - 1 && props.currentStep === props.steps.length - 1),
+        }"
       ></view>
     </view>
   </view>

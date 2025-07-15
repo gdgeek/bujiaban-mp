@@ -165,9 +165,9 @@ const getPriceDisplay = () => {
   <view class="content-wrapper">
     <!-- 主内容区域 -->
     <view class="main-content">
-      <view class="progress-tracker">
+      <!-- <view class="progress-tracker">
         <step :currentStep="currentStep" :steps="steps" style="width: 100%" />
-      </view>
+      </view> -->
       <!-- 状态卡片 -->
       <!--   {{ result }}状态卡片 -->
       <view class="status-card" :class="{ 'animation-active': animationActive }">
