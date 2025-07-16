@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import { postData } from "@/utils/common"; // 导入 postData 函数
 
 // 增加属性父级别属性
 const props = defineProps<{
@@ -9,7 +10,11 @@ const props = defineProps<{
 }>();
 
 const input = ref(props.savedSlogan || "");
-const emits = defineEmits<{ (e: "next", val: string): void; (e: "submit", val: any): void }>();
+const apiPictures = ref<string[]>([]);
+const emits = defineEmits<{
+  (e: "next", val: string, pictures?: string[]): void;
+  (e: "submit", val: any): void;
+}>();
 
 watch(
   () => props.savedSlogan,
@@ -20,8 +25,29 @@ watch(
   },
 );
 
-const nextStep = () => {
-  emits("next", input.value);
+const nextStep = async () => {
+  if (props.openid && props.token) {
+    try {
+      const data = {
+        openid: props.openid,
+        token: props.token,
+        slogan: input.value,
+      };
+      console.log("data", data);
+      const result = await postData(data);
+      if (result.data.report?.setup) {
+        const setupData = JSON.parse(result.data.report?.setup);
+        console.log("postData 返回结果:", setupData[0].pictures);
+        apiPictures.value = setupData[0].pictures;
+      }
+    } catch (error) {
+      console.error("调用 postData 出错:", error);
+    }
+  } else {
+    console.error("缺少必要参数 openid 或 token");
+  }
+
+  emits("next", input.value, apiPictures.value);
   console.error("前往下一步");
 };
 

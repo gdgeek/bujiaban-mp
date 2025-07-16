@@ -13,8 +13,8 @@ export interface ReportInfo {
   status: string;
   created_at: string;
   updated_at: string;
-  data?: string | null; // 附加数据，可以是字符串或null
-  setup?: string | null; // 支付设置信息，通常包含money字段
+  data?: string | null;
+  setup?: string | null;
 }
 export interface FileInfo {
   token: string;

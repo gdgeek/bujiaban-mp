@@ -168,7 +168,7 @@ const steps = [
                 class="preview-image"
                 :class="{ 'image-loaded': !previewImageLoading }"
                 :src="previewImageUrl"
-                mode="aspectFill"
+                mode="widthFix"
                 @load="previewImageLoading = false"
                 @error="previewImageLoading = false"
               ></image>
@@ -655,7 +655,6 @@ const steps = [
     .preview-container {
       position: relative;
       width: 100%;
-      height: 350rpx;
       border-radius: 16rpx;
       overflow: hidden;
       background: #f0f0f0;
@@ -694,7 +693,7 @@ const steps = [
 
     .preview-image {
       width: 100%;
-      height: 100%;
+      display: block;
       border-radius: 16rpx;
       transition: all 0.3s ease;
       position: relative;

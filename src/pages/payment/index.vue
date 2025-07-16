@@ -56,7 +56,7 @@
                 <image
                   class="frame-image"
                   :src="frame.url"
-                  mode="aspectFill"
+                  mode="widthFix"
                   @load="frame.loading = false"
                   @error="onFrameError(index)"
                 ></image>
@@ -706,7 +706,6 @@ const handleCancel = () => {
 
           .frame-image-container {
             position: relative;
-            height: 180rpx;
             border-radius: 12rpx;
             border: 2px solid transparent;
             overflow: hidden;
@@ -735,8 +734,7 @@ const handleCancel = () => {
 
             .frame-image {
               width: 100%;
-              height: 100%;
-              object-fit: cover;
+              display: block;
             }
 
             // 修改选择指示器样式
