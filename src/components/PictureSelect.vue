@@ -32,13 +32,11 @@ const goBack = () => {
 };
 
 const submitForm = () => {
-  if (selectedPicture.value) {
-    emits("submit", {
-      success: true,
-      text: props.slogan,
-      picture: selectedPicture.value,
-    });
-  }
+  emits("submit", {
+    success: true,
+    text: props.slogan,
+    picture: selectedPicture.value || null,
+  });
 };
 </script>
 
@@ -53,7 +51,7 @@ const submitForm = () => {
     <!-- 已选标语展示 -->
     <view class="selected-slogan">
       <text class="slogan-label">已选标语:</text>
-      <text class="slogan-content">{{ slogan }}</text>
+      <text class="slogan-content">{{ slogan || "无" }}</text>
     </view>
 
     <!-- 封面图片选择区域 -->
@@ -78,13 +76,7 @@ const submitForm = () => {
         <image class="btn-icon" src="/static/icons/arrow-left.png" mode="aspectFit"></image>
         <text>返回</text>
       </button>
-      <button
-        class="btn submit-btn"
-        size="mini"
-        @click="submitForm"
-        :disabled="!selectedPicture"
-        :class="{ disabled: !selectedPicture }"
-      >
+      <button class="btn submit-btn" size="mini" @click="submitForm">
         <image class="btn-icon" src="/static/icons/process_success.png" mode="aspectFit"></image>
         <text>提交</text>
       </button>

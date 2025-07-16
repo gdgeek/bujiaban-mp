@@ -13,7 +13,7 @@
       <view class="payment-card">
         <view class="payment-header">
           <!-- <text class="payment-title">拍摄服务</text> -->
-          <text class="payment-title">文件下载</text>
+          <text class="payment-title">{{ alreadyPurchased ? "文件下载" : "文件购买" }}</text>
         </view>
 
         <view class="payment-info">
@@ -23,7 +23,10 @@
           </view>
           <view class="info-item">
             <text class="label">服务费用:</text>
-            <text class="value">¥{{ ((paymentInfo.price || 0) / 100).toFixed(2) }}</text>
+            <text class="value" v-if="!alreadyPurchased"
+              >¥{{ ((paymentInfo.price || 0) / 100).toFixed(2) }}</text
+            >
+            <text class="value purchased" v-else>已购买</text>
           </view>
         </view>
 
@@ -67,8 +70,14 @@
         </view>
 
         <!-- <button class="pay-button" @click="handlePay" :loading="loading">支付服务费</button> -->
-        <button class="pay-button" @click="handlePay" :loading="loading">
-          下载文件{{ getSelectedFramesCount() > 0 ? `(含${getSelectedFramesCount()}张截图)` : "" }}
+        <button
+          class="pay-button"
+          @click="handlePay"
+          :loading="loading"
+          :class="{ 'already-purchased': alreadyPurchased }"
+        >
+          {{ alreadyPurchased ? "直接下载" : "支付服务费"
+          }}{{ getSelectedFramesCount() > 0 ? `(含${getSelectedFramesCount()}张截图)` : "" }}
         </button>
 
         <button class="cancel-button" @click="handleCancel">取消</button>
@@ -107,6 +116,9 @@ const paymentInfo = ref({
 const loading = ref(false);
 // 视频签名URL
 const videoUrl = ref<string>("");
+// 是否已经购买过该文件
+const alreadyPurchased = ref<boolean>(false);
+const PURCHASED_FILES_STORAGE_KEY = "AR_PURCHASED_FILES";
 
 // 视频截帧相关
 interface FrameImage {
@@ -199,6 +211,34 @@ const formatTime = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+};
+
+// 检查文件是否已购买
+const checkIfAlreadyPurchased = (videoKey: string): boolean => {
+  try {
+    const purchasedFiles = uni.getStorageSync(PURCHASED_FILES_STORAGE_KEY) || [];
+    return purchasedFiles.includes(videoKey);
+  } catch (error) {
+    console.error("检查已购买文件出错:", error);
+    return false;
+  }
+};
+
+// 记录已购买的文件
+const savePurchasedFile = (videoKey: string): void => {
+  try {
+    let purchasedFiles = uni.getStorageSync(PURCHASED_FILES_STORAGE_KEY) || [];
+    if (!Array.isArray(purchasedFiles)) {
+      purchasedFiles = [];
+    }
+
+    if (!purchasedFiles.includes(videoKey)) {
+      purchasedFiles.push(videoKey);
+      uni.setStorageSync(PURCHASED_FILES_STORAGE_KEY, purchasedFiles);
+    }
+  } catch (error) {
+    console.error("保存已购买文件记录出错:", error);
+  }
 };
 
 // 加载视频URL和时长相关
@@ -374,6 +414,11 @@ onLoad((query) => {
       console.log("接收到参数:", params);
       paymentInfo.value = { ...paymentInfo.value, ...params };
 
+      // 检查是否已经购买过该文件
+      if (paymentInfo.value.videoKey) {
+        alreadyPurchased.value = checkIfAlreadyPurchased(paymentInfo.value.videoKey);
+      }
+
       // 加载视频截帧
       loadVideoFrames();
     }
@@ -415,20 +460,32 @@ const handlePay = async () => {
       return;
     }
 
-    // 处理支付
-    const paySuccess = await handlePayment({
-      openid,
-      amount: paymentInfo.value.price || 1,
-      description: `拍摄服务:${paymentInfo.value.title}`,
-    });
+    // 检查是否已经购买过该文件，如果已购买则跳过支付流程
+    let paySuccess = alreadyPurchased.value;
 
-    if (paySuccess) {
-      uni.showToast({
-        title: "支付成功，开始处理",
-        icon: "success",
+    // 如果未购买过，则进行支付流程
+    if (!paySuccess) {
+      paySuccess = await handlePayment({
+        openid,
+        amount: paymentInfo.value.price || 1,
+        description: `拍摄服务:${paymentInfo.value.title}`,
       });
 
-      // 直接执行下载逻辑，无需支付
+      // 支付成功后，记录为已购买
+      if (paySuccess && paymentInfo.value.videoKey) {
+        savePurchasedFile(paymentInfo.value.videoKey);
+      }
+    }
+
+    if (paySuccess) {
+      if (!alreadyPurchased.value) {
+        uni.showToast({
+          title: "支付成功，开始处理",
+          icon: "success",
+        });
+      }
+
+      // 直接执行下载逻辑
       uni.showToast({
         title: "准备下载文件",
         icon: "loading",
@@ -593,6 +650,11 @@ const handleCancel = () => {
           white-space: nowrap; // 不换行
           overflow: hidden; // 超出隐藏
           text-overflow: ellipsis; // 超出显示省略号
+
+          &.purchased {
+            color: #52c41a; // 已购买状态文本颜色
+            font-weight: bold;
+          }
         }
       }
     }
@@ -741,6 +803,14 @@ const handleCancel = () => {
         background: #177ddc;
         transform: translateY(2rpx);
         box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.15);
+      }
+
+      &.already-purchased {
+        background: #52c41a; // 已购买状态下按钮为绿色
+
+        &:active {
+          background: #49ad18;
+        }
       }
     }
 

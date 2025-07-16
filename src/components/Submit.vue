@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, defineEmits, computed, watch, onMounted, onUnmounted } from "vue";
-import { calculateHash } from "@/utils/common";
+import { ref, computed, watch } from "vue";
 
 // 增加属性父级别属性
 const props = defineProps<{
@@ -28,7 +27,7 @@ const nextStep = () => {
 
 const formReset = (e: any) => {
   e.preventDefault();
-  input.value = ""; // 清空输入
+  input.value = "";
   console.error("Form reset");
 };
 
@@ -107,7 +106,7 @@ const activeSlogan = computed(() => {
           <image class="btn-icon" src="/static/icons/reset.png" mode="aspectFit"></image>
           <text>重置</text>
         </button>
-        <button class="btn next-btn" size="mini" @click="nextStep" :disabled="!input.length">
+        <button class="btn next-btn" size="mini" @click="nextStep">
           <image class="btn-icon" src="/static/icons/arrow-right.png" mode="aspectFit"></image>
           <text>下一步</text>
         </button>
