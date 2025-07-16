@@ -444,7 +444,7 @@ const handlePay = async () => {
     // 跳转到登录或打卡页面获取openid
     setTimeout(() => {
       uni.redirectTo({
-        url: "/pages/checkin/index?k=test123",
+        url: "/pages/checkin/index",
       });
     }, 1500);
     return;
@@ -467,7 +467,7 @@ const handlePay = async () => {
     if (!paySuccess) {
       paySuccess = await handlePayment({
         openid,
-        amount: paymentInfo.value.price || 1,
+        amount: paymentInfo.value.price || 0,
         description: `拍摄服务:${paymentInfo.value.title}`,
       });
 
@@ -485,13 +485,11 @@ const handlePay = async () => {
         });
       }
 
-      // 直接执行下载逻辑
       uni.showToast({
         title: "准备下载文件",
         icon: "loading",
       });
 
-      // 执行实际下载逻辑
       if (paymentInfo.value.videoKey) {
         // 获取签名URL
         const signedUrl = await getSignedVideoUrl(paymentInfo.value.videoKey);
@@ -519,7 +517,6 @@ const handlePay = async () => {
         }
 
         if (downloadSuccess) {
-          // 显示成功提示并返回
           setTimeout(() => {
             const successMessage =
               selectedFrames.length > 0
@@ -531,7 +528,6 @@ const handlePay = async () => {
               content: successMessage,
               showCancel: false,
               success: () => {
-                // 返回上一页
                 uni.navigateBack();
               },
             });
