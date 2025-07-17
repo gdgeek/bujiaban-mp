@@ -438,8 +438,8 @@ const handleScan = () => {
     }
 
     .logo {
-      width: 72rpx;
-      height: 72rpx;
+      width: 100%;
+      height: 100%;
       filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
     }
   }
