@@ -95,7 +95,7 @@ const downloadVideo = async () => {
   try {
     const params = {
       videoKey: props.video.cosKey,
-      price: 1,
+      price: 0,
       title: videoTitle.value || "AR打卡视频",
       action: "download",
     };

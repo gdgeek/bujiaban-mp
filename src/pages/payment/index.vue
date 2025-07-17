@@ -13,7 +13,9 @@
       <view class="payment-card">
         <view class="payment-header">
           <!-- <text class="payment-title">拍摄服务</text> -->
-          <text class="payment-title">{{ alreadyPurchased ? "文件下载" : "文件购买" }}</text>
+          <text class="payment-title">{{
+            alreadyPurchased || paymentInfo.price === 0 ? "文件下载" : "文件购买"
+          }}</text>
         </view>
 
         <view class="payment-info">
@@ -23,10 +25,9 @@
           </view>
           <view class="info-item">
             <text class="label">服务费用:</text>
-            <text class="value" v-if="!alreadyPurchased"
-              >¥{{ ((paymentInfo.price || 0) / 100).toFixed(2) }}</text
-            >
-            <text class="value purchased" v-else>已购买</text>
+            <text class="value purchased" v-if="alreadyPurchased">已购买</text>
+            <text class="value purchased" v-else-if="paymentInfo.price === 0">免费</text>
+            <text class="value" v-else>¥{{ ((paymentInfo.price || 0) / 100).toFixed(2) }}</text>
           </view>
         </view>
 
@@ -74,9 +75,9 @@
           class="pay-button"
           @click="handlePay"
           :loading="loading"
-          :class="{ 'already-purchased': alreadyPurchased }"
+          :class="{ 'already-purchased': alreadyPurchased || paymentInfo.price === 0 }"
         >
-          {{ alreadyPurchased ? "直接下载" : "支付服务费"
+          {{ alreadyPurchased ? "直接下载" : paymentInfo.price === 0 ? "免费下载" : "支付服务费"
           }}{{ getSelectedFramesCount() > 0 ? `(含${getSelectedFramesCount()}张截图)` : "" }}
         </button>
 
@@ -460,27 +461,26 @@ const handlePay = async () => {
       return;
     }
 
-    // 检查是否已经购买过该文件，如果已购买则跳过支付流程
-    let paySuccess = alreadyPurchased.value;
+    // 检查是否已经购买过该文件或价格为0，如果是则跳过支付流程
+    let paySuccess = alreadyPurchased.value || paymentInfo.value.price === 0;
 
-    // 如果未购买过，则进行支付流程
     if (!paySuccess) {
       paySuccess = await handlePayment({
         openid,
         amount: paymentInfo.value.price || 0,
-        description: `拍摄服务:${paymentInfo.value.title}`,
+        description: `AR打卡服务:${paymentInfo.value.title}`,
       });
+    }
 
-      // 支付成功后，记录为已购买
-      if (paySuccess && paymentInfo.value.videoKey) {
-        savePurchasedFile(paymentInfo.value.videoKey);
-      }
+    // 支付成功或价格为0，记录为已购买
+    if (paySuccess && paymentInfo.value.videoKey) {
+      savePurchasedFile(paymentInfo.value.videoKey);
     }
 
     if (paySuccess) {
       if (!alreadyPurchased.value) {
         uni.showToast({
-          title: "支付成功，开始处理",
+          title: paymentInfo.value.price === 0 ? "开始处理下载" : "支付成功，开始处理",
           icon: "success",
         });
       }
