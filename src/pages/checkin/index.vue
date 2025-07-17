@@ -273,7 +273,6 @@ const handleScan = () => {
       <view class="slogan">
         <image class="slogan-icon" src="/static/icons/slogan.png" mode="aspectFit"></image>
         <text class="slogan-text">科技赋能生活，记录每一次精彩时刻！</text>
-        {{ type }}
       </view>
     </view>
 
