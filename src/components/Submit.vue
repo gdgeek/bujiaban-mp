@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineEmits, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, defineEmits, computed, watch, onMounted, defineProps } from "vue";
 import { calculateHash } from "@/utils/common";
 
 // 增加属性父级别属性

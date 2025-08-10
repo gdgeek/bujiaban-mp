@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted, defineProps } from "vue";
 
 import { postData } from "@/utils/common";
 import Step from "@/components/Step.vue";
