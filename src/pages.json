@@ -72,8 +72,8 @@
       {
         "text": "打卡",
         "pagePath": "pages/checkin/index",
-        "iconPath": "static/tabs/user_default.png",
-        "selectedIconPath": "static/tabs/user_selected.png"
+        "iconPath": "static/tabs/checkin_default.png",
+        "selectedIconPath": "static/tabs/checkin_selected.png"
       },
       {
         "text": "记录管理",

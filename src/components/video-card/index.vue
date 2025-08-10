@@ -93,10 +93,9 @@ const downloadVideo = async () => {
   loading.value = true;
 
   try {
-    // 准备参数
     const params = {
       videoKey: props.video.cosKey,
-      price: 1, // 1分钱
+      price: 0,
       title: videoTitle.value || "AR打卡视频",
       action: "download",
     };

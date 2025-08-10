@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, defineEmits, computed, watch, onMounted, defineProps } from "vue";
-import { calculateHash } from "@/utils/common";
+import { ref, computed, watch } from "vue";
+import { postData } from "@/utils/common"; // 导入 postData 函数
 
 // 增加属性父级别属性
 const props = defineProps<{
@@ -10,7 +10,11 @@ const props = defineProps<{
 }>();
 
 const input = ref(props.savedSlogan || "");
-const emits = defineEmits<{ (e: "next", val: string): void; (e: "submit", val: any): void }>();
+const apiPictures = ref<string[]>([]);
+const emits = defineEmits<{
+  (e: "next", val: string, pictures?: string[]): void;
+  (e: "submit", val: any): void;
+}>();
 
 watch(
   () => props.savedSlogan,
@@ -21,14 +25,35 @@ watch(
   },
 );
 
-const nextStep = () => {
-  emits("next", input.value);
+const nextStep = async () => {
+  if (props.openid && props.token) {
+    try {
+      const data = {
+        openid: props.openid,
+        token: props.token,
+        slogan: input.value,
+      };
+      console.log("data", data);
+      const result = await postData(data);
+      if (result.data.report?.setup) {
+        const setupData = JSON.parse(result.data.report?.setup);
+        console.log("postData 返回结果:", setupData[0].pictures);
+        apiPictures.value = setupData[0].pictures;
+      }
+    } catch (error) {
+      console.error("调用 postData 出错:", error);
+    }
+  } else {
+    console.error("缺少必要参数 openid 或 token");
+  }
+
+  emits("next", input.value, apiPictures.value);
   console.error("前往下一步");
 };
 
 const formReset = (e: any) => {
   e.preventDefault();
-  input.value = ""; // 清空输入
+  input.value = "";
   console.error("Form reset");
 };
 
@@ -107,7 +132,7 @@ const activeSlogan = computed(() => {
           <image class="btn-icon" src="/static/icons/reset.png" mode="aspectFit"></image>
           <text>重置</text>
         </button>
-        <button class="btn next-btn" size="mini" @click="nextStep" :disabled="!input.length">
+        <button class="btn next-btn" size="mini" @click="nextStep">
           <image class="btn-icon" src="/static/icons/arrow-right.png" mode="aspectFit"></image>
           <text>下一步</text>
         </button>

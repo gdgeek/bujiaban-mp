@@ -18,10 +18,14 @@ const props = defineProps<{
 const result = ref<StatusData | null>(null);
 const step = ref<"slogan" | "picture">("slogan");
 const slogan = ref<string>("");
+const apiPictures = ref<string[]>([]);
 
-// 处理进入下一步（选择图片）
-const handleNext = (text: string) => {
+const handleNext = (text: string, pictures?: string[]) => {
   slogan.value = text;
+  // 如果传递了图片数据，则保存
+  if (pictures && pictures.length > 0) {
+    apiPictures.value = pictures;
+  }
   step.value = "picture";
 };
 
@@ -85,6 +89,7 @@ const steps = [
       :openid="openid"
       :token="token"
       :slogan="slogan"
+      :pictures="apiPictures"
     ></PictureSelect>
     <Plane v-else :openid="openid" :token="token"></Plane>
   </view>

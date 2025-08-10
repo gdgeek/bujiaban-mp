@@ -54,22 +54,27 @@ const downloadVideo = async (key: string) => {
   }
 
   // 获取价格设置
-  let price = 0;
+  let price: number = 0;
+  let shot: Array<number> = [];
   try {
     if (result.value?.report?.setup) {
       const setupData = JSON.parse(result.value.report.setup);
       if (setupData.money) {
         price = setupData.money;
       }
+      if (setupData[0].shot) {
+        shot = setupData[0].shot;
+      }
     }
   } catch (error) {
-    console.error("解析价格设置失败", error);
+    console.error("解析price或shot失败", error);
   }
 
   // 准备参数
   const params = {
     videoKey: key,
     price: price,
+    shot: shot,
     title: key.split("/").pop() || "AR打卡视频",
     action: "download",
   };
@@ -200,7 +205,7 @@ const getPriceDisplay = () => {
                 class="preview-image"
                 :class="{ 'image-loaded': !previewImageLoading }"
                 :src="previewImageUrl"
-                mode="aspectFill"
+                mode="widthFix"
                 @load="previewImageLoading = false"
                 @error="previewImageLoading = false"
               ></image>
@@ -688,7 +693,6 @@ const getPriceDisplay = () => {
     .preview-container {
       position: relative;
       width: 100%;
-      height: 350rpx;
       border-radius: 16rpx;
       overflow: hidden;
       background: #f0f0f0;
@@ -727,7 +731,7 @@ const getPriceDisplay = () => {
 
     .preview-image {
       width: 100%;
-      height: 100%;
+      display: block;
       border-radius: 16rpx;
       transition: all 0.3s ease;
       position: relative;

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, defineEmits, defineProps } from "vue";
+import { ref, defineEmits, computed, onMounted, watch } from "vue";
+import { getObjectUrl } from "@/services/cloud";
 
 const props = defineProps<{
   openid: string | null;
   token: string | null;
   slogan: string;
+  pictures?: string[];
 }>();
 
 const emits = defineEmits<{
@@ -12,14 +14,64 @@ const emits = defineEmits<{
   (e: "submit", val: any): void;
 }>();
 
-const coverPictures = [
-  { id: 1, src: "https://game-1251022382.cos.ap-nanjing.myqcloud.com/picture/a1.png" },
-  { id: 2, src: "https://game-1251022382.cos.ap-nanjing.myqcloud.com/picture/a2.png" },
-  { id: 3, src: "https://game-1251022382.cos.ap-nanjing.myqcloud.com/picture/a3.png" },
-  { id: 4, src: "https://game-1251022382.cos.ap-nanjing.myqcloud.com/picture/a4.png" },
-  { id: 5, src: "https://game-1251022382.cos.ap-nanjing.myqcloud.com/picture/a5.png" },
-  { id: 6, src: "https://game-1251022382.cos.ap-nanjing.myqcloud.com/picture/a6.png" },
-];
+const signedPictureUrls = ref<string[]>([]);
+const loading = ref(true);
+
+// 获取签名后的图片URL
+const getSignedPictureUrls = async () => {
+  loading.value = true;
+
+  if (props.pictures && props.pictures.length > 0) {
+    try {
+      // 获取每个图片的签名URL
+      const urls = await Promise.all(
+        props.pictures.map(async (picPath) => {
+          // 提取图片文件名部分作为key
+          const key = picPath.split("cos.ap-nanjing.myqcloud.com/")[1];
+          if (!key) return picPath;
+          try {
+            return await getObjectUrl(key);
+          } catch (error) {
+            console.error(`获取图片[${key}]签名URL失败:`, error);
+            return picPath;
+          }
+        }),
+      );
+
+      signedPictureUrls.value = urls;
+      console.log("已获取签名图片URLs:", urls);
+    } catch (error) {
+      console.error("获取签名图片URLs失败:", error);
+    } finally {
+      loading.value = false;
+    }
+  } else {
+    signedPictureUrls.value = [];
+    loading.value = false;
+  }
+};
+
+watch(
+  () => props.pictures,
+  (newPictures) => {
+    if (newPictures && newPictures.length > 0) {
+      getSignedPictureUrls();
+    }
+  },
+  { immediate: true },
+);
+
+const coverPictures = computed(() => {
+  // 使用签名后的URL创建图片对象
+  if (signedPictureUrls.value.length > 0) {
+    return signedPictureUrls.value.map((src, index) => ({
+      id: index + 1,
+      src: src,
+    }));
+  }
+
+  return [];
+});
 
 const selectedPicture = ref<number | null>(null);
 
@@ -32,14 +84,29 @@ const goBack = () => {
 };
 
 const submitForm = () => {
-  if (selectedPicture.value) {
-    emits("submit", {
-      success: true,
-      text: props.slogan,
-      picture: selectedPicture.value,
-    });
+  // 获取选中的图片原始路径（非签名URL）
+  let selectedImageSrc = null;
+  if (selectedPicture.value !== null && props.pictures && props.pictures.length > 0) {
+    const index = selectedPicture.value - 1;
+    if (index >= 0 && index < props.pictures.length) {
+      selectedImageSrc = props.pictures[index];
+    }
   }
+
+  emits("submit", {
+    success: true,
+    text: props.slogan,
+    picture: selectedPicture.value || null,
+    imageSrc: selectedImageSrc,
+  });
 };
+
+// 组件挂载时获取签名URL
+onMounted(() => {
+  if (props.pictures && props.pictures.length > 0) {
+    getSignedPictureUrls();
+  }
+});
 </script>
 
 <template>
@@ -53,11 +120,16 @@ const submitForm = () => {
     <!-- 已选标语展示 -->
     <view class="selected-slogan">
       <text class="slogan-label">已选标语:</text>
-      <text class="slogan-content">{{ slogan }}</text>
+      <text class="slogan-content">{{ slogan || "无" }}</text>
+    </view>
+
+    <view v-if="loading" class="loading-container">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
     </view>
 
     <!-- 封面图片选择区域 -->
-    <view class="picture-grid">
+    <view v-else class="picture-grid">
       <view
         v-for="picture in coverPictures"
         :key="picture.id"
@@ -78,13 +150,7 @@ const submitForm = () => {
         <image class="btn-icon" src="/static/icons/arrow-left.png" mode="aspectFit"></image>
         <text>返回</text>
       </button>
-      <button
-        class="btn submit-btn"
-        size="mini"
-        @click="submitForm"
-        :disabled="!selectedPicture"
-        :class="{ disabled: !selectedPicture }"
-      >
+      <button class="btn submit-btn" size="mini" @click="submitForm">
         <image class="btn-icon" src="/static/icons/process_success.png" mode="aspectFit"></image>
         <text>提交</text>
       </button>
@@ -139,6 +205,38 @@ const submitForm = () => {
   font-weight: 500;
 }
 
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 0;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid #f3f3f3;
+  border-top: 4rpx solid #1890ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #666;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .picture-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -152,7 +250,7 @@ const submitForm = () => {
   overflow: hidden;
   border: 2rpx solid transparent;
   transition: all 0.3s;
-  min-height: 200rpx;
+  min-height: 100rpx;
 
   &.active {
     border-color: #1890ff;

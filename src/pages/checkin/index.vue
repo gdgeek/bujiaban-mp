@@ -273,7 +273,6 @@ const handleScan = () => {
       <view class="slogan">
         <image class="slogan-icon" src="/static/icons/slogan.png" mode="aspectFit"></image>
         <text class="slogan-text">科技赋能生活，记录每一次精彩时刻！</text>
-        {{ type }}
       </view>
     </view>
 
@@ -438,8 +437,8 @@ const handleScan = () => {
     }
 
     .logo {
-      width: 72rpx;
-      height: 72rpx;
+      width: 100%;
+      height: 100%;
       filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
     }
   }
