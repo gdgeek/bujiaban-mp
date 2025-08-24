@@ -2,24 +2,22 @@
 import { ref, computed, watch, onMounted, onUnmounted, defineProps } from "vue";
 
 import { postData } from "@/utils/common";
-import Step from "@/components/Step.vue";
 // 定义组件属性
 import { getSignedVideoUrl } from "@/utils/video";
-import { type StatusData, type ApiResponse } from "@/services/checkin";
-
-const previewImageLoading = ref(true);
+import { type ApiResponse } from "@/services/checkin";
+import type { IDType, SetupInfo, FileInfo } from "@/services/checkin";
+const previewImageLoading = ref(true); //预览图片载入
 
 // 预览图URL
-const previewImageUrl = ref<string>("");
-const videoUrl = ref<string>("");
-const animationActive = ref(false);
-const status = ref<string>("linked");
-const result = ref<StatusData | null>(null);
+const previewImageUrl = ref<string>(""); //预览图url
+const videoUrl = ref<string>(""); //视频url
+const file = ref<FileInfo | null | undefined>(null); //文件url
 
 // 获取签名后的URL
 const getSignedUrl = async (key: string, isPreview: boolean = false) => {
   try {
     const url = await getSignedVideoUrl(key, isPreview);
+    console.error("key:", key);
     if (isPreview) {
       previewImageUrl.value = url;
     } else {
@@ -33,19 +31,19 @@ const getSignedUrl = async (key: string, isPreview: boolean = false) => {
 };
 
 watch(
-  () => result.value?.file?.key,
+  () => file.value,
   async (newKey) => {
     if (newKey) {
-      console.log("获取到文件key", newKey);
-      previewImageLoading.value = true;
-      await getSignedUrl(newKey, true); // 获取预览图URL
-      await getSignedUrl(newKey); // 获取视频URL
+      console.error("获取到文件key", newKey);
+      previewImageLoading.value = false;
+      await getSignedUrl(newKey.key, true); // 获取预览图URL
+      await getSignedUrl(newKey.key); // 获取视频URL
     }
   },
 );
 const downloadVideo = async (key: string) => {
   // 先检查用户是否登录
-  if (!props.openid) {
+  if (!props.id) {
     uni.showToast({
       title: "请先登录",
       icon: "none",
@@ -57,14 +55,9 @@ const downloadVideo = async (key: string) => {
   let price: number = 0;
   let shot: Array<number> = [];
   try {
-    if (result.value?.report?.setup) {
-      const setupData = JSON.parse(result.value.report.setup);
-      if (setupData.money) {
-        price = setupData.money;
-      }
-      if (setupData[0].shot) {
-        shot = setupData[0].shot;
-      }
+    if (props.setup) {
+      price = props.setup.money;
+      shot = props.setup.shot;
     }
   } catch (error) {
     console.error("解析price或shot失败", error);
@@ -95,8 +88,10 @@ const downloadVideo = async (key: string) => {
 let intervalId: number | null = null;
 //增加属性父级别属性
 const props = defineProps<{
-  openid: string | null;
+  id: IDType | null;
   token: string | null;
+  step: number;
+  setup: SetupInfo | null;
 }>();
 
 //const status = ref<StatusData | null>(null);
@@ -106,19 +101,14 @@ const props = defineProps<{
  * @returns 打卡状态信息
  */
 const _refresh = async (): Promise<ApiResponse> => {
-  const data: any = {
-    openid: props.openid,
-    token: props.token,
-    status: status.value,
-  };
-  return postData(data);
+  return postData(props.id!.unionid, props.token!, "linked", undefined, "token,file");
 };
 
 const refresh = async () => {
   if (props.token) {
     const ret = await _refresh();
-    result.value = ret.data as StatusData;
-    console.error("获取打卡状态", result.value);
+    // result.value = ret.data as StatusData;
+    file.value = ret.data.file;
   }
 };
 
@@ -132,32 +122,11 @@ onUnmounted(() => {
     intervalId = null;
   }
 });
-const currentStep = computed<number>(() => {
-  if (!result.value) return 0;
-  if (result.value.file != null) return 2;
-  if (result.value.checkin.status == "linked") return 1;
-  return 0;
-});
-/*
-
-// 当前步骤（0开始）
-const currentStep = ref(props.currentStep);
-*/
-// 步骤列表
-const steps = [
-  { title: "开始", desc: "准备录制" },
-  { title: "录制中", desc: "正在处理" },
-  { title: "完成", desc: "处理完毕" },
-];
 
 const getPriceDisplay = () => {
-  if (!result.value?.report?.setup) {
-    return "0.00";
-  }
   try {
-    const setupData = JSON.parse(result.value.report.setup);
-    if (setupData.money) {
-      return (setupData.money / 100).toFixed(2);
+    if (props.setup) {
+      return (props.setup.money / 100).toFixed(2);
     }
   } catch (error) {
     console.error("解析价格设置失败", error);
@@ -175,8 +144,8 @@ const getPriceDisplay = () => {
       </view> -->
       <!-- 状态卡片 -->
       <!--   {{ result }}状态卡片 -->
-      <view class="status-card" :class="{ 'animation-active': animationActive }">
-        <block v-if="result && result.file != null">
+      <view class="status-card" :class="{ 'animation-active': false }">
+        <block v-if="file">
           <view class="status-icon success-icon">
             <image src="/static/icons/success.png" mode="aspectFit"></image>
           </view>
@@ -188,7 +157,7 @@ const getPriceDisplay = () => {
             <view class="file-icon">
               <image src="/static/icons/video_icon.png" mode="aspectFit"></image>
             </view>
-            <view class="file-name">{{ result.file.key.split("/").pop() }}</view>
+            <view class="file-name">{{ file.key.split("/").pop() }}</view>
           </view>
 
           <!-- 视频第一帧预览 -->
@@ -198,7 +167,7 @@ const getPriceDisplay = () => {
               <!-- 加载动画 -->
               <view class="preview-loading" v-if="previewImageLoading">
                 <view class="loading-spinner"></view>
-                <text class="loading-text">加载预览中...</text>
+                <text class="loading-text">加载预览中!...</text>
               </view>
               <!-- 预览图 - 使用签名后的URL -->
               <image
@@ -217,7 +186,7 @@ const getPriceDisplay = () => {
             <!-- 下载视频按钮 -->
             <button
               class="action-button download-button full-width"
-              @click="downloadVideo(result.file.key)"
+              @click="downloadVideo(file.key)"
             >
               <view class="button-icon"
                 ><image src="/static/icons/download.png" mode="aspectFit"></image
@@ -236,7 +205,7 @@ const getPriceDisplay = () => {
           </view>
         </block>
 
-        <block v-else-if="result && result.checkin.status == 'linked'">
+        <block v-else>
           <view class="status-icon linked-icon">
             <image src="/static/icons/file_handling.png" mode="aspectFit"></image>
           </view>

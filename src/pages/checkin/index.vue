@@ -3,14 +3,15 @@ import { ref, computed } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { getOpenidFromStorage } from "@/utils/video";
 import { getCheckinStatus, wxLogin, setCheckinLinked, getQueryString } from "@/services/checkin";
+import type { IDType } from "@/services/checkin";
 import FooterCopyright from "@/components/FooterCopyright.vue";
-import Exhibition from "@/components/Exhibition.vue";
+//import Exhibition from "@/components/Exhibition.vue";
 import Recode from "@/components/Recode.vue";
-import Checkin from "@/components/Checkin.vue";
+//import Checkin from "@/components/Checkin.vue";
 
 const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
 const AGREEMENT_STORAGE_KEY = "AR_AGREEMENT_CHECKED";
-const openid = ref<string | null>(null);
+const id = ref<IDType | null>(null);
 const token = ref<string | null>(null);
 const loadingState = ref(true);
 const animationActive = ref(false);
@@ -24,7 +25,7 @@ const agreementType = ref("");
 const agreementContent = ref("");
 
 // 保存openid到本地存储
-const saveOpenidToStorage = (id: string) => {
+const saveOpenidToStorage = (id: IDType) => {
   try {
     uni.setStorageSync(OPENID_STORAGE_KEY, id);
     console.log("openid已成功保存到本地存储");
@@ -139,46 +140,29 @@ const closeAgreementModal = () => {
 onLoad(async () => {
   token.value = getToken(); //得到token
 
+  // console.error("页面加载，token=" + token.value);
   // 从本地存储中获取协议勾选状态
   agreementChecked.value = getAgreementFromStorage();
 
   // 首先尝试从本地存储中获取openid
-  const storedOpenid = getOpenidFromStorage();
-  if (storedOpenid) {
-    console.log("从本地存储中恢复了openid");
-    openid.value = storedOpenid;
+  const storedId: IDType | null = getOpenidFromStorage();
+  if (storedId) {
+    // console.error("从本地存储中恢复了id", storedId);
+    id.value = storedId;
   } else {
     // 如果本地没有存储openid，则请求新的
     try {
       const ret = await wxLogin();
-      openid.value = ret.openid; //得到openid
+      id.value = ret.data; //得到openid
       // 将新获取的openid保存到本地存储
-      if (openid.value) {
-        saveOpenidToStorage(openid.value);
+      if (id.value) {
+        saveOpenidToStorage(id.value);
       }
     } catch (error) {
-      console.error("openid 请求失败！" + error);
+      console.error("id 请求失败！" + error);
       return;
     }
   }
-  /*
-  try {
-    if (token.value) {
-      const ret = await getCheckinStatus(token.value);
-
-      if (!ret.success || ret.data.checkin.openid != openid.value) {
-        //没有状态，证明没有链接，这里要链接
-        if (openid.value && token.value) {
-          const linkedRet = await setCheckinLinked(openid.value, token.value);
-          console.log("链接成功！" + JSON.stringify(linkedRet));
-        }
-      }
-    }
-  } catch (error) {
-    console.log("status 请求失败！" + error);
-  } finally {
-    loadingState.value = false;
-  }*/
 
   loadingState.value = false;
 });
@@ -276,9 +260,10 @@ const handleScan = () => {
       </view>
     </view>
 
-    <Exhibition :openid="openid" :token="token" v-if="type == 'E'" class="content-wrapper" />
-    <Recode :openid="openid" :token="token" v-else-if="type == 'R'" class="content-wrapper" />
-    <Checkin :openid="openid" :token="token" v-else-if="type == 'C'" class="content-wrapper" />
+    {{ id }}
+    {{ type }}
+    {{ token }}
+    <Recode :id="id" :token="token" v-if="token" class="content-wrapper" />
 
     <view v-else class="status-card" :class="{ 'animation-active': animationActive }">
       <block>

@@ -1,9 +1,9 @@
 import CryptoJS from "crypto-js";
-
+import global from "@/utils/global";
 export interface CheckinInfo {
   created_at: string;
-  token: string;
-  openid: string;
+  //  token: string;
+  id: string;
   status: string;
   updated_at: string;
 }
@@ -14,20 +14,28 @@ export interface ReportInfo {
   created_at: string;
   updated_at: string;
   data?: string | null;
-  setup?: string | null;
+  //  setup?: string | null;
+}
+export interface SetupInfo {
+  money: number;
+  slogans: Array<string>;
+  shot: Array<number>;
+  pictures: Array<string>;
 }
 export interface FileInfo {
-  token: string;
+  // token: string;
   key: string;
-  openid: string;
+  //  openid: string;
   created_at: string;
-  updated_at: string;
+  //  updated_at: string;
 }
 
 export interface StatusData {
-  checkin: CheckinInfo;
-  report?: ReportInfo | null;
+  token: string;
+  applet?: CheckinInfo;
+  device?: ReportInfo | null;
   file?: FileInfo | null;
+  setup?: SetupInfo | null;
 }
 
 export interface ApiResponse {
@@ -35,9 +43,16 @@ export interface ApiResponse {
   message: string;
   data: StatusData;
 }
+export interface IDType {
+  openid: string;
+  unionid: string;
+}
 
 export interface LoginResponse {
   openid: string;
+  data: IDType;
+  success: boolean;
+  message: string;
 }
 
 /**
@@ -47,18 +62,7 @@ export interface LoginResponse {
  */
 export const getCheckinStatus = async (token: string): Promise<ApiResponse> => {
   return new Promise((resolve, reject) => {
-    wx.request({
-      url: "https://w.4mr.cn/v1/checkin/status?token=" + token,
-      method: "GET",
-      success: function (res) {
-        console.log("获取打卡状态成功！", res.data);
-        resolve(res.data as ApiResponse);
-      },
-      fail: function (res) {
-        console.log("获取打卡状态失败！", res.errMsg);
-        reject(res.errMsg);
-      },
-    });
+    reject();
   });
 };
 
@@ -70,14 +74,16 @@ export const wxLogin = async (): Promise<LoginResponse> => {
   return new Promise((resolve, reject) => {
     wx.login({
       success: function (res) {
+        console.error("code:", res.code);
         if (res.code) {
           wx.request({
-            url: "https://w.4mr.cn/v1/we-chat/openid",
+            url: `${global.url}/wechat/login`,
             data: {
               code: res.code,
             },
             method: "POST",
             success: function (res) {
+              console.error("data", res.data);
               resolve(res.data as LoginResponse);
             },
             fail: function (res) {
@@ -104,32 +110,8 @@ export const wxLogin = async (): Promise<LoginResponse> => {
  * @param token 打卡token
  * @returns 打卡状态信息
  */
-export const setCheckinReady = async (openid: string, token: string): Promise<ApiResponse> => {
-  /*
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: "https://w.4mr.cn/v1/checkin/status-ready",
-      method: "POST",
-      data: {
-        openid,
-        token,
-      },
-      success: function (res) {
-        console.log("设置打卡ready状态成功！", openid);
-        resolve(res.data as ApiResponse);
-      },
-      fail: function (res) {
-        console.log("设置打卡ready状态失败！", res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
-  */
-
-  return localRefresh(token, {
-    openid,
-    status: "ready",
-  });
+export const setCheckinReady = async (id: string, token: string): Promise<ApiResponse> => {
+  return localRefresh(token, id, "ready");
 };
 
 /**
@@ -138,32 +120,8 @@ export const setCheckinReady = async (openid: string, token: string): Promise<Ap
  * @param token 打卡token
  * @returns 打卡状态信息
  */
-export const setCheckinOver = async (openid: string, token: string): Promise<ApiResponse> => {
-  /*
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: "https://w.4mr.cn/v1/checkin/status-over",
-      method: "POST",
-      data: {
-        openid,
-        token,
-      },
-      success: function (res) {
-        console.log("设置打卡over状态成功！", openid);
-        resolve(res.data as ApiResponse);
-      },
-      fail: function (res) {
-        console.log("设置打卡over状态失败！", res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
-  */
-
-  return localRefresh(token, {
-    openid,
-    status: "over",
-  });
+export const setCheckinOver = async (id: string, token: string): Promise<ApiResponse> => {
+  return localRefresh(token, id, "over");
 };
 
 /**
@@ -172,32 +130,8 @@ export const setCheckinOver = async (openid: string, token: string): Promise<Api
  * @param token 打卡token
  * @returns 打卡状态信息
  */
-export const setCheckinLinked = async (openid: string, token: string): Promise<ApiResponse> => {
-  /*
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: "https://w.4mr.cn/v1/checkin/status-linked",
-      method: "POST",
-      data: {
-        openid,
-        token,
-      },
-      success: function (res) {
-        console.log("设置打卡linked状态成功！", openid);
-        resolve(res.data as ApiResponse);
-      },
-      fail: function (res) {
-        console.log("设置打卡linked状态失败！", res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
-  */
-
-  return localRefresh(token, {
-    openid,
-    status: "linked",
-  });
+export const setCheckinLinked = async (id: string, token: string): Promise<ApiResponse> => {
+  return localRefresh(token, id, "linked");
 };
 
 /**
@@ -242,48 +176,39 @@ export const calculateHash = (token: string, time: string, param: string): strin
  */
 export const localRefresh = async (
   token: string,
-  options: {
-    device?: string;
-    openid?: string;
-    key?: string;
-    status?: string;
-    data?: string | object;
-  },
+  id: string,
+  status?: string,
+  idata: string | object = "",
 ): Promise<ApiResponse> => {
   return new Promise((resolve, reject) => {
-    // 确保只提供三选一参数中的一个
-    const params = [options.device, options.openid, options.key].filter(Boolean);
-    if (params.length !== 1) {
-      reject("必须且只能提供device、openid、key三个参数中的一个");
-      return;
-    }
-
     // 获取提供的参数值(用于计算hash)
-    const param = options.device || options.openid || options.key || "";
+    const param = id;
 
     // 生成时间戳
     const time = Math.floor(Date.now() / 1000).toString();
 
     // 计算hash
-    const hash = calculateHash(token, time, param);
+    const hash = calculateHash(token, time, id);
 
     // 准备请求数据
-    const data: any = { token };
+    const data: any = {
+      token,
+      id,
+      status,
+      data: typeof idata === "string" ? idata : JSON.stringify(idata),
+    };
 
     // 添加三选一参数
-    if (options.device) data.device = options.device;
-    if (options.openid) data.openid = options.openid;
-    if (options.key) data.key = options.key;
-
-    // 添加可选参数
-    if (options.status) data.status = options.status;
-    if (options.data) {
-      data.data = typeof options.data === "string" ? options.data : JSON.stringify(options.data);
-    }
+    //if (options.device) data.device = options.device;
+    // if (options.id) data.id = options.id;
+    //if (options.key) data.key = options.key;
+    // data.id = id;
+    //  data.status = status;
+    // data.data = typeof data.data === "string" ? data.data : JSON.stringify(data.data);
 
     // 发送请求
     wx.request({
-      url: `https://w.4mr.cn/v1/local/refresh?time=${time}&hash=${hash}`,
+      url: `${global.url}/server/applet?time=${time}&hash=${hash}&expand=token,file,device,setup,applet`,
       method: "POST",
       data,
       success: function (res) {

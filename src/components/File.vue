@@ -1,63 +1,32 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, defineProps } from "vue";
-import CryptoJS from "crypto-js";
-import { calculateHash, getUrl, postData } from "@/utils/common";
-import Step from "@/components/Step.vue";
 
 // 定义组件属性
 import { getSignedVideoUrl } from "@/utils/video";
-import { type StatusData, type ApiResponse } from "@/services/checkin";
-
-const previewImageLoading = ref(true);
+import type { IDType, SetupInfo, FileInfo } from "@/services/checkin";
+const previewImageLoading = ref(true); //预览图片载入
 
 // 预览图URL
-const previewImageUrl = ref<string>("");
-const videoUrl = ref<string>("");
-const animationActive = ref(false);
-const status = ref<string>("linked");
-const result = ref<StatusData | null>(null);
+const previewImageUrl = ref<string>(""); //预览图url
+const videoUrl = ref<string>(""); //视频url
+//const file = ref<FileInfo | null | undefined>(null); //文件url
 
-// 获取签名后的URL
-const getSignedUrl = async (key: string, isPreview: boolean = false) => {
-  try {
-    const url = await getSignedVideoUrl(key, isPreview);
-    if (isPreview) {
-      previewImageUrl.value = url;
-    } else {
-      videoUrl.value = url;
-    }
-    return url;
-  } catch (error) {
-    console.error("获取签名URL失败:", error);
-    return "";
+onMounted(async () => {
+  if (props.file) {
+    previewImageUrl.value = await getSignedVideoUrl(props.file.key, true);
+    videoUrl.value = await getSignedVideoUrl(props.file.key);
   }
-};
+});
 
-watch(
-  () => result.value?.file?.key,
-  async (newKey) => {
-    if (newKey) {
-      console.log("获取到文件key", newKey);
-      previewImageLoading.value = true;
-      await getSignedUrl(newKey, true); // 获取预览图URL
-      await getSignedUrl(newKey); // 获取视频URL
-    }
-  },
-);
 const downloadVideo = async (key: string) => {
-  // 先检查用户是否登录
-  if (!props.openid) {
-    uni.showToast({
-      title: "请先登录",
-      icon: "none",
-    });
-    return;
-  }
+  const price = props.setup!.money;
+  const shot: Array<number> = props.setup.shot;
 
   // 准备参数
   const params = {
     videoKey: key,
-    price: 0,
+    price: price,
+    shot: shot,
     title: key.split("/").pop() || "AR打卡视频",
     action: "download",
   };
@@ -75,71 +44,37 @@ const downloadVideo = async (key: string) => {
   });
 };
 
-let intervalId: number | null = null;
 //增加属性父级别属性
 const props = defineProps<{
-  openid: string | null;
-  token: string | null;
+  file: FileInfo | null;
+  setup: SetupInfo;
 }>();
 
-//const status = ref<StatusData | null>(null);
-/**
- * 获取打卡状态
- * @param token 打卡token
- * @returns 打卡状态信息
- */
-const _refresh = async (): Promise<ApiResponse> => {
-  const data: any = {
-    openid: props.openid,
-    token: props.token,
-    status: status.value,
-  };
-  return postData(data);
-};
-
-const refresh = async () => {
-  if (props.token) {
-    const ret = await _refresh();
-    result.value = ret.data as StatusData;
+const getPriceDisplay = () => {
+  try {
+    if (props.setup) {
+      return (props.setup.money / 100).toFixed(2);
+    }
+  } catch (error) {
+    console.error("解析价格设置失败", error);
   }
+  return "0.00";
 };
-
-onMounted(async () => {
-  await refresh();
-  intervalId = setInterval(refresh, 1800);
-});
-onUnmounted(() => {
-  if (intervalId) {
-    clearInterval(intervalId);
-    intervalId = null;
-  }
-});
-const currentStep = computed<number>(() => {
-  if (!result.value) return 0;
-  if (result.value.file != null) return 1;
-  if (result.value.checkin.status == "linked") return 0;
-  return 0;
-});
-
-// 步骤列表
-const steps = [
-  { title: "处理中", desc: "文件处理" },
-  { title: "完成", desc: "处理完毕" },
-];
 </script>
 
 <template>
+  {{ previewImageUrl }}
+  {{ videoUrl }}
   <view class="content-wrapper">
     <!-- 主内容区域 -->
     <view class="main-content">
-      <!-- 进度指示器 -->
-      <view class="progress-tracker">
+      <!-- <view class="progress-tracker">
         <step :currentStep="currentStep" :steps="steps" style="width: 100%" />
-      </view>
-
+      </view> -->
+      <!-- 状态卡片 -->
       <!--   {{ result }}状态卡片 -->
-      <view class="status-card" :class="{ 'animation-active': animationActive }">
-        <block v-if="result && result.file != null">
+      <view class="status-card" :class="{ 'animation-active': false }">
+        <block v-if="props.file">
           <view class="status-icon success-icon">
             <image src="/static/icons/success.png" mode="aspectFit"></image>
           </view>
@@ -151,7 +86,7 @@ const steps = [
             <view class="file-icon">
               <image src="/static/icons/video_icon.png" mode="aspectFit"></image>
             </view>
-            <view class="file-name">{{ result.file.key.split("/").pop() }}</view>
+            <view class="file-name">{{ props.file.key.split("/").pop() }}</view>
           </view>
 
           <!-- 视频第一帧预览 -->
@@ -161,7 +96,7 @@ const steps = [
               <!-- 加载动画 -->
               <view class="preview-loading" v-if="previewImageLoading">
                 <view class="loading-spinner"></view>
-                <text class="loading-text">加载预览中...</text>
+                <text class="loading-text">加载预览中!...</text>
               </view>
               <!-- 预览图 - 使用签名后的URL -->
               <image
@@ -180,12 +115,12 @@ const steps = [
             <!-- 下载视频按钮 -->
             <button
               class="action-button download-button full-width"
-              @click="downloadVideo(result.file.key)"
+              @click="downloadVideo(props.file.key)"
             >
               <view class="button-icon"
                 ><image src="/static/icons/download.png" mode="aspectFit"></image
               ></view>
-              <!-- <text>拍摄服务费(¥0.01)</text> -->
+
               <text>文件下载</text>
             </button>
           </view>
@@ -193,17 +128,10 @@ const steps = [
           <!-- 支付说明 -->
           <view class="payment-tips">
             <image src="/static/icons/tip.png" mode="aspectFit" class="tip-icon"></image>
-            <!-- <text class="tip-text">拍摄服务费¥0.01，支付完成后可获取打卡视频并保存到相册</text> -->
-            <text class="tip-text">文件下载免费，下载完成后可获取打卡视频并保存到相册</text>
+            <text class="tip-text"
+              >拍摄服务费¥{{ getPriceDisplay() }}，支付完成后可获取打卡文件并保存到相册</text
+            >
           </view>
-        </block>
-
-        <block v-else-if="result && result.checkin.status == 'linked'">
-          <view class="status-icon linked-icon">
-            <image src="/static/icons/file_handling.png" mode="aspectFit"></image>
-          </view>
-          <view class="status-title">文件处理中</view>
-          <view class="status-description">文件已经录制完成，正在进行最后的处理！</view>
         </block>
       </view>
     </view>

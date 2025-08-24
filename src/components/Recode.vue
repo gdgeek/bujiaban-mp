@@ -1,97 +1,136 @@
 <script setup lang="ts">
-import { ref, computed, defineProps } from "vue";
+import { ref, computed, defineProps, watch, onMounted } from "vue";
 
 import { postData } from "@/utils/common";
 
-import { type StatusData } from "@/services/checkin";
+import type { ApiResponse, FileInfo, ReportInfo, StatusData, SetupInfo } from "@/services/checkin";
+
 import Submit from "@/components/Submit.vue";
 import PictureSelect from "@/components/PictureSelect.vue";
-import Plane from "@/components/Plane.vue";
+import File from "@/components/File.vue";
+import Recoding from "@/components/Recoding.vue";
 import Step from "@/components/Step.vue";
+import type { IDType } from "@/services/checkin";
+const step = ref<number>(-1);
+const file = ref<FileInfo | null>(null);
+const device = ref<ReportInfo | null>(null);
+const setup = ref<SetupInfo | null>(null);
 
+const slogan = ref<string>("");
+
+let intervalId: number | null = null;
+watch(
+  () => step.value,
+  (value: number, oldValue: number) => {
+    if (value === 2 && intervalId === null) {
+      //向 refresh 里面增加参数
+      intervalId = setInterval(() => refresh(null, "token,file,device"), 1800);
+    } else if (oldValue == 2) {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+    console.error("Step changed:", value);
+  },
+);
 //增加属性父级别属性
 const props = defineProps<{
-  openid: string | null;
+  id: IDType | null;
   token: string | null;
 }>();
 
-const result = ref<StatusData | null>(null);
-const step = ref<"slogan" | "picture">("slogan");
-const slogan = ref<string>("");
-const apiPictures = ref<string[]>([]);
-
-const handleNext = (text: string, pictures?: string[]) => {
-  slogan.value = text;
-  // 如果传递了图片数据，则保存
-  if (pictures && pictures.length > 0) {
-    apiPictures.value = pictures;
+const refresh = async (context: any | undefined | null, expand: string = "token,file") => {
+  if (props.token) {
+    const ret = await postData(props.id!.unionid, props.token!, status.value, context, expand);
+    if (ret.data.file) {
+      file.value = ret.data.file;
+      if (file.value != null) {
+        step.value = 3;
+      }
+    }
+    if (ret.data.device) {
+      device.value = ret.data.device;
+    }
+    if (ret.data.setup) {
+      setup.value = ret.data.setup;
+    }
+    return ret;
   }
-  step.value = "picture";
+  return undefined;
+};
+
+const setSlogan = (text: string) => {
+  slogan.value = text;
+  step.value = 1;
 };
 
 // 处理返回上一步（选择标语）
-const handleBack = () => {
-  step.value = "slogan";
+const back = () => {
+  step.value--;
 };
 
 // 最终提交表单
-const submit = async (data: any) => {
-  const ret = await postData({
-    openid: props.openid,
-    token: props.token,
-    status: "linked",
-    data: JSON.stringify(data),
-  });
-  result.value = ret.data as StatusData;
-  console.error("提交结果", ret.data);
-};
-
-// 计算当前步骤
-const currentStep = computed<number>(() => {
-  if (result.value) {
-    if (result.value.file != null) return 3; // 完成
-    if (result.value.checkin.status === "linked") return 2; // 录制中
+const setPicture = async (picture: number) => {
+  step.value = 2;
+  const ret = await refresh(
+    {
+      picture: picture,
+      text: slogan.value,
+    },
+    "token,file,device",
+  );
+  if (ret) {
+    console.error("提交结果", ret.data);
   }
-
-  if (step.value === "picture") return 1; // 选择封面
-  if (step.value === "slogan") return 0; // 选择标语
-
-  return 0;
-});
+};
 
 // 步骤列表
 const steps = [
-  { title: "选择标语", desc: "个性文字" },
-  { title: "选择封面", desc: "设置封面" },
-  { title: "录制中", desc: "视频制作" },
-  { title: "完成", desc: "处理完毕" },
+  { title: "选择标语", desc: "个性文字", status: "slogan" },
+  { title: "选择封面", desc: "设置封面", status: "picture" },
+  { title: "录制中", desc: "视频制作", status: "linked" },
+  { title: "完成", desc: "处理完毕", status: "finish" },
 ];
+const status = computed(() => {
+  if (step.value === -1) return "init";
+  return steps[step.value].status;
+});
+
+//在启动时候运行
+onMounted(async () => {
+  uni.showLoading({ title: "加载中..." });
+  console.error("组件已挂载，开始初始化" + props.id?.unionid + " " + props.token);
+
+  const ret = await refresh(undefined, "setup");
+
+  if (ret) {
+    console.error("提交结果", ret.data);
+  }
+  uni.hideLoading();
+  step.value = 0;
+});
 </script>
 
 <template>
-  <view class="content-wrapper">
+  <view class="content-wrapper" :loading="true">
     <!-- 进度指示器 -->
     <view class="progress-tracker">
-      <step :currentStep="currentStep" :steps="steps" style="width: 100%" />
+      <step :currentStep="step" :steps="steps" style="width: 100%" />
     </view>
-
-    <Submit
-      v-if="result == null && step === 'slogan'"
-      @next="handleNext"
-      :openid="openid"
-      :token="token"
-      :savedSlogan="slogan"
-    ></Submit>
-    <PictureSelect
-      v-else-if="result == null && step === 'picture'"
-      @back="handleBack"
-      @submit="submit"
-      :openid="openid"
-      :token="token"
-      :slogan="slogan"
-      :pictures="apiPictures"
-    ></PictureSelect>
-    <Plane v-else :openid="openid" :token="token"></Plane>
+    {{ step }}
+    <view v-if="setup">
+      <Submit v-if="step === 0" @set-slogan="setSlogan" :slogan="slogan" :setup="setup"></Submit>
+      <PictureSelect
+        v-else-if="step === 1"
+        @back="back"
+        @submit="setPicture"
+        :slogan="slogan"
+        :setup="setup"
+      ></PictureSelect>
+      <Recoding v-else-if="step === 2" :setup="setup" :device="device" :file="file"></Recoding>
+      <File v-else-if="step === 3" :setup="setup" :file="file"></File>
+    </view>
   </view>
 </template>
 

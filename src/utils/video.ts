@@ -1,3 +1,4 @@
+import type { IDType } from "@/services/checkin";
 import { getObjectUrl } from "@/services/cloud";
 import { wxPay, generateOrderNo } from "@/services/pay";
 
@@ -196,7 +197,7 @@ export const downloadAndSaveVideo = async (url: string): Promise<boolean> => {
 /**
  * 从本地存储获取openid
  */
-export const getOpenidFromStorage = (): string | null => {
+export const getOpenidFromStorage = (): IDType | null => {
   const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
   try {
     const storedOpenid = uni.getStorageSync(OPENID_STORAGE_KEY);

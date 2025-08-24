@@ -1,7 +1,7 @@
 /**
  * 微信支付相关服务
  */
-
+import global from "@/utils/global";
 // 定义微信支付请求参数类型
 interface WxPayOrderParams {
   openid: string;
@@ -58,7 +58,7 @@ export const createWxPayOrder = async (
 ): Promise<WxPayOrderResponse["data"]> => {
   try {
     const response = await uni.request({
-      url: "https://w.4mr.cn/v1/wechat-pay/wxpay-order",
+      url: `${global.url}/wechat/wxpay-order`,
       method: "POST",
       data: params,
     });
@@ -155,7 +155,7 @@ export const queryWxPayOrder = async (
 ): Promise<WxPayOrderQueryResponse["data"]> => {
   try {
     const response = await uni.request({
-      url: `https://w.4mr.cn/v1/wechat-pay/wxpay-query-order-by-out-trade-no?out_trade_no=${out_trade_no}`,
+      url: `${global.url}/wechat/wxpay-query-order-by-out-trade-no?out_trade_no=${out_trade_no}`,
       method: "GET",
     });
 

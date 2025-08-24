@@ -101,7 +101,7 @@ import {
   downloadAndSaveVideo,
   handlePayment,
 } from "@/utils/video";
-
+import type { IDType } from "@/services/checkin";
 // 获取安全区域信息
 const { safeAreaInsets } = uni.getWindowInfo();
 
@@ -348,6 +348,7 @@ const clearVideoTimeout = () => {
 
 // 获取视频时长
 const getVideoDuration = (url: string): Promise<number | null> => {
+  console.error(url);
   return new Promise((resolve) => {
     // 重置状态
     videoDurationResolved.value = false;
@@ -436,8 +437,8 @@ onLoad((query) => {
 // 处理下载
 const handlePay = async () => {
   // 获取openid
-  const openid = getOpenidFromStorage();
-  if (!openid) {
+  const id: IDType | null = getOpenidFromStorage();
+  if (!id!.openid) {
     uni.showToast({
       title: "请先登录",
       icon: "none",
@@ -467,7 +468,7 @@ const handlePay = async () => {
 
     if (!paySuccess) {
       paySuccess = await handlePayment({
-        openid,
+        openid: id!.openid,
         amount: paymentInfo.value.price || 0,
         description: `AR打卡服务:${paymentInfo.value.title}`,
       });

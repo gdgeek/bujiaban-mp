@@ -44,7 +44,7 @@ import { useVideoStore } from "@/stores/modules/video";
 import VideoCard from "@/components/video-card/index.vue";
 import { getOpenidFromStorage } from "@/utils/video";
 import FooterCopyright from "@/components/FooterCopyright.vue";
-
+import global from "@/utils/global";
 const { safeAreaInsets } = uni.getWindowInfo();
 
 // 加载状态
@@ -56,6 +56,7 @@ const videoStore = useVideoStore();
 
 // 初始化页面
 onMounted(() => {
+  console.error(global.url);
   // 获取openid
   const storedOpenid = getOpenidFromStorage();
   if (!storedOpenid) {

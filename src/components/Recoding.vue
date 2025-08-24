@@ -1,356 +1,16 @@
-<script setup lang="ts">
-import { ref, computed, watch } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
-import { getSignedVideoUrl, getOpenidFromStorage } from "@/utils/video";
-import Step from "@/components/Step.vue";
-import {
-  getCheckinStatus,
-  wxLogin,
-  setCheckinReady,
-  setCheckinOver,
-  setCheckinLinked,
-  getQueryString,
-  type StatusData,
-} from "@/services/checkin";
-const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
-const openid = ref<string | null>(null);
-const token = ref<string | null>(null);
-const status = ref<StatusData | null>(null);
-const _ready = computed(() => {
-  return !!(status.value && status.value.checkin.status == "ready");
-});
-const currentStep = computed(() => {
-  if (!status.value) return 0;
-  if (status.value.file != null) return 3;
-  if (status.value.checkin.status == "ready") return 2;
-  if (status.value.checkin.status == "linked") return 1;
-  return 0;
-});
-const loadingState = ref(true);
-const previewImageLoading = ref(true);
-const animationActive = ref(false);
-
-const previewImageUrl = ref<string>("");
-const videoUrl = ref<string>("");
-
-// 保存openid到本地存储
-const saveOpenidToStorage = (id: string) => {
-  try {
-    uni.setStorageSync(OPENID_STORAGE_KEY, id);
-    console.log("openid已成功保存到本地存储");
-  } catch (e) {
-    console.error("保存openid到本地存储失败:", e);
-  }
-};
-const type = computed<undefined | null | string>(() => {
-  //检查 token.value  第一个字母，是E还是C
-  if (!token.value) return undefined;
-  if (token.value.startsWith("E")) {
-    return "E";
-  } else if (token.value.startsWith("C")) {
-    return "C";
-  }
-  return null;
-});
-let intervalId: number | null = null;
-watch(
-  () => _ready.value,
-  (newVal) => {
-    console.log("ready:" + newVal);
-    if (newVal) {
-      intervalId = setInterval(async () => {
-        await refresh();
-      }, 1800);
-    } else {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    }
-  },
-  { immediate: true },
-);
-
-// 刷新打卡状态
-const refresh = async () => {
-  if (token.value) {
-    const ret = await getCheckinStatus(token.value);
-    status.value = ret.data;
-  }
-};
-
-// 开始录制
-const begin = async () => {
-  animationActive.value = true;
-  setTimeout(async () => {
-    if (openid.value && token.value) {
-      const ret = await setCheckinReady(openid.value, token.value);
-      status.value = ret.data;
-    }
-    animationActive.value = false;
-  }, 800);
-};
-
-// 停止录制
-const stop = async () => {
-  animationActive.value = true;
-  setTimeout(async () => {
-    if (openid.value && token.value) {
-      const ret = await setCheckinOver(openid.value, token.value);
-      status.value = ret.data;
-    }
-    animationActive.value = false;
-  }, 800);
-};
-
-// 获取签名后的URL，使用工具函数
-const getSignedUrl = async (key: string, isPreview: boolean = false) => {
-  try {
-    const url = await getSignedVideoUrl(key, isPreview);
-    if (isPreview) {
-      previewImageUrl.value = url;
-    } else {
-      videoUrl.value = url;
-    }
-    return url;
-  } catch (error) {
-    console.error("获取签名URL失败:", error);
-    return "";
-  }
-};
-
-// 监听status.file变化，更新签名URL
-watch(
-  () => status.value?.file?.key,
-  async (newKey) => {
-    if (newKey) {
-      previewImageLoading.value = true;
-      await getSignedUrl(newKey, true); // 获取预览图URL
-      await getSignedUrl(newKey); // 获取视频URL
-    }
-  },
-);
-
-const downloadVideo = async (key: string) => {
-  // 先检查用户是否登录
-  if (!openid.value) {
-    uni.showToast({
-      title: "请先登录",
-      icon: "none",
-    });
-    return;
-  }
-
-  // 准备参数
-  const params = {
-    videoKey: key,
-    price: 0,
-    title: key.split("/").pop() || "AR打卡视频",
-    action: "download",
-  };
-
-  // 跳转到支付页面
-  uni.navigateTo({
-    url: `/pages/payment/index?params=${encodeURIComponent(JSON.stringify(params))}`,
-    fail: (err) => {
-      console.error(`跳转到支付页面失败: ${JSON.stringify(err)}`);
-      uni.showToast({
-        title: "页面跳转失败",
-        icon: "none",
-      });
-    },
-  });
-};
-
-const getToken = () => {
-  const pages = getCurrentPages();
-  const currentPage = pages[pages.length - 1] as unknown as { options: { q: string } };
-  const query = currentPage.options;
-  const decodedUrl = decodeURIComponent(query.q);
-  const result = getQueryString(decodedUrl, "k");
-
-  return result;
-};
-
-// 步骤列表
-const steps = [
-  { title: "连接", desc: "设备连接" },
-  { title: "准备", desc: "点击开始" },
-  { title: "录制中", desc: "视频制作" },
-  { title: "完成", desc: "处理完毕" },
-];
-
-onLoad(async () => {
-  token.value = getToken(); //得到token
-
-  //本页面所有操作都具有token
-
-  // 首先尝试从本地存储中获取openid
-  const storedOpenid = getOpenidFromStorage();
-  if (storedOpenid) {
-    console.log("从本地存储中恢复了openid");
-    openid.value = storedOpenid;
-  } else {
-    // 如果本地没有存储openid，则请求新的
-    try {
-      const ret = await wxLogin();
-      openid.value = ret.openid; //得到openid
-      // 将新获取的openid保存到本地存储
-      if (openid.value) {
-        saveOpenidToStorage(openid.value);
-      }
-    } catch (error) {
-      console.error("openid 请求失败！" + error);
-      return;
-    }
-  }
-
-  try {
-    if (token.value) {
-      const ret = await getCheckinStatus(token.value);
-
-      if (!ret.success || ret.data.checkin.openid != openid.value) {
-        //没有状态，证明没有链接，这里要链接
-        if (openid.value && token.value) {
-          const linkedRet = await setCheckinLinked(openid.value, token.value);
-          console.log("链接成功！" + JSON.stringify(linkedRet));
-          status.value = linkedRet.data;
-        }
-      } else {
-        //有状态，证明已经链接，这里要刷新
-        status.value = ret.data;
-      }
-    }
-  } catch (error) {
-    console.log("status 请求失败！" + error);
-  } finally {
-    loadingState.value = false;
-  }
-});
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <view class="content-wrapper">
-    <!-- 加载状态 -->
-    <view class="loading-container" v-if="loadingState">
-      <view class="loading-spinner"></view>
-      <view class="loading-text">连接中...</view>
-    </view>
-
     <!-- 主内容区域 -->
-    <view class="main-content" v-else>
-      <!-- 进度指示器 -->
-      <view v-if="type != undefined" class="progress-tracker">
-        <step :currentStep="currentStep" :steps="steps" style="width: 100%" />
-      </view>
-
-      <!-- 状态卡片 -->
-      <view class="status-card" :class="{ 'animation-active': animationActive }">
-        <block v-if="status && status.file != null">
-          <view class="status-icon success-icon">
-            <image src="/static/icons/success.png" mode="aspectFit"></image>
-          </view>
-          <view class="status-title">🎉 录制完成！</view>
-          <view class="status-description"
-            >恭喜您！AR打卡视频已成功生成，快来查看您的精彩时刻吧！</view
-          >
-          <view class="file-info">
-            <view class="file-icon">
-              <image src="/static/icons/video_icon.png" mode="aspectFit"></image>
-            </view>
-            <view class="file-name">{{ status.file.key.split("/").pop() }}</view>
-          </view>
-
-          <!-- 视频第一帧预览 -->
-          <view class="video-preview">
-            <view class="preview-title">视频预览</view>
-            <view class="preview-container">
-              <!-- 加载动画 -->
-              <view class="preview-loading" v-if="previewImageLoading">
-                <view class="loading-spinner"></view>
-                <text class="loading-text">加载预览中...</text>
-              </view>
-              <!-- 预览图 - 使用签名后的URL -->
-              <image
-                class="preview-image"
-                :class="{ 'image-loaded': !previewImageLoading }"
-                :src="previewImageUrl"
-                mode="widthFix"
-                @load="previewImageLoading = false"
-                @error="previewImageLoading = false"
-              ></image>
-            </view>
-          </view>
-
-          <!-- 按钮组 -->
-          <view class="action-buttons">
-            <!-- 下载视频按钮 -->
-            <button
-              class="action-button download-button full-width"
-              @click="downloadVideo(status.file.key)"
-            >
-              <view class="button-icon"
-                ><image src="/static/icons/download.png" mode="aspectFit"></image
-              ></view>
-              <!-- <text>拍摄服务费(¥0.01)</text> -->
-              <text>文件下载</text>
-            </button>
-          </view>
-
-          <!-- 支付说明 -->
-          <view class="payment-tips">
-            <image src="/static/icons/tip.png" mode="aspectFit" class="tip-icon"></image>
-            <!-- <text class="tip-text">拍摄服务费¥0.01，支付完成后可获取打卡视频并保存到相册</text> -->
-            <text class="tip-text">文件下载免费，下载完成后可获取打卡视频并保存到相册</text>
-          </view>
-        </block>
-
-        <block v-else-if="status && status.checkin.status == 'linked'">
+    <view class="main-content">
+      <view class="status-card" :class="{ 'animation-active': false }">
+        <block>
           <view class="status-icon linked-icon">
-            <image src="/static/icons/linked.png" mode="aspectFit"></image>
+            <image src="/static/icons/file_handling.png" mode="aspectFit"></image>
           </view>
-          <view class="status-title">已连接</view>
-          <view class="status-description">您的设备已成功连接，准备好开始录制了吗？</view>
-          <view class="ar-instruction">
-            <view class="instruction-step">
-              <view class="instruction-number">1</view>
-              <view class="instruction-text">手机对准目标</view>
-            </view>
-            <view class="instruction-step">
-              <view class="instruction-number">2</view>
-              <view class="instruction-text">保持稳定录制</view>
-            </view>
-            <view class="instruction-step">
-              <view class="instruction-number">3</view>
-              <view class="instruction-text">完成AR打卡</view>
-            </view>
-          </view>
-
-          <button class="action-button begin-button full-width" @click="begin">
-            <view class="button-icon"
-              ><image src="/static/icons/start_recording.png" mode="aspectFit"></image
-            ></view>
-            <text>开始录制</text>
-          </button>
-        </block>
-
-        <block v-else-if="status && status.checkin.status == 'ready'">
-          <view class="status-icon ready-icon">
-            <image src="/static/icons/recording.png" mode="aspectFit"></image>
-          </view>
-          <view class="status-title">录制进行中</view>
-          <view class="status-description">正在进行AR打卡录制，请保持设备稳定...</view>
-          <view class="recording-indicator">
-            <view class="recording-pulse"></view>
-            <view class="recording-ring"></view>
-            <view class="recording-time">● REC</view>
-          </view>
-          <button class="action-button cancel-button full-width" @click="stop">
-            <view class="button-icon"
-              ><image src="/static/icons/stop_recording.png" mode="aspectFit"></image
-            ></view>
-            <text>停止录制</text>
-          </button>
+          <view class="status-title">文件处理中</view>
+          <view class="status-description">文件已经录制完成，正在进行最后的处理！</view>
         </block>
       </view>
     </view>
@@ -362,36 +22,6 @@ onLoad(async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-}
-
-// 加载状态
-.loading-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  .loading-spinner {
-    width: 80rpx;
-    height: 80rpx;
-    border: 4rpx solid rgba(0, 0, 0, 0.1);
-    border-radius: 50%;
-    border-top-color: #4a90e2;
-    animation: spin 1s linear infinite;
-    margin-bottom: 20rpx;
-  }
-
-  .loading-text {
-    font-size: 28rpx;
-    color: #666;
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 // 主内容区域
@@ -414,6 +44,7 @@ onLoad(async () => {
   position: relative;
   overflow: hidden;
 
+  // 添加背景装饰
   &::before {
     content: "";
     position: absolute;
@@ -449,6 +80,7 @@ onLoad(async () => {
       position: relative;
       overflow: hidden;
 
+      // 添加光泽效果
       &::before {
         content: "";
         position: absolute;
@@ -606,6 +238,7 @@ onLoad(async () => {
       overflow: visible;
       animation: connected-pulse 3s ease-in-out infinite;
 
+      // 连接成功波纹效果
       &::before {
         content: "";
         position: absolute;
@@ -618,6 +251,7 @@ onLoad(async () => {
         animation: connection-wave 2s ease-out infinite;
       }
 
+      // 内层成功指示圆环
       &::after {
         content: "";
         position: absolute;
@@ -646,6 +280,7 @@ onLoad(async () => {
       position: relative;
       overflow: visible;
 
+      // 录制指示闪烁灯
       &::before {
         content: "";
         position: absolute;
@@ -660,6 +295,7 @@ onLoad(async () => {
         animation: recording-blink 1s ease-in-out infinite;
       }
 
+      // 扫描旋转圈
       &::after {
         content: "";
         position: absolute;
@@ -688,6 +324,7 @@ onLoad(async () => {
       overflow: visible;
       animation: success-celebrate 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 
+      // 成功庆祝波纹效果
       &::before {
         content: "";
         position: absolute;
@@ -700,6 +337,7 @@ onLoad(async () => {
         animation: success-wave 1.5s ease-out infinite;
       }
 
+      // 成功光晕效果
       &::after {
         content: "";
         position: absolute;
@@ -717,6 +355,47 @@ onLoad(async () => {
         z-index: 2;
         filter: brightness(1.2) drop-shadow(0 6rpx 15rpx rgba(82, 196, 26, 0.4));
         animation: success-bounce 2s ease-in-out infinite;
+      }
+    }
+
+    &.waiting-icon {
+      background: rgba(74, 144, 226, 0.08);
+      position: relative;
+      overflow: visible;
+
+      // 外围扫描圆环
+      &::before {
+        content: "";
+        position: absolute;
+        top: -20rpx;
+        left: -20rpx;
+        right: -20rpx;
+        bottom: -20rpx;
+        border: 3rpx solid transparent;
+        border-top: 3rpx solid #4a90e2;
+        border-radius: 50%;
+        animation: radar-scan 2s linear infinite;
+        opacity: 0.8;
+      }
+
+      // 内层扫描波纹
+      &::after {
+        content: "";
+        position: absolute;
+        top: -10rpx;
+        left: -10rpx;
+        right: -10rpx;
+        bottom: -10rpx;
+        border: 2rpx solid rgba(74, 144, 226, 0.3);
+        border-radius: 50%;
+        animation: pulse-ring 3s ease-in-out infinite;
+      }
+
+      image {
+        position: relative;
+        z-index: 2;
+        filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(74, 144, 226, 0.2));
+        animation: gentle-glow 2s ease-in-out infinite alternate;
       }
     }
   }
@@ -760,9 +439,9 @@ onLoad(async () => {
       font-size: 28rpx;
       color: #333;
       flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: nowrap; // 不换行
+      overflow: hidden; // 超出隐藏
+      text-overflow: ellipsis; // 超出显示省略号
     }
   }
 
@@ -1012,6 +691,7 @@ onLoad(async () => {
       align-items: center;
     }
 
+    // 统一的激活状态效果
     &:active {
       transform: translateY(2rpx);
       box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.15);
@@ -1064,6 +744,13 @@ onLoad(async () => {
   }
 }
 
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// 动画效果
 @keyframes recording-pulse {
   0% {
     transform: scale(0.95);
@@ -1178,6 +865,15 @@ onLoad(async () => {
   }
 }
 
+@keyframes gentle-glow {
+  0% {
+    filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(74, 144, 226, 0.2));
+  }
+  100% {
+    filter: brightness(1.3) drop-shadow(0 4rpx 12rpx rgba(74, 144, 226, 0.4));
+  }
+}
+
 @keyframes tip-fade-in {
   0% {
     opacity: 0;
@@ -1189,7 +885,6 @@ onLoad(async () => {
   }
 }
 
-// 连接成功背景脉冲动画
 @keyframes connected-pulse {
   0%,
   100% {
@@ -1202,7 +897,6 @@ onLoad(async () => {
   }
 }
 
-// 连接波纹扩散动画
 @keyframes connection-wave {
   0% {
     transform: scale(1);
@@ -1218,7 +912,6 @@ onLoad(async () => {
   }
 }
 
-// 成功指示圆环动画
 @keyframes success-ring {
   0%,
   100% {
@@ -1231,7 +924,6 @@ onLoad(async () => {
   }
 }
 
-// 图标呼吸动画
 @keyframes icon-breath {
   0%,
   100% {
@@ -1244,7 +936,6 @@ onLoad(async () => {
   }
 }
 
-// 录制指示闪烁动画
 @keyframes recording-blink {
   0% {
     opacity: 1;
@@ -1257,7 +948,6 @@ onLoad(async () => {
   }
 }
 
-// 录制扫描旋转动画
 @keyframes recording-scan {
   0% {
     transform: rotate(0deg);
@@ -1267,7 +957,6 @@ onLoad(async () => {
   }
 }
 
-// 录制呼吸动画
 @keyframes recording-breath {
   0% {
     filter: brightness(1.1) drop-shadow(0 4rpx 8rpx rgba(250, 173, 20, 0.4));

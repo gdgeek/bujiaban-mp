@@ -1,5 +1,5 @@
 import COS from "cos-js-sdk-v5";
-
+import global from "@/utils/global";
 // 定义云存储信息的类型
 interface CloudStorageInfo {
   bucket: string;
@@ -23,7 +23,7 @@ interface ApiResponse {
 export const getCloudStorageInfoAPI = async (): Promise<CloudStorageInfo> => {
   try {
     const response = await uni.request({
-      url: "https://w.4mr.cn/v1/tencent-cloud/store",
+      url: `${global.url}/tencent-cloud/store`,
       method: "GET",
     });
 

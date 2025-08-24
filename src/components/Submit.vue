@@ -1,23 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, defineProps } from "vue";
 import { postData } from "@/utils/common"; // 导入 postData 函数
-
+import type { IDType, SetupInfo } from "@/services/checkin";
 // 增加属性父级别属性
 const props = defineProps<{
-  openid: string | null;
-  token: string | null;
-  savedSlogan?: string;
+  slogan?: string;
+  setup: SetupInfo;
 }>();
 
-const input = ref(props.savedSlogan || "");
-const apiPictures = ref<string[]>([]);
+const input = ref(props.slogan || "");
+
 const emits = defineEmits<{
-  (e: "next", val: string, pictures?: string[]): void;
+  (e: "setSlogan", val: string): void;
   (e: "submit", val: any): void;
 }>();
 
 watch(
-  () => props.savedSlogan,
+  () => props.slogan,
   (newVal) => {
     if (newVal) {
       input.value = newVal;
@@ -26,28 +25,7 @@ watch(
 );
 
 const nextStep = async () => {
-  if (props.openid && props.token) {
-    try {
-      const data = {
-        openid: props.openid,
-        token: props.token,
-        slogan: input.value,
-      };
-      console.log("data", data);
-      const result = await postData(data);
-      if (result.data.report?.setup) {
-        const setupData = JSON.parse(result.data.report?.setup);
-        console.log("postData 返回结果:", setupData[0].pictures);
-        apiPictures.value = setupData[0].pictures;
-      }
-    } catch (error) {
-      console.error("调用 postData 出错:", error);
-    }
-  } else {
-    console.error("缺少必要参数 openid 或 token");
-  }
-
-  emits("next", input.value, apiPictures.value);
+  emits("setSlogan", input.value);
   console.error("前往下一步");
 };
 
@@ -57,13 +35,20 @@ const formReset = (e: any) => {
   console.error("Form reset");
 };
 
-// 预设标语列表
-const presetSlogans = [
-  { id: 1, text: "我在这里很想你", color: "#E6F7FF", bgColor: "#1890FF" },
-  { id: 2, text: "今天也要加油鸭", color: "#F6FFED", bgColor: "#52C41A" },
-  { id: 3, text: "阳光正好，微风不燥", color: "#FFF7E6", bgColor: "#FA8C16" },
-  { id: 4, text: "记录每一刻，热爱每一天", color: "#FCF5FF", bgColor: "#722ED1" },
-];
+//presetSlogans 里面 的 text 换成 setup.slogans
+const presetSlogans = computed(() => {
+  let slogans: any[] = [];
+  const style = [
+    { color: "#E6F7FF", bgColor: "#1890FF" },
+    { color: "#F6FFED", bgColor: "#52C41A" },
+    { color: "#FFF7E6", bgColor: "#FA8C16" },
+    { color: "#FCF5FF", bgColor: "#722ED1" },
+  ];
+  for (let i = 0; i < props.setup.slogans.length; ++i) {
+    slogans = [...slogans, { ...style[i % style.length], id: i + 1, text: props.setup.slogans[i] }];
+  }
+  return slogans;
+});
 
 // 选择预设标语
 const selectSlogan = (slogan: string) => {
@@ -72,7 +57,7 @@ const selectSlogan = (slogan: string) => {
 
 // 是否有选中的预设标语
 const activeSlogan = computed(() => {
-  return presetSlogans.find((item) => item.text === input.value)?.id || null;
+  return presetSlogans.value.find((item) => item.text === input.value)?.id || null;
 });
 </script>
 

@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { ref, defineEmits, computed, onMounted, watch } from "vue";
 import { getObjectUrl } from "@/services/cloud";
-
+import type { SetupInfo } from "@/services/checkin";
 const props = defineProps<{
-  openid: string | null;
-  token: string | null;
   slogan: string;
-  pictures?: string[];
+  setup: SetupInfo | null;
 }>();
 
 const emits = defineEmits<{
@@ -21,11 +19,11 @@ const loading = ref(true);
 const getSignedPictureUrls = async () => {
   loading.value = true;
 
-  if (props.pictures && props.pictures.length > 0) {
+  if (props.setup && props.setup.pictures.length > 0) {
     try {
       // 获取每个图片的签名URL
       const urls = await Promise.all(
-        props.pictures.map(async (picPath) => {
+        props.setup.pictures.map(async (picPath) => {
           // 提取图片文件名部分作为key
           const key = picPath.split("cos.ap-nanjing.myqcloud.com/")[1];
           if (!key) return picPath;
@@ -52,7 +50,7 @@ const getSignedPictureUrls = async () => {
 };
 
 watch(
-  () => props.pictures,
+  () => props.setup?.pictures,
   (newPictures) => {
     if (newPictures && newPictures.length > 0) {
       getSignedPictureUrls();
@@ -73,10 +71,10 @@ const coverPictures = computed(() => {
   return [];
 });
 
-const selectedPicture = ref<number | null>(null);
+const selected = ref<number | null>(null);
 
 const selectPicture = (id: number) => {
-  selectedPicture.value = id;
+  selected.value = id;
 };
 
 const goBack = () => {
@@ -86,24 +84,19 @@ const goBack = () => {
 const submitForm = () => {
   // 获取选中的图片原始路径（非签名URL）
   let selectedImageSrc = null;
-  if (selectedPicture.value !== null && props.pictures && props.pictures.length > 0) {
-    const index = selectedPicture.value - 1;
-    if (index >= 0 && index < props.pictures.length) {
-      selectedImageSrc = props.pictures[index];
+  if (selected.value !== null && props.setup && props.setup.pictures.length > 0) {
+    const index = selected.value - 1;
+    if (index >= 0 && index < props.setup.pictures.length) {
+      selectedImageSrc = props.setup.pictures[index];
     }
   }
 
-  emits("submit", {
-    success: true,
-    text: props.slogan,
-    picture: selectedPicture.value || null,
-    imageSrc: selectedImageSrc,
-  });
+  emits("submit", selected.value);
 };
 
 // 组件挂载时获取签名URL
 onMounted(() => {
-  if (props.pictures && props.pictures.length > 0) {
+  if (props.setup && props.setup.pictures && props.setup.pictures.length > 0) {
     getSignedPictureUrls();
   }
 });
@@ -134,11 +127,11 @@ onMounted(() => {
         v-for="picture in coverPictures"
         :key="picture.id"
         class="picture-item"
-        :class="{ active: selectedPicture === picture.id }"
+        :class="{ active: selected === picture.id }"
         @click="selectPicture(picture.id)"
       >
         <image class="cover-image" :src="picture.src" mode="widthFix"></image>
-        <view v-if="selectedPicture === picture.id" class="selected-overlay">
+        <view v-if="selected === picture.id" class="selected-overlay">
           <image class="check-icon" src="/static/icons/selected.png" mode="aspectFit"></image>
         </view>
       </view>
