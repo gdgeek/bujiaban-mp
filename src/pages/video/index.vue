@@ -16,12 +16,8 @@
         </block>
         <block v-else>
           <view class="video-list">
-            <video-card
-              v-for="video in videoStore.videos"
-              :key="video.id"
-              :video="video"
-              :openid="openid"
-            />
+            <file-card v-for="video in list" :key="video.id" :video="video" />
+            <!-- <video-card v-for="video in videoStore.videos" :key="video.id" :video="video" />-->
           </view>
         </block>
       </view>
@@ -41,25 +37,28 @@
 import { ref, onMounted } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useVideoStore } from "@/stores/modules/video";
-import VideoCard from "@/components/video-card/index.vue";
-import { getOpenidFromStorage } from "@/utils/video";
+import FileCard from "@/components/file-card/index.vue";
+import { getFileList } from "@/utils/common";
 import FooterCopyright from "@/components/FooterCopyright.vue";
+import type { IDType, FileType } from "@/services/checkin";
 import global from "@/utils/global";
+import { login } from "@/services/login";
 const { safeAreaInsets } = uni.getWindowInfo();
 
+const list = ref<FileType[] | null>(null);
 // 加载状态
 const loading = ref(true);
 // 用户openid
-const openid = ref<string>("");
+const id = ref<IDType | null>(null);
 // 视频store
 const videoStore = useVideoStore();
 
 // 初始化页面
-onMounted(() => {
+onMounted(async () => {
   console.error(global.url);
   // 获取openid
-  const storedOpenid = getOpenidFromStorage();
-  if (!storedOpenid) {
+  const storedId = await login();
+  if (!storedId) {
     console.warn("未找到存储的openid，需要先访问打卡页面");
     // 提示用户先登录
     uni.showToast({
@@ -68,8 +67,11 @@ onMounted(() => {
       duration: 2000,
     });
   } else {
-    openid.value = storedOpenid;
-    console.log("已获取到openid:", openid.value);
+    id.value = storedId;
+
+    list.value = await getFileList(id.value.unionid);
+
+    console.error("已获取到openid:", list);
   }
 });
 

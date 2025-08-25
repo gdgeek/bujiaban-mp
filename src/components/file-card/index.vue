@@ -8,10 +8,11 @@
         :lazy-load="true"
         @error="onImageError"
       />
+      {{ props.video.unlocked }}
     </view>
     <view class="video-info">
       <text class="video-title">{{ videoTitle }}</text>
-      <text class="video-date">上传日期: {{ video.uploadDate }}</text>
+      <text class="video-date">上传日期: {{ video.created_at }}</text>
     </view>
     <view class="video-actions">
       <button class="action-button download-button full-width" @click="downloadVideo()">
@@ -27,11 +28,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, defineProps } from "vue";
-import type { Video } from "@/types/video";
+import type { FileType } from "@/services/checkin";
+//import type { Video } from "@/types/video";
 import { getSignedVideoUrl } from "@/utils/video";
 
 const props = defineProps<{
-  video: Video;
+  video: FileType;
 }>();
 
 // 视频缩略图URL
@@ -43,10 +45,10 @@ const loading = ref<boolean>(false);
 
 // 从cosKey中提取视频标题
 const videoTitle = computed(() => {
-  if (!props.video.cosKey) return "未命名视频";
+  if (!props.video.key) return "未命名视频";
 
   // 获取/后文件名
-  const parts = props.video.cosKey.split("/");
+  const parts = props.video.key.split("/");
   const filename = parts[parts.length - 1];
 
   // 去掉文件扩展名
@@ -55,9 +57,9 @@ const videoTitle = computed(() => {
 
 // 获取视频缩略图
 const updateThumbnailUrl = async () => {
-  if (props.video.cosKey && !imageLoadError.value) {
+  if (props.video.key && !imageLoadError.value) {
     try {
-      thumbnailUrl.value = await getSignedVideoUrl(props.video.cosKey, true);
+      thumbnailUrl.value = await getSignedVideoUrl(props.video.key, true);
     } catch (error) {
       console.error("获取视频缩略图失败:", error);
       // 使用占位图
@@ -81,7 +83,7 @@ const downloadVideo = async () => {
 
   try {
     const params = {
-      videoKey: props.video.cosKey,
+      videoKey: props.video.key,
       price: 0,
       title: videoTitle.value || "AR打卡视频",
       action: "download",

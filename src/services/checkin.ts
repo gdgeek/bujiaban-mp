@@ -7,6 +7,28 @@ export interface CheckinInfo {
   status: string;
   updated_at: string;
 }
+/*
+<id>2</id>
+<unionid>obKwE6KHgRx3V99vceOwdh22_LRI</unionid>
+<key>recode/05b2e1d67bcf4f11b20cb0f72c31e282.mp4</key>
+<type>video/mp4</type>
+<md5>e1c7b87eb9fa32ec94e66be743277c95</md5>
+<size>42406354</size>
+<bucket>game-1251022382</bucket>
+<created_at>2025-05-28 14:58:30</created_at>
+<unlocked>0</unlocked>
+ */
+export interface FileType {
+  id: number;
+  unionid: string;
+  key: string;
+  type: string;
+  md5: string;
+  size: number;
+  bucket: string;
+  created_at: string;
+  unlocked: number;
+}
 export interface ReportInfo {
   token: string;
   device: string;
@@ -44,15 +66,37 @@ export interface ApiResponse {
   data: StatusData;
 }
 export interface IDType {
+  token: {
+    accessToken: string;
+    refreshToken: string;
+    expires: string;
+  };
   openid: string;
   unionid: string;
 }
 
 export interface LoginResponse {
-  openid: string;
+  //openid: string;
   data: IDType;
   success: boolean;
   message: string;
+}
+
+// 读取 accessToken 并构造 Authorization 头
+const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
+function getAccessTokenFromStorage(): string | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stored: any = uni.getStorageSync(OPENID_STORAGE_KEY);
+    return stored?.token?.accessToken ?? null;
+  } catch (e) {
+    console.warn("读取 accessToken 失败:", e);
+    return null;
+  }
+}
+function buildAuthHeader(): Record<string, string> {
+  const at = getAccessTokenFromStorage();
+  return at ? { Authorization: `Bearer ${at}` } : {};
 }
 
 /**
@@ -77,7 +121,7 @@ export const wxLogin = async (): Promise<LoginResponse> => {
         console.error("code:", res.code);
         if (res.code) {
           wx.request({
-            url: `${global.url}/wechat/login`,
+            url: `${global.url}/site/login`,
             data: {
               code: res.code,
             },
@@ -210,6 +254,10 @@ export const localRefresh = async (
     wx.request({
       url: `${global.url}/server/applet?time=${time}&hash=${hash}&expand=token,file,device,setup,applet`,
       method: "POST",
+      header: {
+        ...buildAuthHeader(),
+        "Content-Type": "application/json",
+      },
       data,
       success: function (res) {
         console.log("本地状态刷新成功！", res.data);

@@ -9,7 +9,7 @@ const props = defineProps<{
 
 const emits = defineEmits<{
   (e: "back"): void;
-  (e: "submit", val: any): void;
+  (e: "setPicture", id: number): void;
 }>();
 
 const signedPictureUrls = ref<string[]>([]);
@@ -83,15 +83,14 @@ const goBack = () => {
 
 const submitForm = () => {
   // 获取选中的图片原始路径（非签名URL）
-  let selectedImageSrc = null;
+  let image = null;
   if (selected.value !== null && props.setup && props.setup.pictures.length > 0) {
     const index = selected.value - 1;
     if (index >= 0 && index < props.setup.pictures.length) {
-      selectedImageSrc = props.setup.pictures[index];
+      image = props.setup.pictures[index];
     }
+    emits("setPicture", selected.value);
   }
-
-  emits("submit", selected.value);
 };
 
 // 组件挂载时获取签名URL

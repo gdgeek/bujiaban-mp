@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
-import { getOpenidFromStorage } from "@/utils/video";
-import { getCheckinStatus, wxLogin, setCheckinLinked, getQueryString } from "@/services/checkin";
+import { login } from "@/services/login";
+import { getQueryString } from "@/services/checkin";
 import type { IDType } from "@/services/checkin";
 import FooterCopyright from "@/components/FooterCopyright.vue";
 //import Exhibition from "@/components/Exhibition.vue";
 import Recode from "@/components/Recode.vue";
 //import Checkin from "@/components/Checkin.vue";
 
-const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
+//const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
 const AGREEMENT_STORAGE_KEY = "AR_AGREEMENT_CHECKED";
 const id = ref<IDType | null>(null);
 const token = ref<string | null>(null);
@@ -23,7 +23,7 @@ const showPrivacyModal = ref(false);
 const showDisclaimerModal = ref(false);
 const agreementType = ref("");
 const agreementContent = ref("");
-
+/*
 // 保存openid到本地存储
 const saveOpenidToStorage = (id: IDType) => {
   try {
@@ -32,7 +32,7 @@ const saveOpenidToStorage = (id: IDType) => {
   } catch (e) {
     console.error("保存openid到本地存储失败:", e);
   }
-};
+};*/
 
 // 保存协议勾选状态到本地存储
 const saveAgreementToStorage = (checked: boolean) => {
@@ -137,31 +137,22 @@ const closeAgreementModal = () => {
   showDisclaimerModal.value = false;
 };
 
+const isExpired = (expires: string) => {
+  const now = new Date();
+  const expireTime = new Date(expires);
+  return now > expireTime;
+};
 onLoad(async () => {
   token.value = getToken(); //得到token
 
-  // console.error("页面加载，token=" + token.value);
   // 从本地存储中获取协议勾选状态
   agreementChecked.value = getAgreementFromStorage();
 
-  // 首先尝试从本地存储中获取openid
-  const storedId: IDType | null = getOpenidFromStorage();
-  if (storedId) {
-    // console.error("从本地存储中恢复了id", storedId);
-    id.value = storedId;
-  } else {
-    // 如果本地没有存储openid，则请求新的
-    try {
-      const ret = await wxLogin();
-      id.value = ret.data; //得到openid
-      // 将新获取的openid保存到本地存储
-      if (id.value) {
-        saveOpenidToStorage(id.value);
-      }
-    } catch (error) {
-      console.error("id 请求失败！" + error);
-      return;
-    }
+  try {
+    id.value = await login();
+  } catch (error) {
+    console.error("id 请求失败！" + error);
+    return;
   }
 
   loadingState.value = false;
@@ -259,11 +250,7 @@ const handleScan = () => {
         <text class="slogan-text">科技赋能生活，记录每一次精彩时刻！</text>
       </view>
     </view>
-
-    {{ id }}
-    {{ type }}
-    {{ token }}
-    <Recode :id="id" :token="token" v-if="token" class="content-wrapper" />
+    <Recode :id="id" :token="token" v-if="id && token" class="content-wrapper" />
 
     <view v-else class="status-card" :class="{ 'animation-active': animationActive }">
       <block>

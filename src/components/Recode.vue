@@ -41,7 +41,8 @@ const props = defineProps<{
 }>();
 
 const refresh = async (context: any | undefined | null, expand: string = "token,file") => {
-  if (props.token) {
+  console.error("刷新数据", props.id?.token.accessToken);
+  if (props.token && props.id) {
     const ret = await postData(props.id!.unionid, props.token!, status.value, context, expand);
     if (ret.data.file) {
       file.value = ret.data.file;
@@ -71,11 +72,11 @@ const back = () => {
 };
 
 // 最终提交表单
-const setPicture = async (picture: number) => {
+const setPicture = async (id: number) => {
   step.value = 2;
   const ret = await refresh(
     {
-      picture: picture,
+      picture: id,
       text: slogan.value,
     },
     "token,file,device",
@@ -118,13 +119,13 @@ onMounted(async () => {
     <view class="progress-tracker">
       <step :currentStep="step" :steps="steps" style="width: 100%" />
     </view>
-    {{ step }}
+
     <view v-if="setup">
       <Submit v-if="step === 0" @set-slogan="setSlogan" :slogan="slogan" :setup="setup"></Submit>
       <PictureSelect
         v-else-if="step === 1"
         @back="back"
-        @submit="setPicture"
+        @setPicture="setPicture"
         :slogan="slogan"
         :setup="setup"
       ></PictureSelect>

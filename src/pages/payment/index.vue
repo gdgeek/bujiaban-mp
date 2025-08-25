@@ -96,12 +96,12 @@ import { onLoad } from "@dcloudio/uni-app";
 import FooterCopyright from "@/components/FooterCopyright.vue";
 import {
   getSignedVideoUrl,
-  getOpenidFromStorage,
   checkAlbumPermission,
   downloadAndSaveVideo,
   handlePayment,
 } from "@/utils/video";
 import type { IDType } from "@/services/checkin";
+import { login } from "@/services/login";
 // 获取安全区域信息
 const { safeAreaInsets } = uni.getWindowInfo();
 
@@ -437,7 +437,7 @@ onLoad((query) => {
 // 处理下载
 const handlePay = async () => {
   // 获取openid
-  const id: IDType | null = getOpenidFromStorage();
+  const id: IDType | null = await login();
   if (!id!.openid) {
     uni.showToast({
       title: "请先登录",

@@ -63,8 +63,6 @@ const getPriceDisplay = () => {
 </script>
 
 <template>
-  {{ previewImageUrl }}
-  {{ videoUrl }}
   <view class="content-wrapper">
     <!-- 主内容区域 -->
     <view class="main-content">
@@ -72,7 +70,9 @@ const getPriceDisplay = () => {
         <step :currentStep="currentStep" :steps="steps" style="width: 100%" />
       </view> -->
       <!-- 状态卡片 -->
+
       <!--   {{ result }}状态卡片 -->
+
       <view class="status-card" :class="{ 'animation-active': false }">
         <block v-if="props.file">
           <view class="status-icon success-icon">

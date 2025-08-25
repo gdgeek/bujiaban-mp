@@ -77,17 +77,16 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { wxPay, generateOrderNo, queryWxPayOrder, isOrderPaid } from "@/services/pay";
-import { localRefresh } from "@/services/checkin";
-
-// 定义openid存储键名（与checkin页面保持一致）
-const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
+import { localRefresh, type IDType } from "@/services/checkin";
+import { login } from "@/services/login";
 
 // 响应式数据
 const amount = ref<string>("1"); // 默认支付金额：1分
 const orderNo = ref<string>(generateOrderNo()); // 初始生成一个订单号
 const result = ref<string>(""); // 结果展示
 const isDevtools = ref<boolean>(false); // 是否在开发工具中运行
-const openid = ref<string | null>(null); // 用户openid
+//const openid = ref<string | null>(null); // 用户openid
+const id = ref<IDType | null>(null);
 
 // 本地刷新接口测试相关数据
 const refreshToken = ref<string>("A1234567890abcdef1234567890abcdef"); // 默认测试token
@@ -113,39 +112,28 @@ const refreshTypeLabel = computed(() => {
 const onRefreshTypeChange = (e: any) => {
   refreshType.value = e.detail.value;
   // 如果选择了openid且已有用户openid，则自动填充
-  if (refreshType.value === "openid" && openid.value) {
-    refreshParam.value = openid.value;
+  if (refreshType.value === "openid" && id.value?.openid) {
+    refreshParam.value = id.value.openid;
   } else {
     refreshParam.value = "";
   }
 };
 
-// 从本地存储获取openid
-const getOpenidFromStorage = (): string | null => {
-  try {
-    const storedOpenid = uni.getStorageSync(OPENID_STORAGE_KEY);
-    return storedOpenid || null;
-  } catch (e) {
-    console.error("从本地存储获取openid失败:", e);
-    return null;
-  }
-};
-
-// 检查是否在开发工具中运行并获取openid
-onMounted(() => {
+/// 检查是否在开发工具中运行并获取openid
+onMounted(async () => {
   try {
     const systemInfo = uni.getSystemInfoSync();
     isDevtools.value = systemInfo.platform === "devtools";
     console.log("当前运行环境:", systemInfo.platform);
 
     // 获取存储的openid
-    openid.value = getOpenidFromStorage();
-    if (!openid.value) {
+    id.value = await login();
+    if (!id.value) {
       console.warn("未找到存储的openid，可能需要先访问打卡页面");
     } else {
       // 如果已有openid且当前选择的是openid类型，则自动填充
       if (refreshType.value === "openid") {
-        refreshParam.value = openid.value;
+        refreshParam.value = id.value.openid;
       }
     }
   } catch (err) {
@@ -160,7 +148,7 @@ const testWxPay = async () => {
     return;
   }
 
-  if (!openid.value) {
+  if (!id.value?.openid) {
     result.value = "未找到openid，请先访问打卡页面";
     return;
   }
@@ -169,7 +157,7 @@ const testWxPay = async () => {
     result.value = "发起支付中...";
 
     const payResult = await wxPay({
-      openid: openid.value,
+      openid: id.value?.openid,
       out_trade_no: orderNo.value,
       amount: Number(amount.value),
       description: "测试商品",
