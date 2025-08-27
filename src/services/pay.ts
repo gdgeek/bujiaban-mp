@@ -58,7 +58,7 @@ export const createWxPayOrder = async (
 ): Promise<WxPayOrderResponse["data"]> => {
   try {
     const response = await uni.request({
-      url: `${global.url}/wechat/wxpay-order`,
+      url: `${global.url}/wechat-pay/wxpay-order`,
       method: "POST",
       data: params,
     });
@@ -155,7 +155,7 @@ export const queryWxPayOrder = async (
 ): Promise<WxPayOrderQueryResponse["data"]> => {
   try {
     const response = await uni.request({
-      url: `${global.url}/wechat/wxpay-query-order-by-out-trade-no?out_trade_no=${out_trade_no}`,
+      url: `${global.url}/wechat-pay/wxpay-query-order-by-out-trade-no?out_trade_no=${out_trade_no}`,
       method: "GET",
     });
 

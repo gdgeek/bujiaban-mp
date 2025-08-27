@@ -118,10 +118,9 @@ export const wxLogin = async (): Promise<LoginResponse> => {
   return new Promise((resolve, reject) => {
     wx.login({
       success: function (res) {
-        console.error("code:", res.code);
         if (res.code) {
           wx.request({
-            url: `${global.url}/site/login`,
+            url: `${global.url}/wechat/login`,
             data: {
               code: res.code,
             },

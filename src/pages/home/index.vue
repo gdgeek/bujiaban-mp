@@ -1,7 +1,7 @@
 <template>
   <view class="container">
     <view class="title">接口功能测试</view>
-    <text class="openid-info" v-if="openid">当前用户OpenID: {{ openid }}</text>
+    <text class="openid-info" v-if="id?.openid">当前用户OpenID: {{ id?.openid }}</text>
     <text class="openid-info" v-else>未获取到OpenID</text>
 
     <!-- 支付测试 -->
