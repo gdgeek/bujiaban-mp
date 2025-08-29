@@ -1,16 +1,7 @@
 import type { IDType } from "@/services/checkin";
 import { getObjectUrl } from "@/services/cloud";
 import { wxPay, generateOrderNo } from "@/services/pay";
-// 保存openid到本地存储
-const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
-export const saveOpenidToStorage = (id: IDType) => {
-  try {
-    uni.setStorageSync(OPENID_STORAGE_KEY, id);
-    console.log("openid已成功保存到本地存储");
-  } catch (e) {
-    console.error("保存openid到本地存储失败:", e);
-  }
-};
+
 /**
  * 获取视频对象的签名URL
  * @param key 视频在对象存储中的键值
@@ -200,20 +191,6 @@ export const downloadAndSaveVideo = async (url: string): Promise<boolean> => {
       icon: "none",
     });
     return false;
-  }
-};
-
-/**
- * 从本地存储获取openid
- */
-export const getOpenidFromStorage = (): IDType | null => {
-  //const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
-  try {
-    const storedOpenid = uni.getStorageSync(OPENID_STORAGE_KEY);
-    return storedOpenid || null;
-  } catch (e) {
-    console.error("从本地存储获取openid失败:", e);
-    return null;
   }
 };
 

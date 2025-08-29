@@ -5,11 +5,9 @@ import { login } from "@/services/login";
 import { getQueryString } from "@/services/checkin";
 import type { IDType } from "@/services/checkin";
 import FooterCopyright from "@/components/FooterCopyright.vue";
-//import Exhibition from "@/components/Exhibition.vue";
-import Recode from "@/components/Recode.vue";
-//import Checkin from "@/components/Checkin.vue";
 
-//const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
+import Recode from "@/components/Recode.vue";
+
 const AGREEMENT_STORAGE_KEY = "AR_AGREEMENT_CHECKED";
 const id = ref<IDType | null>(null);
 const token = ref<string | null>(null);
@@ -23,16 +21,6 @@ const showPrivacyModal = ref(false);
 const showDisclaimerModal = ref(false);
 const agreementType = ref("");
 const agreementContent = ref("");
-/*
-// 保存openid到本地存储
-const saveOpenidToStorage = (id: IDType) => {
-  try {
-    uni.setStorageSync(OPENID_STORAGE_KEY, id);
-    console.log("openid已成功保存到本地存储");
-  } catch (e) {
-    console.error("保存openid到本地存储失败:", e);
-  }
-};*/
 
 // 保存协议勾选状态到本地存储
 const saveAgreementToStorage = (checked: boolean) => {

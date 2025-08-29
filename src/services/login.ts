@@ -1,6 +1,6 @@
 import { wxLogin } from "./checkin.ts";
 import { type IDType } from "@/services/checkin";
-import { getOpenidFromStorage, saveOpenidToStorage } from "@/utils/video";
+import { loadId, saveId, buildAuthHeader } from "@/utils/common.ts";
 import global from "@/utils/global";
 const isExpired = (expires: string) => {
   const now = new Date();
@@ -9,18 +9,10 @@ const isExpired = (expires: string) => {
   return new Date(now.getTime() + 3000) > expireTime; //三秒后过期
 };
 
-function getAccessTokenFromStorage(): string | null {
-  try {
-    const id: IDType | null = getOpenidFromStorage();
-    return id?.token?.accessToken ?? null;
-  } catch (e) {
-    return null;
-  }
-}
 export const regist = async (code: string): Promise<boolean> => {
   return new Promise((resolve) => {
     wx.request({
-      url: `${global.url}/wechat/regist`,
+      url: `${global.url}/wechat/bind-phone`,
       method: "POST",
       header: {
         ...buildAuthHeader(),
@@ -40,16 +32,15 @@ export const regist = async (code: string): Promise<boolean> => {
     });
   });
 };
-export const login = async (): Promise<IDType> => {
+export const login = async (refresh: boolean = false): Promise<IDType> => {
   return new Promise((resolve, reject) => {
-    const id: IDType | null = getOpenidFromStorage();
-    if (id && !isExpired(id.token.expires)) {
-      // saveOpenidToStorage(id);
+    const id: IDType | null = loadId();
+    if (!refresh && id && !isExpired(id.token.expires)) {
       resolve(id);
     } else {
       wxLogin()
         .then((res) => {
-          saveOpenidToStorage(res.data);
+          saveId(res.data);
           resolve(res.data);
         })
         .catch((err) => {
@@ -59,16 +50,8 @@ export const login = async (): Promise<IDType> => {
   });
 };
 
-function buildAuthHeader(): Record<string, string> {
-  const at = getAccessTokenFromStorage();
-  return at ? { Authorization: `Bearer ${at}` } : {};
-}
-
 // 绑定/上报用户资料（昵称、头像）
-export const bindUserProfile = async (payload: {
-  nickname: string;
-  avatarUrl: string;
-}): Promise<boolean> => {
+export const profile = async (nickname: string, avatar: string): Promise<boolean> => {
   return new Promise((resolve) => {
     wx.request({
       url: `${global.url}/wechat/profile`,
@@ -77,11 +60,15 @@ export const bindUserProfile = async (payload: {
         ...buildAuthHeader(),
         "Content-Type": "application/json",
       },
-      data: payload,
+      data: { nickname, avatar },
       success: (res) => {
+        console.error("profile", res.data);
         resolve(!!(res.statusCode && res.statusCode >= 200 && res.statusCode < 300));
       },
-      fail: () => resolve(false),
+      fail: (e) => {
+        console.error("profile fail", e);
+        resolve(false);
+      },
     });
   });
 };

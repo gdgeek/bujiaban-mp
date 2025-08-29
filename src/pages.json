@@ -54,6 +54,12 @@
         "navigationBarTitleText": "下载",
         "enablePullDownRefresh": false
       }
+    },
+    {
+      "path": "pages/admin/index",
+      "style": {
+        "navigationBarTitleText": "管理后台"
+      }
     }
   ],
   "globalStyle": {
@@ -76,7 +82,7 @@
       //   "selectedIconPath": "static/tabs/home_selected.png"
       // },
       {
-        "text": "打卡",
+        "text": "拍摄打卡",
         "pagePath": "pages/checkin/index",
         "iconPath": "static/tabs/checkin_default.png",
         "selectedIconPath": "static/tabs/checkin_selected.png"
@@ -88,7 +94,7 @@
         "selectedIconPath": "static/tabs/video_selected.png"
       },
       {
-        "text": "登录",
+        "text": "用户信息",
         "pagePath": "pages/login/index",
         "iconPath": "static/tabs/user_default.png",
         "selectedIconPath": "static/tabs/user_selected.png"

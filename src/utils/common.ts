@@ -1,13 +1,36 @@
 import CryptoJS from "crypto-js";
 import global from "@/utils/global";
-import { type FileType, type IDType, type ApiResponse } from "@/services/checkin";
+import type { FileType, IDType, ApiResponse, DeviceType } from "@/services/checkin";
 
 // 从本地存储读取 accessToken（不引入跨文件依赖）
+
 const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
-function getAccessTokenFromStorage(): string | null {
+export const saveId = (id: IDType) => {
+  try {
+    uni.setStorageSync(OPENID_STORAGE_KEY, id);
+    console.log("openid已成功保存到本地存储");
+  } catch (e) {
+    console.error("保存openid到本地存储失败:", e);
+  }
+};
+
+/**
+ * 从本地存储获取openid
+ */
+export const loadId = (): IDType | null => {
+  try {
+    const storedOpenid = uni.getStorageSync(OPENID_STORAGE_KEY);
+    return storedOpenid || null;
+  } catch (e) {
+    console.error("从本地存储获取openid失败:", e);
+    return null;
+  }
+};
+
+export function getToken(): string | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stored: IDType = uni.getStorageSync(OPENID_STORAGE_KEY);
+    const stored: IDType | null = loadId();
     return stored?.token?.accessToken ?? null;
   } catch (e) {
     console.warn("读取 accessToken 失败:", e);
@@ -15,8 +38,8 @@ function getAccessTokenFromStorage(): string | null {
   }
 }
 
-function buildAuthHeader(): Record<string, string> {
-  const at = getAccessTokenFromStorage();
+export function buildAuthHeader(): Record<string, string> {
+  const at = getToken();
   return at ? { Authorization: `Bearer ${at}` } : {};
 }
 
@@ -54,27 +77,7 @@ export function getFileList(id: string): Promise<FileType[]> {
   });
   //console.error("请求URL:", url);
 }
-/*
-export function getUrl(token: string, id: string, expand: string = "token,file"): string {
-  const time: string = Math.floor(Date.now() / 1000).toString();
-  const hash = calculateHash(token, time, id);
-  const url = `${global.url}/server/applet?time=${time}&hash=${hash}&expand=${expand}`;
-  /*wx.request({
-    url: url,
-    method: "GET",
-    header: {
-      ...buildAuthHeader(),
-    },
-    success: (res) => {
-      console.log("请求成功:", res.data);
-    },
-    fail: (err) => {
-      console.error("请求失败:", err);
-    },
-  });
-  //console.error("请求URL:", url);
-  return url;
-}*/
+
 export function postData(
   id: string,
   token: string,
@@ -86,8 +89,7 @@ export function postData(
     const time: string = Math.floor(Date.now() / 1000).toString();
     const hash = calculateHash(token, time, id);
     const url = `${global.url}/applet/refresh?time=${time}&hash=${hash}&expand=${expand}`;
-    //const url = getUrl(token, id, expand);
-    //console.error("请求URL:", token);
+
     let data: { token: string; id: string; status?: string; data?: string } = { token, id };
 
     if (context) {

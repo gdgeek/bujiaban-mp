@@ -1,5 +1,6 @@
 import CryptoJS from "crypto-js";
 import global from "@/utils/global";
+import { buildAuthHeader } from "@/utils/common";
 export interface CheckinInfo {
   created_at: string;
   //  token: string;
@@ -29,6 +30,7 @@ export interface FileType {
   created_at: string;
   unlocked: number;
 }
+
 export interface ReportInfo {
   token: string;
   device: string;
@@ -36,13 +38,18 @@ export interface ReportInfo {
   created_at: string;
   updated_at: string;
   data?: string | null;
-  //  setup?: string | null;
 }
 export interface SetupInfo {
   money: number;
   slogans: Array<string>;
   shot: Array<number>;
   pictures: Array<string>;
+}
+export interface UserType {
+  avatar: string;
+  nickname: string;
+  role: string;
+  tel: string;
 }
 export interface FileInfo {
   // token: string;
@@ -71,6 +78,7 @@ export interface IDType {
     refreshToken: string;
     expires: string;
   };
+  user: UserType;
   openid: string;
   unionid: string;
 }
@@ -80,23 +88,6 @@ export interface LoginResponse {
   data: IDType;
   success: boolean;
   message: string;
-}
-
-// 读取 accessToken 并构造 Authorization 头
-const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
-function getAccessTokenFromStorage(): string | null {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stored: any = uni.getStorageSync(OPENID_STORAGE_KEY);
-    return stored?.token?.accessToken ?? null;
-  } catch (e) {
-    console.warn("读取 accessToken 失败:", e);
-    return null;
-  }
-}
-function buildAuthHeader(): Record<string, string> {
-  const at = getAccessTokenFromStorage();
-  return at ? { Authorization: `Bearer ${at}` } : {};
 }
 
 /**
@@ -120,7 +111,7 @@ export const wxLogin = async (): Promise<LoginResponse> => {
       success: function (res) {
         if (res.code) {
           wx.request({
-            url: `${global.url}/wechat/login`,
+            url: `${global.url}/site/login`,
             data: {
               code: res.code,
             },
