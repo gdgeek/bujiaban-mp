@@ -131,3 +131,29 @@ export function getDevice(id: number): Promise<DeviceType> {
     });
   });
 }
+
+// 通过手机号为设备执行“指定/绑定”之类的操作（后端需提供该接口）
+export function assignDevice(id: number, phone: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    wx.request({
+      url: `${global.url}/devices/${id}/assign`,
+      method: "POST",
+      header: {
+        ...buildAuthHeader(),
+        "Content-Type": "application/json",
+      },
+      data: JSON.stringify({ phone }),
+      success: (res) => {
+        const ok = !!(res.statusCode && res.statusCode >= 200 && res.statusCode < 300);
+        if (!ok) {
+          console.warn("指定失败:", res.data);
+        }
+        resolve(ok);
+      },
+      fail: (err) => {
+        console.error("请求失败:", err);
+        resolve(false);
+      },
+    });
+  });
+}

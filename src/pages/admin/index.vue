@@ -3,13 +3,57 @@ import { ref, onMounted } from "vue";
 import { login } from "@/services/login";
 import type { IDType } from "@/services/checkin";
 
-import { getDevices, putDevice, type DeviceType } from "@/api/device.ts";
+import { getDevices, putDevice, assignDevice, type DeviceType } from "@/api/device.ts";
 
 const id = ref<IDType | null>(null);
 const devices = ref<DeviceType[]>([]);
 const loading = ref(true);
 const saving = ref<Record<number, boolean>>({});
 const tagTimers = ref<Record<number, number>>({});
+
+// 指定手机号弹窗
+const assignVisible = ref(false);
+const assignPhone = ref("");
+const assignTargetId = ref<number | null>(null);
+const assigning = ref(false);
+const assignErr = ref("");
+
+const openAssign = (deviceId: number) => {
+  assignTargetId.value = deviceId;
+  assignPhone.value = "";
+  assignErr.value = "";
+  assignVisible.value = true;
+};
+const closeAssign = () => {
+  assignVisible.value = false;
+};
+const onAssignPhoneInput = (e: any) => {
+  assignPhone.value = (e?.detail?.value ?? "") as string;
+};
+const confirmAssign = async () => {
+  const phone = (assignPhone.value || "").trim();
+  // 简单手机校验（国内 11 位）
+  if (!/^1\d{10}$/.test(phone)) {
+    assignErr.value = "请输入有效的手机号";
+    return;
+  }
+  if (!assignTargetId.value) return;
+  assigning.value = true;
+  assignErr.value = "";
+  try {
+    const ok = await assignDevice(assignTargetId.value, phone);
+    uni.showToast({ title: ok ? "已指定" : "指定失败", icon: ok ? "success" : "none" });
+    if (ok) {
+      // 可选：刷新列表
+      try {
+        devices.value = await getDevices();
+      } catch {}
+      assignVisible.value = false;
+    }
+  } finally {
+    assigning.value = false;
+  }
+};
 
 const onTagInput = (idx: number, e: any) => {
   const v = (e?.detail?.value ?? "") as string;
@@ -78,6 +122,15 @@ onMounted(async () => {
       <view class="title small">设备列表</view>
       <view class="device-list">
         <view class="device-item" v-for="(d, i) in devices" :key="d.id">
+          <view class="line">
+            <text class="k">标签</text>
+            <input
+              class="input"
+              :value="d.tag"
+              placeholder="输入标签"
+              @input="(e) => onTagInput(i, e)"
+            />
+          </view>
           <view class="line"
             ><text class="k">ID</text><text class="v">{{ d.id }}</text></view
           >
@@ -88,16 +141,30 @@ onMounted(async () => {
             ><text class="k">IP</text><text class="v">{{ d.ip || "-" }}</text></view
           >
           <view class="line">
-            <text class="k">标签</text>
-            <input
-              class="input"
-              :value="d.tag"
-              placeholder="输入标签"
-              @input="(e) => onTagInput(i, e)"
-            />
+            <text class="k">管理员</text>
+            <button class="btn small block" @tap="openAssign(d.id)">指定</button>
           </view>
+
           <view class="ops" v-if="saving[d.id]">
             <text class="saving">保存中...</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 指定手机号弹窗 -->
+      <view class="mask" v-if="assignVisible" @tap="closeAssign">
+        <view class="modal" @tap.stop>
+          <view class="modal-title">指定管理员手机号</view>
+          <input
+            class="input"
+            placeholder="请输入11位手机号"
+            :value="assignPhone"
+            @input="onAssignPhoneInput"
+          />
+          <view class="err" v-if="assignErr">{{ assignErr }}</view>
+          <view class="modal-actions">
+            <button class="btn" @tap="closeAssign">取消</button>
+            <button class="btn primary" :loading="assigning" @tap="confirmAssign">确定</button>
           </view>
         </view>
       </view>
@@ -110,7 +177,7 @@ onMounted(async () => {
       </view>
 
       <view class="actions">
-        <button class="btn" @tap="goBack">返回</button>
+        <button class="btn small block" @tap="goBack">返回</button>
       </view>
     </view>
   </view>
@@ -248,11 +315,54 @@ onMounted(async () => {
   background: #f5f5f5;
   color: #333;
 }
+.btn.small {
+  font-size: 24rpx;
+  padding: 12rpx 16rpx;
+}
+.btn.block {
+  width: 100%;
+  display: block;
+}
 .ops {
   min-height: 40rpx;
 }
 .saving {
   color: #2e73ff;
   font-size: 24rpx;
+}
+.line.column {
+  flex-direction: column;
+  align-items: stretch;
+}
+.mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.modal {
+  width: 640rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+}
+.modal-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+.err {
+  color: #e54d42;
+  font-size: 24rpx;
+  margin-top: 8rpx;
 }
 </style>
