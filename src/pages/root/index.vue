@@ -104,7 +104,7 @@ onMounted(async () => {
 <template>
   <view class="admin-page">
     <view class="header">
-      <text class="title">管理后台</text>
+      <text class="title">跟用户管理</text>
     </view>
 
     <view v-if="loading" class="card">加载中...</view>

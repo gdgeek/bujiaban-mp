@@ -2,103 +2,118 @@
 import { ref, onMounted } from "vue";
 import { login } from "@/services/login";
 import type { IDType } from "@/services/checkin";
-
-import { getDevices, putDevice, type DeviceType } from "@/api/device.ts";
+import ArrayListInput from "@/components/ArrayListInput.vue";
+import {
+  putDevice,
+  putSetup,
+  type SetupType,
+  type DeviceType,
+  manageDevice,
+} from "@/api/device.ts";
 import { assign } from "@/api/root.ts";
 const id = ref<IDType | null>(null);
 const devices = ref<DeviceType[]>([]);
 const loading = ref(true);
 const saving = ref<Record<number, boolean>>({});
 const tagTimers = ref<Record<number, number>>({});
-
-// 指定手机号弹窗
-const assignVisible = ref(false);
-const assignPhone = ref("");
-const assignTargetId = ref<number | null>(null);
-const assigning = ref(false);
-const assignErr = ref("");
-
-const openAssign = (deviceId: number) => {
-  assignTargetId.value = deviceId;
-  assignPhone.value = "";
-  assignErr.value = "";
-  assignVisible.value = true;
-};
-const closeAssign = () => {
-  assignVisible.value = false;
-};
-const onAssignPhoneInput = (e: any) => {
-  assignPhone.value = (e?.detail?.value ?? "") as string;
-};
-const confirmAssign = async () => {
-  const phone = (assignPhone.value || "").trim();
-  // 简单手机校验（国内 11 位）
-  if (!/^1\d{10}$/.test(phone)) {
-    assignErr.value = "请输入有效的手机号";
-    return;
-  }
-  if (!assignTargetId.value) return;
-  assigning.value = true;
-  assignErr.value = "";
-  try {
-    const ok = await assign(assignTargetId.value, phone);
-    uni.showToast({ title: ok ? "已指定" : "指定失败", icon: ok ? "success" : "none" });
-    if (ok) {
-      // 可选：刷新列表
-      try {
-        devices.value = await getDevices();
-      } catch {}
-      assignVisible.value = false;
+// setup 编辑表单：以设备 id 为 key
+const setupForm = ref<
+  Record<
+    number,
+    {
+      title: string;
+      money: number;
+      scene_id: string;
+      slogans: string[]; // 每行一个口号
+      shots: string[]; // 逗号分隔数字
+      //  thumbs: string[]; // 每行一个 URL
+      thumbs: string[]; // 每行一个 URL
     }
-  } finally {
-    assigning.value = false;
-  }
-};
-
-const onTagInput = (idx: number, e: any) => {
-  const v = (e?.detail?.value ?? "") as string;
-  const item = devices.value[idx];
-  if (!item) return;
-  // 本地更新
-  devices.value[idx] = { ...item, tag: v };
-  // 防抖自动保存
-  const id = item.id;
-  if (tagTimers.value[id]) {
-    clearTimeout(tagTimers.value[id]);
-  }
-  tagTimers.value[id] = setTimeout(async () => {
-    try {
-      saving.value[id] = true;
-      await putDevice(id, { tag: v || "" });
-      uni.showToast({ title: "已保存", icon: "success", duration: 800 });
-    } catch (err) {
-      uni.showToast({ title: "保存失败", icon: "none" });
-    } finally {
-      saving.value[id] = false;
-      delete tagTimers.value[id];
-    }
-  }, 600) as unknown as number;
-};
-
-// 提取设备类型：优先 setup.type，其次 deviceType/type 字段，兜底 "-"
-const getDeviceType = (d: DeviceType): string => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const s: any = d?.setup || {};
-  return s.type || s.deviceType || (d as any).deviceType || (d as any).type || "-";
-};
-
-const goBack = () => {
-  uni.navigateBack();
-};
+  >
+>({});
+const setupSaving = ref<Record<number, boolean>>({});
 
 onMounted(async () => {
   try {
     id.value = await login();
-    devices.value = await getDevices();
+    devices.value = await manageDevice();
+    initSetupForm();
   } finally {
     loading.value = false;
   }
 });
+
+const initSetupForm = () => {
+  const map: Record<number, any> = {};
+  devices.value.forEach((d) => {
+    const s: SetupType | undefined = d.setup as unknown as SetupType;
+    map[d.id] = {
+      title: s?.title ?? "",
+      money: s?.money != null ? String(s.money) : "",
+      scene_id: s?.scene_id != null ? String(s.scene_id) : "",
+      slogans:
+        Array.isArray(s?.slogans) && s!.slogans.length ? [...(s!.slogans as string[])] : [""],
+      //把shot这个number[]转成 string[]
+
+      shots: Array.isArray(s?.shots)
+        ? [...(s!.shots.map((num) => num.toString()) as string[])]
+        : [""],
+      // thumbs: Array.isArray(s?.thumbs) && s!.thumbs.length ? [...(s!.thumbs as string[])] : [""],
+      thumbs: Array.isArray(s?.thumbs) && s!.thumbs.length ? [...(s!.thumbs as string[])] : [""],
+    };
+  });
+  setupForm.value = map;
+};
+
+const onSetupChange = (id: number, field: keyof (typeof setupForm.value)[number], e: any) => {
+  const v = (e?.detail?.value ?? "") as string;
+  setupForm.value[id] = { ...setupForm.value[id], [field]: v };
+};
+
+const saveSetup = async (deviceId: number) => {
+  const form = setupForm.value[deviceId];
+  if (!form) return;
+  // 解析表单
+  const toNumberArray = (txt: string[]) => {
+    return txt
+      .map((x) => (x || "").trim())
+      .filter(Boolean)
+      .map((x) => Number(x))
+      .filter((x) => !isNaN(x) && x > 0)
+      .sort((a, b) => a - b);
+  };
+  // 组织 setup 负载
+  const setupPayload: Partial<SetupType> = {
+    title: form.title.trim(),
+    money: form.money ? Number(form.money) : 0,
+    scene_id: form.scene_id ? Number(form.scene_id) : null,
+    slogans: (form.slogans || []).map((x) => (x || "").trim()).filter(Boolean),
+    shots: toNumberArray(form.shots),
+    thumbs: (form.thumbs || []).map((x) => (x || "").trim()).filter(Boolean),
+  };
+
+  setupSaving.value[deviceId] = true;
+  try {
+    // 优先走独立接口：/setups/{id}
+    const setupId = (devices.value.find((x) => x.id === deviceId)?.setup as any)?.id as
+      | number
+      | undefined;
+    if (setupId) {
+      const data = await putSetup(setupId, setupPayload);
+      devices.value = devices.value.map((x) => (x.id === deviceId ? { ...x, setup: data } : x));
+    } else {
+      // 兜底：老接口（设备 PUT 携带 setup）
+      await putDevice(deviceId, { setup: setupPayload } as any);
+    }
+    uni.showToast({ title: "配置已保存", icon: "success" });
+  } catch (e) {
+    uni.showToast({ title: "保存失败", icon: "none" });
+  } finally {
+    setupSaving.value[deviceId] = false;
+  }
+};
+
+// 已由组件内置预览逻辑处理
 </script>
 
 <template>
@@ -120,64 +135,93 @@ onMounted(async () => {
       </view>
       <view class="divider" />
       <view class="title small">设备列表</view>
+      <view class="subtitle">当前共有 {{ devices.length }} 台设备</view>
       <view class="device-list">
         <view class="device-item" v-for="(d, i) in devices" :key="d.id">
-          <view class="line">
-            <text class="k">标签</text>
-            <input
-              class="input"
-              :value="d.tag"
-              placeholder="输入标签"
-              @input="(e) => onTagInput(i, e)"
+          <view class="card">
+            <view class="line"
+              ><text class="k">Tag</text><text class="v">{{ d.tag }}</text></view
+            >
+            <view class="line"
+              ><text class="k">UUID</text><text class="v mono">{{ d.uuid }}</text></view
+            >
+            <view class="line"
+              ><text class="k">IP</text><text class="v">{{ d.ip || "-" }}</text></view
+            ></view
+          >
+          <view class="divider" />
+          <view class="hr" />
+          <!-- 设备配置 setup 展示与编辑 -->
+          <view class="setup">
+            <view class="line"
+              ><text class="k">名称</text>
+              <input
+                class="input"
+                :value="setupForm[d.id]?.title || ''"
+                placeholder="标题"
+                @input="(e) => onSetupChange(d.id, 'title', e)"
+              />
+            </view>
+            <view class="line"
+              ><text class="k">金额</text>
+              <input
+                class="input"
+                type="number"
+                :value="setupForm[d.id]!.money.toString() || '0'"
+                placeholder="如 0"
+                @input="(e) => onSetupChange(d.id, 'money', e)"
+              />
+            </view>
+            <view class="line"
+              ><text class="k">场景</text>
+              <input
+                class="input"
+                type="number"
+                :value="setupForm[d.id]!.scene_id.toString() || '0'"
+                placeholder="如 0"
+                @input="(e) => onSetupChange(d.id, 'scene_id', e)"
+              />
+            </view>
+            <ArrayListInput
+              :title="'口号'"
+              @set-value="(v) => (setupForm[d.id].slogans = v)"
+              :items="setupForm[d.id].slogans"
             />
-          </view>
-          <view class="line"
-            ><text class="k">ID</text><text class="v">{{ d.id }}</text></view
-          >
-          <view class="line"
-            ><text class="k">UUID</text><text class="v mono">{{ d.uuid }}</text></view
-          >
-          <view class="line"
-            ><text class="k">IP</text><text class="v">{{ d.ip || "-" }}</text></view
-          >
-          <view class="line">
-            <text class="k">管理员</text>
-            <button class="btn small block" @tap="openAssign(d.id)">指定</button>
+            <view class="hr" />
+            <ArrayListInput
+              :title="'镜头'"
+              @set-value="(v) => (setupForm[d.id].shots = v)"
+              :items="setupForm[d.id].shots"
+            />
+            <view class="hr" />
+            <ArrayListInput
+              :title="'图片'"
+              @set-value="(v) => (setupForm[d.id].thumbs = v)"
+              :items="setupForm[d.id].thumbs"
+            />
+
+            <view class="hr" />
+            <ArrayListInput
+              :title="'缩略图'"
+              @set-value="(v) => (setupForm[d.id].thumbs = v)"
+              :items="setupForm[d.id].thumbs"
+            />
+            <view class="hr" />
+
+            <button
+              class="btn primary block"
+              :loading="!!setupSaving[d.id]"
+              @tap="saveSetup(d.id)"
+              size="mini"
+            >
+              保存配置
+            </button>
           </view>
 
           <view class="ops" v-if="saving[d.id]">
             <text class="saving">保存中...</text>
           </view>
         </view>
-      </view>
-
-      <!-- 指定手机号弹窗 -->
-      <view class="mask" v-if="assignVisible" @tap="closeAssign">
-        <view class="modal" @tap.stop>
-          <view class="modal-title">指定管理员手机号</view>
-          <input
-            class="input"
-            placeholder="请输入11位手机号"
-            :value="assignPhone"
-            @input="onAssignPhoneInput"
-          />
-          <view class="err" v-if="assignErr">{{ assignErr }}</view>
-          <view class="modal-actions">
-            <button class="btn" @tap="closeAssign">取消</button>
-            <button class="btn primary" :loading="assigning" @tap="confirmAssign">确定</button>
-          </view>
-        </view>
-      </view>
-
-      <view
-        class="tips"
-        v-if="id && !['root', 'manager'].includes((id.user.role || '').toLowerCase())"
-      >
-        当前账号未具备管理权限。仅用于演示。
-      </view>
-
-      <view class="actions">
-        <button class="btn small block" @tap="goBack">返回</button>
       </view>
     </view>
   </view>
@@ -258,9 +302,26 @@ onMounted(async () => {
     font-size: 26rpx;
     background: #fff;
   }
+  .textarea {
+    width: 100%;
+    min-height: 120rpx;
+    border: 1rpx solid #ddd;
+    border-radius: 8rpx;
+    padding: 12rpx;
+    font-size: 26rpx;
+    background: #fff;
+  }
   .btn.primary {
-    background: #2e73ff;
+    background: #07c160;
     color: #fff;
+  }
+
+  .setup {
+    margin: 12rpx 0 16rpx;
+    padding: 12rpx;
+    background: #fafafa;
+    border: 1rpx solid #f0f0f0;
+    border-radius: 12rpx;
   }
 }
 .label {
@@ -293,6 +354,11 @@ onMounted(async () => {
   color: #666;
   font-size: 24rpx;
 }
+.k.full {
+  width: 100%;
+  display: block;
+  text-align: center;
+}
 .v {
   color: #333;
   font-size: 26rpx;
@@ -315,12 +381,36 @@ onMounted(async () => {
   background: #f5f5f5;
   color: #333;
 }
+.btn.secondary {
+  background: #eff4ff;
+  color: #2e73ff;
+}
+.btn.danger {
+  background: #ffecec;
+  color: #e54d42;
+}
 .btn.small {
   font-size: 24rpx;
   padding: 12rpx 16rpx;
 }
 .btn.block {
   width: 100%;
+  display: block;
+}
+.icon-btn {
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-btn.mini {
+  width: 48rpx;
+  height: 48rpx;
+}
+.icon-btn .icon {
+  width: 36rpx;
+  height: 36rpx;
   display: block;
 }
 .ops {
@@ -333,6 +423,19 @@ onMounted(async () => {
 .line.column {
   flex-direction: column;
   align-items: stretch;
+}
+.slogans {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.slogan-row {
+  display: flex;
+  gap: 12rpx;
+  align-items: center;
+}
+.flex-1 {
+  flex: 1;
 }
 .mask {
   position: fixed;
@@ -364,5 +467,29 @@ onMounted(async () => {
   color: #e54d42;
   font-size: 24rpx;
   margin-top: 8rpx;
+}
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin: 8rpx 0 12rpx;
+}
+.thumb {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 8rpx;
+  background: #f2f3f5;
+}
+.empty {
+  color: #999;
+  font-size: 24rpx;
+  margin: 8rpx 0 12rpx;
+}
+.hr {
+  width: 100%;
+  height: 1px;
+  background: #ececec;
+  margin: 16rpx 0;
+  border-radius: 1px;
 }
 </style>

@@ -101,7 +101,6 @@ const gotoAdmin = () => {
 </script>
 
 <template>
-  {{ id }}
   <view class="login-page">
     <view class="card">
       <view class="title">用户信息</view>

@@ -1,6 +1,27 @@
 import global from "@/utils/global";
 
 import { buildAuthHeader } from "@/utils/common.ts";
+/*device_id: 44
+id: 1
+money: 0
+scene_id: null
+shots: (4) [1, 5, 10, 20]
+slogans: (4) ["我在这里很想你", "今天也要加油鸭", "阳光正好，微风不燥", "记录每一刻，热爱每一天"]
+thumbs: (4) ["https://game-1251022382.cos.ap-nanjing.myqcloud.com/picture/t1.webp", "https://game-1251022382.cos.ap-nanjing.myqcloud.com/picture/t2.webp", "https://game-1251022382.cos.ap-nanjing.myqcloud.com/picture/t3.webp", "https://game-1251022382.cos.ap-nanjing.myqcloud.com/picture/t4.webp"]
+title: "测试机器" */
+export interface SetupType {
+  //  device_id: number;
+  // 一些接口会返回这些标识字段，用于独立更新 setup
+  id?: number;
+  device_id?: number;
+  money: number;
+
+  scene_id: number | null;
+  shots: number[];
+  slogans: string[];
+  thumbs: string[];
+  title: string;
+}
 export interface DeviceType {
   id: number;
   uuid: string;
@@ -8,7 +29,7 @@ export interface DeviceType {
   created_at: string;
   updated_at: string;
   ip: string;
-  setup: any;
+  setup: SetupType;
 }
 
 /**
@@ -92,6 +113,29 @@ export function putDevice(id: number, data: Partial<DeviceType>): Promise<Device
     });
   });
 }
+
+// 独立更新设备的 setup：PUT /setups/{id}
+export function putSetup(id: number, data: Partial<SetupType>): Promise<SetupType> {
+  return new Promise((resolve, reject) => {
+    wx.request({
+      url: `${global.url}/setups/${id}`,
+      method: "PUT",
+      header: {
+        ...buildAuthHeader(),
+        "Content-Type": "application/json",
+      },
+      data: JSON.stringify(data),
+      success: (res) => {
+        console.log("请求成功:", res.data);
+        resolve(res.data as SetupType);
+      },
+      fail: (err) => {
+        console.error("请求失败:", err);
+        reject(err);
+      },
+    });
+  });
+}
 export function deleteDevice(id: number): Promise<boolean> {
   return new Promise((resolve, reject) => {
     wx.request({
@@ -131,7 +175,35 @@ export function getDevice(id: number): Promise<DeviceType> {
     });
   });
 }
+/*
+    public function actionManage($user_id)
+    {
+      $query = Control::find()->where(['user_id' => $user_id]);
+      return $query->all();
+    }
+    'GET manage' => 'manage',
+*/
+export function manageDevice(): Promise<DeviceType[]> {
+  return new Promise((resolve, reject) => {
+    wx.request({
+      url: `${global.url}/devices/manage?expand=setup`,
+      method: "GET",
+      header: {
+        ...buildAuthHeader(),
+      },
+      success: (res) => {
+        console.log("请求成功!!:", res.data);
+        resolve(res.data as DeviceType[]);
+      },
+      fail: (err) => {
+        console.error("请求失败:", err);
+        reject(err);
+      },
+    });
+  });
+}
 
+/*
 // 通过手机号为设备执行“指定/绑定”之类的操作（后端需提供该接口）
 export function assignDevice(id: number, phone: string): Promise<any> {
   return new Promise((resolve) => {
@@ -154,3 +226,4 @@ export function assignDevice(id: number, phone: string): Promise<any> {
     });
   });
 }
+*/

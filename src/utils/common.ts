@@ -1,6 +1,6 @@
 import CryptoJS from "crypto-js";
 import global from "@/utils/global";
-import type { FileType, IDType, ApiResponse, DeviceType } from "@/services/checkin";
+import type { FileType, IDType, ApiResponse } from "@/services/checkin";
 
 // 从本地存储读取 accessToken（不引入跨文件依赖）
 
@@ -40,6 +40,7 @@ export function getToken(): string | null {
 
 export function buildAuthHeader(): Record<string, string> {
   const at = getToken();
+  console.error("buildAuthHeader token:", at);
   return at ? { Authorization: `Bearer ${at}` } : {};
 }
 

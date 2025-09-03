@@ -19,11 +19,11 @@ const loading = ref(true);
 const getSignedPictureUrls = async () => {
   loading.value = true;
 
-  if (props.setup && props.setup.pictures.length > 0) {
+  if (props.setup && props.setup.thumbs.length > 0) {
     try {
       // 获取每个图片的签名URL
       const urls = await Promise.all(
-        props.setup.pictures.map(async (picPath) => {
+        props.setup.thumbs.map(async (picPath) => {
           // 提取图片文件名部分作为key
           const key = picPath.split("cos.ap-nanjing.myqcloud.com/")[1];
           if (!key) return picPath;
@@ -50,7 +50,7 @@ const getSignedPictureUrls = async () => {
 };
 
 watch(
-  () => props.setup?.pictures,
+  () => props.setup?.thumbs,
   (newPictures) => {
     if (newPictures && newPictures.length > 0) {
       getSignedPictureUrls();
@@ -84,10 +84,10 @@ const goBack = () => {
 const submitForm = () => {
   // 获取选中的图片原始路径（非签名URL）
   let image = null;
-  if (selected.value !== null && props.setup && props.setup.pictures.length > 0) {
+  if (selected.value !== null && props.setup && props.setup.thumbs.length > 0) {
     const index = selected.value - 1;
-    if (index >= 0 && index < props.setup.pictures.length) {
-      image = props.setup.pictures[index];
+    if (index >= 0 && index < props.setup.thumbs.length) {
+      image = props.setup.thumbs[index];
     }
     emits("setPicture", selected.value);
   }
@@ -95,7 +95,7 @@ const submitForm = () => {
 
 // 组件挂载时获取签名URL
 onMounted(() => {
-  if (props.setup && props.setup.pictures && props.setup.pictures.length > 0) {
+  if (props.setup && props.setup.thumbs && props.setup.thumbs.length > 0) {
     getSignedPictureUrls();
   }
 });

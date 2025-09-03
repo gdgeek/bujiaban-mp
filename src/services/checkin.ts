@@ -42,8 +42,8 @@ export interface ReportInfo {
 export interface SetupInfo {
   money: number;
   slogans: Array<string>;
-  shot: Array<number>;
-  pictures: Array<string>;
+  shots: Array<number>;
+  thumbs: Array<string>;
 }
 export interface UserType {
   avatar: string;

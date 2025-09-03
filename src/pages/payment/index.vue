@@ -110,7 +110,7 @@ const paymentInfo = ref({
   videoId: 0,
   videoKey: "",
   price: 0,
-  shot: [],
+  shots: [],
   title: "",
   action: "",
   // duration: 0,
@@ -281,8 +281,8 @@ const loadVideoFrames = async () => {
 // 生成帧点并获取截帧
 const generateFramePoints = async (duration: number) => {
   let framePoints: number[] = [];
-  if (paymentInfo.value.shot.length > 0) {
-    framePoints = paymentInfo.value.shot;
+  if (paymentInfo.value.shots.length > 0) {
+    framePoints = paymentInfo.value.shots;
   } else {
     framePoints = [duration * 0.1, duration * 0.3, duration * 0.6, duration * 0.9];
   }

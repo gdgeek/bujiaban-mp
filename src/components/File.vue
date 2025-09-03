@@ -20,13 +20,13 @@ onMounted(async () => {
 
 const downloadVideo = async (key: string) => {
   const price = props.setup!.money;
-  const shot: Array<number> = props.setup.shot;
+  const shots: Array<number> = props.setup.shots;
 
   // 准备参数
   const params = {
     videoKey: key,
     price: price,
-    shot: shot,
+    shots: shots,
     title: key.split("/").pop() || "AR打卡视频",
     action: "download",
   };

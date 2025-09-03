@@ -53,11 +53,11 @@ const downloadVideo = async (key: string) => {
 
   // 获取价格设置
   let price: number = 0;
-  let shot: Array<number> = [];
+  let shots: Array<number> = [];
   try {
     if (props.setup) {
       price = props.setup.money;
-      shot = props.setup.shot;
+      shots = props.setup.shots;
     }
   } catch (error) {
     console.error("解析price或shot失败", error);
@@ -67,7 +67,7 @@ const downloadVideo = async (key: string) => {
   const params = {
     videoKey: key,
     price: price,
-    shot: shot,
+    shots: shots,
     title: key.split("/").pop() || "AR打卡视频",
     action: "download",
   };

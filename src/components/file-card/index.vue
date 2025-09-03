@@ -8,7 +8,6 @@
         :lazy-load="true"
         @error="onImageError"
       />
-      {{ props.video.unlocked }}
     </view>
     <view class="video-info">
       <text class="video-title">{{ videoTitle }}</text>
