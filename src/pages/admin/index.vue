@@ -26,7 +26,7 @@ const setupForm = ref<
       scene_id: string;
       slogans: string[]; // 每行一个口号
       shots: string[]; // 逗号分隔数字
-      //  thumbs: string[]; // 每行一个 URL
+      pictures: string[]; // 每行一个 URL
       thumbs: string[]; // 每行一个 URL
     }
   >
@@ -58,7 +58,8 @@ const initSetupForm = () => {
       shots: Array.isArray(s?.shots)
         ? [...(s!.shots.map((num) => num.toString()) as string[])]
         : [""],
-      // thumbs: Array.isArray(s?.thumbs) && s!.thumbs.length ? [...(s!.thumbs as string[])] : [""],
+      pictures:
+        Array.isArray(s?.pictures) && s!.pictures.length ? [...(s!.pictures as string[])] : [""],
       thumbs: Array.isArray(s?.thumbs) && s!.thumbs.length ? [...(s!.thumbs as string[])] : [""],
     };
   });
@@ -122,9 +123,9 @@ const saveSetup = async (deviceId: number) => {
       <text class="title">管理后台</text>
     </view>
 
-    <view v-if="loading" class="card">加载中...</view>
+    <view v-if="loading">加载中...</view>
 
-    <view v-else class="card">
+    <view v-else>
       <view class="row">
         <text class="label">当前用户</text>
         <text class="value">{{ id?.user.nickname || id?.openid || "未登录" }}</text>
@@ -137,89 +138,92 @@ const saveSetup = async (deviceId: number) => {
       <view class="title small">设备列表</view>
       <view class="subtitle">当前共有 {{ devices.length }} 台设备</view>
       <view class="device-list">
-        <view class="device-item" v-for="(d, i) in devices" :key="d.id">
-          <view class="card">
-            <view class="line"
-              ><text class="k">Tag</text><text class="v">{{ d.tag }}</text></view
-            >
-            <view class="line"
-              ><text class="k">UUID</text><text class="v mono">{{ d.uuid }}</text></view
-            >
-            <view class="line"
-              ><text class="k">IP</text><text class="v">{{ d.ip || "-" }}</text></view
-            ></view
-          >
-          <view class="divider" />
+        <view v-for="(d, i) in devices" :key="d.id">
           <view class="hr" />
-          <!-- 设备配置 setup 展示与编辑 -->
-          <view class="setup">
-            <view class="line"
-              ><text class="k">名称</text>
-              <input
-                class="input"
-                :value="setupForm[d.id]?.title || ''"
-                placeholder="标题"
-                @input="(e) => onSetupChange(d.id, 'title', e)"
-              />
-            </view>
-            <view class="line"
-              ><text class="k">金额</text>
-              <input
-                class="input"
-                type="number"
-                :value="setupForm[d.id]!.money.toString() || '0'"
-                placeholder="如 0"
-                @input="(e) => onSetupChange(d.id, 'money', e)"
-              />
-            </view>
-            <view class="line"
-              ><text class="k">场景</text>
-              <input
-                class="input"
-                type="number"
-                :value="setupForm[d.id]!.scene_id.toString() || '0'"
-                placeholder="如 0"
-                @input="(e) => onSetupChange(d.id, 'scene_id', e)"
-              />
-            </view>
-            <ArrayListInput
-              :title="'口号'"
-              @set-value="(v) => (setupForm[d.id].slogans = v)"
-              :items="setupForm[d.id].slogans"
-            />
-            <view class="hr" />
-            <ArrayListInput
-              :title="'镜头'"
-              @set-value="(v) => (setupForm[d.id].shots = v)"
-              :items="setupForm[d.id].shots"
-            />
-            <view class="hr" />
-            <ArrayListInput
-              :title="'图片'"
-              @set-value="(v) => (setupForm[d.id].thumbs = v)"
-              :items="setupForm[d.id].thumbs"
-            />
-
-            <view class="hr" />
-            <ArrayListInput
-              :title="'缩略图'"
-              @set-value="(v) => (setupForm[d.id].thumbs = v)"
-              :items="setupForm[d.id].thumbs"
-            />
-            <view class="hr" />
-
-            <button
-              class="btn primary block"
-              :loading="!!setupSaving[d.id]"
-              @tap="saveSetup(d.id)"
-              size="mini"
+          <view class="card">
+            <view class="card">
+              <view class="line"
+                ><text class="k">Tag</text><text class="v">{{ d.tag }}</text></view
+              >
+              <view class="line"
+                ><text class="k">UUID</text><text class="v mono">{{ d.uuid }}</text></view
+              >
+              <view class="line"
+                ><text class="k">IP</text><text class="v">{{ d.ip || "-" }}</text></view
+              ></view
             >
-              保存配置
-            </button>
-          </view>
+            <view class="divider" />
+            <view class="hr" />
+            <!-- 设备配置 setup 展示与编辑 -->
+            <view class="setup">
+              <view class="line"
+                ><text class="k">名称</text>
+                <input
+                  class="input"
+                  :value="setupForm[d.id]?.title || ''"
+                  placeholder="标题"
+                  @input="(e) => onSetupChange(d.id, 'title', e)"
+                />
+              </view>
+              <view class="line"
+                ><text class="k">金额</text>
+                <input
+                  class="input"
+                  type="number"
+                  :value="setupForm[d.id]!.money.toString() || '0'"
+                  placeholder="如 0"
+                  @input="(e) => onSetupChange(d.id, 'money', e)"
+                />
+              </view>
+              <view class="line"
+                ><text class="k">场景</text>
+                <input
+                  class="input"
+                  type="number"
+                  :value="setupForm[d.id]!.scene_id.toString() || '0'"
+                  placeholder="如 0"
+                  @input="(e) => onSetupChange(d.id, 'scene_id', e)"
+                />
+              </view>
+              <ArrayListInput
+                :title="'口号'"
+                @set-value="(v) => (setupForm[d.id].slogans = v)"
+                :items="setupForm[d.id].slogans"
+              />
+              <view class="hr" />
+              <ArrayListInput
+                :title="'镜头'"
+                @set-value="(v) => (setupForm[d.id].shots = v)"
+                :items="setupForm[d.id].shots"
+              />
+              <view class="hr" />
+              <ArrayListInput
+                :title="'图片'"
+                @set-value="(v) => (setupForm[d.id].pictures = v)"
+                :items="setupForm[d.id].pictures"
+              />
 
-          <view class="ops" v-if="saving[d.id]">
-            <text class="saving">保存中...</text>
+              <view class="hr" />
+              <ArrayListInput
+                :title="'缩略图'"
+                @set-value="(v) => (setupForm[d.id].thumbs = v)"
+                :items="setupForm[d.id].thumbs"
+              />
+              <view class="hr" />
+
+              <button
+                class="btn primary block"
+                :loading="!!setupSaving[d.id]"
+                @tap="saveSetup(d.id)"
+                size="mini"
+              >
+                保存配置
+              </button>
+            </view>
+
+            <view class="ops" v-if="saving[d.id]">
+              <text class="saving">保存中...</text>
+            </view>
           </view>
         </view>
       </view>

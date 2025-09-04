@@ -46,6 +46,7 @@ export interface SetupInfo {
   thumbs: Array<string>;
 }
 export interface UserType {
+  id: number;
   avatar: string;
   nickname: string;
   role: string;

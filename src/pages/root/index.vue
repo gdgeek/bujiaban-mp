@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, readonly } from "vue";
 import { login } from "@/services/login";
-import type { IDType } from "@/services/checkin";
+import type { IDType, UserType } from "@/services/checkin";
 import ArrayListInput from "@/components/ArrayListInput.vue";
 import { getDevices, putDevice, deleteDevice, type DeviceType } from "@/api/device.ts";
 import { assign, unassign } from "@/api/root.ts";
@@ -19,11 +19,25 @@ const assigning = ref(false);
 const assignErr = ref("");
 // 临时缓存：每台设备的管理员（支持后端返回 admin 或 admins 两种形态）
 const adminList = (d: DeviceType) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const anyD: any = d as any;
-  if (Array.isArray(anyD.admins)) return anyD.admins as Array<{ nickname?: string; tel?: string }>;
-  if (anyD.admin) return [anyD.admin as { nickname?: string; tel?: string }];
-  return [] as Array<{ nickname?: string; tel?: string }>;
+  //返回d.admin.tel的字符串数组
+  const admin: UserType[] | undefined = d.admin;
+  return admin ? (Array.isArray(admin) ? admin : [admin]).map((a) => a.tel || "") : [];
+};
+const changeAdmin = (list: string[], d: DeviceType) => {
+  //如果list比d.admin 多一个，说明要增加，调用输入内容
+  if (list.length > adminList(d).length) {
+    openAssign(d.id);
+    return;
+  }
+  //如果 list 比d.admin 少一个，说明要删除，然后找到删除的手机号，调用删除接口
+  if (list.length < adminList(d).length) {
+    d.admin?.forEach((a) => {
+      if (!list.includes(a.tel || "")) {
+        removeAdmin(d.id, a.id || 0);
+      }
+    });
+  }
+  console.log("changeAdmin", list);
 };
 
 // 删除设备弹窗
@@ -93,9 +107,9 @@ const confirmAssign = async () => {
   }
 };
 
-const removeAdmin = async (deviceId: number, phone: string) => {
-  if (!phone) return;
-  const ok = await unassign(deviceId, phone);
+const removeAdmin = async (deviceId: number, userId: number) => {
+  if (!userId) return;
+  const ok = await unassign(deviceId, userId);
   uni.showToast({ title: ok ? "已移除" : "移除失败", icon: ok ? "success" : "none" });
   if (ok) {
     try {
@@ -189,26 +203,18 @@ onMounted(async () => {
           <view class="line"
             ><text class="k">IP</text><text class="v">{{ d.ip || "-" }}</text></view
           >
-          <view class="line top">
-            <text class="k">管理员</text>
-            {{ d.admin }}
-            <ArrayListInput :title="'口号'" @set-value="(v) => {}" :items="[]" />
-
-            <view class="v" style="flex: 1">
-              <view class="admin-list">
-                <view v-if="adminList(d).length === 0" class="admin-empty" style="color: #999"
-                  >暂无</view
-                >
-                <view class="admin-item" v-for="(a, idx) in adminList(d)" :key="idx">
-                  <text class="admin-name">{{ a.tel || "-" }}</text>
-                  <button size="mini" class="btn danger" @tap="removeAdmin(d.id, a.tel || '')">
-                    删除
-                  </button>
-                </view>
-                <button class="btn small block" @tap="openAssign(d.id)">增加管理员</button>
-              </view>
-            </view>
-          </view>
+          <view class="hr" />
+          <ArrayListInput
+            :title="'管理员'"
+            :readonly="true"
+            @set-value="
+              (v) => {
+                changeAdmin(v, d);
+              }
+            "
+            :items="adminList(d)"
+          />
+          <view class="hr" />
           <view class="line">
             <text class="k">操作</text>
             <button size="mini" class="btn danger block" @tap="openDelete(d.id)">删除设备</button>
@@ -435,6 +441,12 @@ onMounted(async () => {
 .admin-name {
   font-size: 26rpx;
   color: #333;
+}
+.hr {
+  width: 100%;
+  height: 2rpx;
+  background: #e9ecef;
+  margin: 16rpx 0;
 }
 .mask {
   position: fixed;

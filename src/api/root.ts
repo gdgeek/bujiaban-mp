@@ -25,16 +25,15 @@ export function assign(device_id: number, phone: string): Promise<any> {
 }
 
 // 取消（移除）设备管理员
-export function unassign(device_id: number, phone: string): Promise<boolean> {
+export function unassign(device_id: number, user_id: number): Promise<boolean> {
   return new Promise((resolve) => {
     wx.request({
-      url: `${global.url}/devices/${device_id}/assign`,
+      url: `${global.url}/devices/${device_id}/assign/${user_id}`,
       method: "DELETE",
       header: {
         ...buildAuthHeader(),
         "Content-Type": "application/json",
       },
-      data: JSON.stringify({ device_id, phone }),
       success: (res) => {
         resolve(!!res.data || true);
       },

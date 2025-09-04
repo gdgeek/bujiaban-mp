@@ -21,6 +21,7 @@ export interface SetupType {
   shots: number[];
   slogans: string[];
   thumbs: string[];
+  pictures: string[];
   title: string;
 }
 export interface DeviceType {
@@ -31,7 +32,7 @@ export interface DeviceType {
   //updated_at: string;
   ip: string;
   setup?: SetupType;
-  admin?: UserType;
+  admin?: UserType[];
 }
 
 /**

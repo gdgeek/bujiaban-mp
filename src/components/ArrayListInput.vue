@@ -4,6 +4,7 @@ import { computed, ref, defineProps } from "vue";
 const props = defineProps<{
   items: string[];
   title: string;
+  readonly?: boolean;
 }>();
 const emit = defineEmits<{
   (e: "setValue", v: string[]): void;
@@ -34,11 +35,13 @@ const removeSlogan = (idx: number) => {
     <view class="slogans">
       <view class="slogan-row" v-for="(s, si) in props.items" :key="si">
         <input
+          v-if="!props.readonly"
           class="input flex-1"
           :value="s"
           :placeholder="'输入' + props.title"
           @input="(e) => updateSlogan(si, e)"
         />
+        <text class="input flex-1" v-else>{{ s }}</text>
         <button class="icon-btn mini" @tap="removeSlogan(si)">
           <icon type="clear" :size="20" color="#e54d42" />
         </button>
