@@ -1,6 +1,7 @@
 import global from "@/utils/global";
 
 import { buildAuthHeader } from "@/utils/common.ts";
+import type { UserType } from "@/services/checkin";
 /*device_id: 44
 id: 1
 money: 0
@@ -26,10 +27,11 @@ export interface DeviceType {
   id: number;
   uuid: string;
   tag: string;
-  created_at: string;
-  updated_at: string;
+  //created_at: string;
+  //updated_at: string;
   ip: string;
-  setup: SetupType;
+  setup?: SetupType;
+  admin?: UserType;
 }
 
 /**
@@ -45,7 +47,7 @@ export function getDevices(params?: {
 }): Promise<DeviceType[]> {
   const { tag, page, pageSize } = params || {};
 
-  const query: string[] = [];
+  const query: string[] = ["expand=admin"];
   if (tag) query.push(`tag=${encodeURIComponent(tag)}`);
   if (typeof page === "number") query.push(`page=${page}`);
   if (typeof pageSize === "number") query.push(`per-page=${pageSize}`); // Yii2 常用 per-page
@@ -59,7 +61,7 @@ export function getDevices(params?: {
         ...buildAuthHeader(),
       },
       success: (res) => {
-        console.log("请求成功:", res.data);
+        console.error("请求成功:", res.data);
         resolve(res.data as any[]);
       },
       fail: (err) => {

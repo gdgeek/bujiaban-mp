@@ -2,9 +2,9 @@
 import { ref, onMounted } from "vue";
 import { login } from "@/services/login";
 import type { IDType } from "@/services/checkin";
-
-import { getDevices, putDevice, type DeviceType } from "@/api/device.ts";
-import { assign } from "@/api/root.ts";
+import ArrayListInput from "@/components/ArrayListInput.vue";
+import { getDevices, putDevice, deleteDevice, type DeviceType } from "@/api/device.ts";
+import { assign, unassign } from "@/api/root.ts";
 const id = ref<IDType | null>(null);
 const devices = ref<DeviceType[]>([]);
 const loading = ref(true);
@@ -17,6 +17,19 @@ const assignPhone = ref("");
 const assignTargetId = ref<number | null>(null);
 const assigning = ref(false);
 const assignErr = ref("");
+// 临时缓存：每台设备的管理员（支持后端返回 admin 或 admins 两种形态）
+const adminList = (d: DeviceType) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const anyD: any = d as any;
+  if (Array.isArray(anyD.admins)) return anyD.admins as Array<{ nickname?: string; tel?: string }>;
+  if (anyD.admin) return [anyD.admin as { nickname?: string; tel?: string }];
+  return [] as Array<{ nickname?: string; tel?: string }>;
+};
+
+// 删除设备弹窗
+const deleteVisible = ref(false);
+const deleteTargetId = ref<number | null>(null);
+const deleting = ref(false);
 
 const openAssign = (deviceId: number) => {
   assignTargetId.value = deviceId;
@@ -26,6 +39,31 @@ const openAssign = (deviceId: number) => {
 };
 const closeAssign = () => {
   assignVisible.value = false;
+};
+const openDelete = (deviceId: number) => {
+  deleteTargetId.value = deviceId;
+  deleteVisible.value = true;
+};
+const closeDelete = () => {
+  deleteVisible.value = false;
+};
+const confirmDelete = async () => {
+  if (!deleteTargetId.value) return;
+  deleting.value = true;
+  try {
+    const ok = await deleteDevice(deleteTargetId.value);
+    if (ok) {
+      devices.value = devices.value.filter((d) => d.id !== deleteTargetId.value);
+      uni.showToast({ title: "已删除", icon: "success" });
+      deleteVisible.value = false;
+    } else {
+      uni.showToast({ title: "删除失败", icon: "none" });
+    }
+  } catch (e) {
+    uni.showToast({ title: "删除失败", icon: "none" });
+  } finally {
+    deleting.value = false;
+  }
 };
 const onAssignPhoneInput = (e: any) => {
   assignPhone.value = (e?.detail?.value ?? "") as string;
@@ -52,6 +90,17 @@ const confirmAssign = async () => {
     }
   } finally {
     assigning.value = false;
+  }
+};
+
+const removeAdmin = async (deviceId: number, phone: string) => {
+  if (!phone) return;
+  const ok = await unassign(deviceId, phone);
+  uni.showToast({ title: ok ? "已移除" : "移除失败", icon: ok ? "success" : "none" });
+  if (ok) {
+    try {
+      devices.value = await getDevices();
+    } catch {}
   }
 };
 
@@ -104,7 +153,7 @@ onMounted(async () => {
 <template>
   <view class="admin-page">
     <view class="header">
-      <text class="title">跟用户管理</text>
+      <text class="title">root用户管理</text>
     </view>
 
     <view v-if="loading" class="card">加载中...</view>
@@ -140,11 +189,30 @@ onMounted(async () => {
           <view class="line"
             ><text class="k">IP</text><text class="v">{{ d.ip || "-" }}</text></view
           >
-          <view class="line">
+          <view class="line top">
             <text class="k">管理员</text>
-            <button class="btn small block" @tap="openAssign(d.id)">指定</button>
-          </view>
+            {{ d.admin }}
+            <ArrayListInput :title="'口号'" @set-value="(v) => {}" :items="[]" />
 
+            <view class="v" style="flex: 1">
+              <view class="admin-list">
+                <view v-if="adminList(d).length === 0" class="admin-empty" style="color: #999"
+                  >暂无</view
+                >
+                <view class="admin-item" v-for="(a, idx) in adminList(d)" :key="idx">
+                  <text class="admin-name">{{ a.tel || "-" }}</text>
+                  <button size="mini" class="btn danger" @tap="removeAdmin(d.id, a.tel || '')">
+                    删除
+                  </button>
+                </view>
+                <button class="btn small block" @tap="openAssign(d.id)">增加管理员</button>
+              </view>
+            </view>
+          </view>
+          <view class="line">
+            <text class="k">操作</text>
+            <button size="mini" class="btn danger block" @tap="openDelete(d.id)">删除设备</button>
+          </view>
           <view class="ops" v-if="saving[d.id]">
             <text class="saving">保存中...</text>
           </view>
@@ -165,6 +233,18 @@ onMounted(async () => {
           <view class="modal-actions">
             <button class="btn" @tap="closeAssign">取消</button>
             <button class="btn primary" :loading="assigning" @tap="confirmAssign">确定</button>
+          </view>
+        </view>
+      </view>
+
+      <!-- 删除设备弹窗 -->
+      <view class="mask" v-if="deleteVisible" @tap="closeDelete">
+        <view class="modal" @tap.stop>
+          <view class="modal-title">删除设备</view>
+          <view style="color: #666; font-size: 26rpx">确定要删除该设备吗？此操作不可恢复。</view>
+          <view class="modal-actions">
+            <button class="btn" @tap="closeDelete">取消</button>
+            <button class="btn primary" :loading="deleting" @tap="confirmDelete">确定</button>
           </view>
         </view>
       </view>
@@ -288,6 +368,9 @@ onMounted(async () => {
   gap: 12rpx;
   margin-bottom: 8rpx;
 }
+.line.top {
+  align-items: flex-start;
+}
 .k {
   width: 120rpx;
   color: #666;
@@ -315,6 +398,10 @@ onMounted(async () => {
   background: #f5f5f5;
   color: #333;
 }
+.btn.danger {
+  background: #e54d42;
+  color: #fff;
+}
 .btn.small {
   font-size: 24rpx;
   padding: 12rpx 16rpx;
@@ -333,6 +420,21 @@ onMounted(async () => {
 .line.column {
   flex-direction: column;
   align-items: stretch;
+}
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.admin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+.admin-name {
+  font-size: 26rpx;
+  color: #333;
 }
 .mask {
   position: fixed;

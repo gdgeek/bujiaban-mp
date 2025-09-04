@@ -150,7 +150,7 @@ const gotoAdmin = () => {
       >
         进入管理后台
       </button>
-
+      {{ id?.user }}
       <button
         v-if="isRoot"
         :size="'mini'"
