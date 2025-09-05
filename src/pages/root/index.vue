@@ -263,7 +263,7 @@ onMounted(async () => {
       </view>
 
       <view class="actions">
-        <button class="btn small block" @tap="goBack">返回</button>
+        <button class="btn small block" @tap="console.log('添加设备')">添加设备</button>
       </view>
     </view>
   </view>

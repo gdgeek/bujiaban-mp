@@ -103,19 +103,20 @@ const saveSetup = async () => {
     <view v-else class="card">
       <view v-if="!deviceId" class="empty">未提供设备ID</view>
       <view v-else>
-        <view class="line"
-          ><text class="k">设备ID</text><text class="v">{{ deviceId }}</text></view
-        >
-        <view v-if="device" class="line"
-          ><text class="k">标签</text><text class="v">{{ device!.tag }}</text></view
-        >
-        <view v-if="device" class="line"
-          ><text class="k">UUID</text><text class="v mono">{{ device!.uuid }}</text></view
-        >
-        <view v-if="device" class="line"
-          ><text class="k">IP</text><text class="v">{{ device!.ip || "-" }}</text></view
-        >
-
+        <view class="card">
+          <view class="line"
+            ><text class="k">设备ID</text><text class="v">{{ deviceId }}</text></view
+          >
+          <view v-if="device" class="line"
+            ><text class="k">标签</text><text class="v">{{ device!.tag }}</text></view
+          >
+          <view v-if="device" class="line"
+            ><text class="k">UUID</text><text class="v mono">{{ device!.uuid }}</text></view
+          >
+          <view v-if="device" class="line"
+            ><text class="k">IP</text><text class="v">{{ device!.ip || "-" }}</text></view
+          >
+        </view>
         <view class="hr" />
         <view class="title small">设备配置</view>
         <view class="setup">
@@ -241,5 +242,13 @@ const saveSetup = async () => {
 .btn.block {
   width: 100%;
   display: block;
+}
+
+.hr {
+  width: 100%;
+  height: 1px;
+  background: #ececec;
+  margin: 16rpx 0;
+  border-radius: 1px;
 }
 </style>
