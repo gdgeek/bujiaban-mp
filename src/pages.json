@@ -60,6 +60,12 @@
       "style": {
         "navigationBarTitleText": "root用户管理"
       }
+    },
+    {
+      "path": "pages/device/manage",
+      "style": {
+        "navigationBarTitleText": "设备管理"
+      }
     }
   ],
   "globalStyle": {

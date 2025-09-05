@@ -178,6 +178,27 @@ export function getDevice(id: number): Promise<DeviceType> {
     });
   });
 }
+
+// 获取单个设备详情并展开 setup
+export function getDeviceWithSetup(id: number): Promise<DeviceType> {
+  return new Promise((resolve, reject) => {
+    wx.request({
+      url: `${global.url}/devices/${id}?expand=setup`,
+      method: "GET",
+      header: {
+        ...buildAuthHeader(),
+      },
+      success: (res) => {
+        console.log("请求成功:", res.data);
+        resolve(res.data as DeviceType);
+      },
+      fail: (err) => {
+        console.error("请求失败:", err);
+        reject(err);
+      },
+    });
+  });
+}
 /*
     public function actionManage($user_id)
     {
