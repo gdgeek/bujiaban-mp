@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { login } from "@/services/login";
 import ArrayListInput from "@/components/ArrayListInput.vue";
 import { getDeviceWithSetup, putSetup, type DeviceType, type SetupType } from "@/api/device.ts";
-
+import { getCheckinList, type VerseType } from "@/api/a1.ts";
 const deviceId = ref<number | null>(null);
 const loading = ref(true);
 const device = ref<DeviceType | null>(null);
@@ -18,8 +18,9 @@ const setupForm = ref({
   thumbs: [""],
 });
 const saving = ref(false);
-
+const verses = ref<VerseType[]>([]);
 onLoad(async (opts) => {
+  verses.value = await getCheckinList();
   const raw = (opts as Record<string, any>) || {};
   const idParam = Number(raw.deviceId ?? raw.id ?? 0);
   deviceId.value = Number.isFinite(idParam) && idParam > 0 ? idParam : null;
@@ -54,6 +55,30 @@ const goBack = () => {
 const onInput = (field: keyof typeof setupForm.value, e: any) => {
   const v = (e?.detail?.value ?? "") as string;
   (setupForm.value as any)[field] = v;
+};
+
+// 当前选中场景名称（用于下拉展示）
+const selectedVerseName = computed(() => {
+  const idNum = Number(setupForm.value.scene_id || 0);
+  const found = verses.value.find((x) => x.verse_id === idNum);
+  return found?.name || "";
+});
+
+const selectedVerseIndex = computed(() => {
+  const idNum = Number(setupForm.value.scene_id || 0);
+  return Math.max(
+    0,
+    verses.value.findIndex((x) => x.verse_id === idNum),
+  );
+});
+
+// 选择场景（picker 返回的是所选项索引）
+const onSceneChange = (e: any) => {
+  const idx = Number(e?.detail?.value ?? -1);
+  if (idx >= 0 && idx < verses.value.length) {
+    const v = verses.value[idx];
+    setupForm.value.scene_id = String(v.verse_id);
+  }
 };
 
 const saveSetup = async () => {
@@ -141,13 +166,15 @@ const saveSetup = async () => {
           </view>
           <view class="line"
             ><text class="k">场景</text>
-            <input
-              class="input"
-              type="number"
-              :value="setupForm.scene_id"
-              placeholder="如 0"
-              @input="(e) => onInput('scene_id', e)"
-            />
+            <picker
+              mode="selector"
+              :range="verses"
+              range-key="name"
+              :value="selectedVerseIndex"
+              @change="onSceneChange"
+            >
+              <view class="input">{{ selectedVerseName || "请选择场景" }}</view>
+            </picker>
           </view>
           <ArrayListInput
             :title="'口号'"

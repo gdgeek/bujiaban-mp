@@ -2,13 +2,14 @@
 import { ref, onMounted, computed } from "vue";
 import { login, profile, regist } from "@/services/login";
 
-import type { IDType } from "@/services/checkin";
+import type { IDType, UserType } from "@/services/checkin";
 
 const loading = ref(false);
 const hasProfile = ref(false);
 const hasPhone = ref(false);
 const nickname = ref("");
 const avatarUrl = ref("");
+
 const id = ref<IDType | null>(null);
 
 // 角色是否具备管理权限
@@ -28,6 +29,7 @@ const isManager = computed(() => {
 
 onMounted(async () => {
   id.value = await login(true);
+  id.value.user = null;
 });
 
 const maskPhone = (tel: string) => {
@@ -45,7 +47,8 @@ const onGetProfile = async () => {
         fail: reject,
       });
     });
-    const userInfo = res?.userInfo || {};
+
+    const userInfo: any = res?.userInfo;
     nickname.value = userInfo.nickName || "";
     avatarUrl.value = userInfo.avatarUrl || "";
 
@@ -104,9 +107,10 @@ const gotoAdmin = () => {
   <view class="login-page">
     <view class="card">
       <view class="title">用户信息</view>
+
       <view class="desc">用于打卡下载、订单与素材同步</view>
       <!-- 用户卡片 -->
-      <view class="user-card" v-if="id">
+      <view class="user-card" v-if="id && id.user">
         <view class="user-left">
           <image v-if="id.user.avatar" class="avatar" :src="id.user.avatar" mode="aspectFill" />
         </view>
@@ -123,12 +127,12 @@ const gotoAdmin = () => {
 
       <view class="divider" />
       <!-- 必须由点击触发 -->
-      <button v-if="!id?.user.nickname" class="btn" :disabled="loading" @tap="onGetProfile">
+      <button v-if="!id?.user?.nickname" class="btn" :disabled="loading" @tap="onGetProfile">
         授权头像昵称
       </button>
 
       <button
-        v-if="!id?.user.tel"
+        v-if="!id?.user?.tel"
         class="btn"
         open-type="getPhoneNumber"
         @getphonenumber="onGetPhoneNumber"
@@ -137,8 +141,8 @@ const gotoAdmin = () => {
       </button>
 
       <view class="status">
-        <text>资料：{{ id?.user.nickname ? "已授权" : "未授权" }}</text>
-        <text>手机号：{{ id?.user.tel ? "已绑定" : "未绑定" }}</text>
+        <text>资料：{{ id?.user?.nickname ? "已授权" : "未授权" }}</text>
+        <text>手机号：{{ id?.user?.tel ? "已绑定" : "未绑定" }}</text>
       </view>
 
       <button

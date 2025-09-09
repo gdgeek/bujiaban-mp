@@ -172,19 +172,21 @@ onMounted(async () => {
 
     <view v-if="loading" class="card">加载中...</view>
 
-    <view v-else class="card">
-      <view class="row">
-        <text class="label">当前用户</text>
-        <text class="value">{{ id?.user.nickname || id?.openid || "未登录" }}</text>
-      </view>
-      <view class="row">
-        <text class="label">角色</text>
-        <text class="value">{{ id?.user.role || "-" }}</text>
+    <view v-else>
+      <view class="card">
+        <view class="row">
+          <text class="label">当前用户</text>
+          <text class="value">{{ id?.user.nickname || id?.openid || "未登录" }}</text>
+        </view>
+        <view class="row">
+          <text class="label">角色</text>
+          <text class="value">{{ id?.user.role || "-" }}</text>
+        </view>
       </view>
       <view class="divider" />
       <view class="title small">设备列表</view>
       <view class="device-list">
-        <view class="device-item" v-for="(d, i) in devices" :key="d.id">
+        <view class="device-item card" v-for="(d, i) in devices" :key="d.id">
           <view class="line">
             <text class="k">标签</text>
             <input

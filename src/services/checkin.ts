@@ -79,7 +79,7 @@ export interface IDType {
     refreshToken: string;
     expires: string;
   };
-  user: UserType;
+  user: UserType | null;
   openid: string;
   unionid: string;
 }
