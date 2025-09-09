@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
-import { login, profile, regist } from "@/services/login";
+import {
+  login,
+  profile,
+  regist,
+  type ProfileResponse,
+  type RegistResponse,
+} from "@/services/login";
 
 import type { IDType } from "@/services/checkin";
 
@@ -42,9 +48,13 @@ const onGetProfile = async () => {
 
     console.log("获取到用户信息:", userInfo);
     loading.value = true;
-    const ok = await profile(nickname.value, avatarUrl.value);
-    hasProfile.value = ok;
-    uni.showToast({ title: ok ? "资料已保存" : "保存失败", icon: ok ? "success" : "none" });
+    const response: ProfileResponse = await profile(nickname.value, avatarUrl.value);
+    hasProfile.value = response.success;
+    uni.showToast({
+      title: response.success ? "资料已保存" : "保存失败",
+      icon: response.success ? "success" : "none",
+    });
+    id.value!.user = response.data.user;
   } catch (e) {
     console.error("获取用户信息失败", e);
     uni.showToast({ title: "用户取消或失败", icon: "none" });
@@ -64,9 +74,13 @@ const onGetPhoneNumber = async (e: any) => {
     const code: string | undefined = e?.detail?.code as string | undefined;
     if (code) {
       console.error("获取到手机号:", code);
-      let ok = await regist(code);
-      hasPhone.value = ok;
-      uni.showToast({ title: ok ? "手机号已绑定" : "绑定失败", icon: ok ? "success" : "none" });
+      let response: RegistResponse = await regist(code);
+      hasPhone.value = response.success;
+      uni.showToast({
+        title: response.success ? "手机号已绑定" : "绑定失败",
+        icon: response.success ? "success" : "none",
+      });
+      id.value!.user = response.data.user;
     } else {
       uni.showToast({ title: "未获取到手机号", icon: "none" });
     }
@@ -92,27 +106,27 @@ const gotoAdmin = () => {
       <!-- 用户卡片 -->
       <view class="user-card" v-if="id">
         <view class="user-left">
-          <image class="avatar" :src="id.user.avatar" mode="aspectFill" />
+          <image class="avatar" :src="id.user?.avatar" mode="aspectFill" />
         </view>
         <view class="user-right">
           <view class="name-row">
-            <text class="name">{{ id.user.nickname }}</text>
+            <text class="name">{{ id.user?.nickname }}</text>
           </view>
           <view class="meta-row">
             <text class="label">手机号</text>
-            <text class="value">{{ maskPhone(id.user.tel) }}</text>
+            <text class="value">{{ maskPhone(id.user?.tel || "") }}</text>
           </view>
         </view>
       </view>
 
       <view class="divider" />
       <!-- 必须由点击触发 -->
-      <button v-if="!id?.user.nickname" class="btn" :disabled="loading" @tap="onGetProfile">
+      <button v-if="!id?.user?.nickname" class="btn" :disabled="loading" @tap="onGetProfile">
         授权头像昵称
       </button>
 
       <button
-        v-if="!id?.user.tel"
+        v-if="!id?.user?.tel"
         class="btn"
         open-type="getPhoneNumber"
         @getphonenumber="onGetPhoneNumber"
@@ -121,8 +135,8 @@ const gotoAdmin = () => {
       </button>
 
       <view class="status">
-        <text>资料：{{ id?.user.nickname ? "已授权" : "未授权" }}</text>
-        <text>手机号：{{ id?.user.tel ? "已绑定" : "未绑定" }}</text>
+        <text>资料：{{ id?.user?.nickname ? "已授权" : "未授权" }}</text>
+        <text>手机号：{{ id?.user?.tel ? "已绑定" : "未绑定" }}</text>
       </view>
 
       <button v-if="isAdmin" class="btn primary" style="margin-top: 28rpx" @tap="gotoAdmin">

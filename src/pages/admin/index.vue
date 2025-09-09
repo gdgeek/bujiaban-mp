@@ -39,11 +39,11 @@ const goDeviceManage = (deviceId: number) => {
     <view v-else>
       <view class="row">
         <text class="label">当前用户</text>
-        <text class="value">{{ id?.user.nickname || id?.openid || "未登录" }}</text>
+        <text class="value">{{ id?.user?.nickname || id?.openid || "未登录" }}</text>
       </view>
       <view class="row">
         <text class="label">角色</text>
-        <text class="value">{{ id?.user.role || "-" }}</text>
+        <text class="value">{{ id?.user?.role || "-" }}</text>
       </view>
       <view class="divider" />
       <view class="title small">设备列表</view>

@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
-import { login, profile, regist } from "@/services/login";
+import {
+  login,
+  profile,
+  regist,
+  type ProfileResponse,
+  type RegistResponse,
+} from "@/services/login";
 
 import type { IDType, UserType } from "@/services/checkin";
 
@@ -29,7 +35,7 @@ const isManager = computed(() => {
 
 onMounted(async () => {
   id.value = await login(true);
-  id.value.user = null;
+  //id.value.user = null;
 });
 
 const maskPhone = (tel: string) => {
@@ -54,9 +60,13 @@ const onGetProfile = async () => {
 
     console.log("获取到用户信息:", userInfo);
     loading.value = true;
-    const ok = await profile(nickname.value, avatarUrl.value);
-    hasProfile.value = ok;
-    uni.showToast({ title: ok ? "资料已保存" : "保存失败", icon: ok ? "success" : "none" });
+    const response: ProfileResponse = await profile(nickname.value, avatarUrl.value);
+    hasProfile.value = response.success;
+    uni.showToast({
+      title: response.success ? "资料已保存" : "保存失败",
+      icon: response.success ? "success" : "none",
+    });
+    id.value!.user = response.data.user;
   } catch (e) {
     console.error("获取用户信息失败", e);
     uni.showToast({ title: "用户取消或失败", icon: "none" });
@@ -76,9 +86,14 @@ const onGetPhoneNumber = async (e: any) => {
     const code: string | undefined = e?.detail?.code as string | undefined;
     if (code) {
       console.error("获取到手机号:", code);
-      let ok = await regist(code);
-      hasPhone.value = ok;
-      uni.showToast({ title: ok ? "手机号已绑定" : "绑定失败", icon: ok ? "success" : "none" });
+      let response: RegistResponse = await regist(code);
+      hasPhone.value = response.success;
+      uni.showToast({
+        title: response.success ? "手机号已绑定" : "绑定失败",
+        icon: response.success ? "success" : "none",
+      });
+
+      id.value!.user = response.data.user;
     } else {
       uni.showToast({ title: "未获取到手机号", icon: "none" });
     }

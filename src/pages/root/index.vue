@@ -176,11 +176,11 @@ onMounted(async () => {
       <view class="card">
         <view class="row">
           <text class="label">当前用户</text>
-          <text class="value">{{ id?.user.nickname || id?.openid || "未登录" }}</text>
+          <text class="value">{{ id?.user?.nickname || id?.openid || "未登录" }}</text>
         </view>
         <view class="row">
           <text class="label">角色</text>
-          <text class="value">{{ id?.user.role || "-" }}</text>
+          <text class="value">{{ id?.user?.role || "-" }}</text>
         </view>
       </view>
       <view class="divider" />
@@ -259,7 +259,7 @@ onMounted(async () => {
 
       <view
         class="tips"
-        v-if="id && !['root', 'manager'].includes((id.user.role || '').toLowerCase())"
+        v-if="id && !['root', 'manager'].includes((id.user?.role || '').toLowerCase())"
       >
         当前账号未具备管理权限。仅用于演示。
       </view>

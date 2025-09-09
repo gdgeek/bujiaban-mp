@@ -1,4 +1,4 @@
-import { wxLogin } from "./checkin.ts";
+import { wxLogin, type UserType } from "./checkin.ts";
 import { type IDType } from "@/services/checkin";
 import { loadId, saveId, buildAuthHeader } from "@/utils/common.ts";
 import global from "@/utils/global";
@@ -9,8 +9,15 @@ const isExpired = (expires: string) => {
   return new Date(now.getTime() + 3000) > expireTime; //三秒后过期
 };
 
-export const regist = async (code: string): Promise<boolean> => {
-  return new Promise((resolve) => {
+export interface RegistResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: UserType;
+  };
+}
+export const regist = async (code: string): Promise<RegistResponse> => {
+  return new Promise((resolve, reject) => {
     wx.request({
       url: `${global.url}/wechat/bind-phone`,
       method: "POST",
@@ -22,12 +29,16 @@ export const regist = async (code: string): Promise<boolean> => {
         code,
       },
       success: (res) => {
-        console.error("cool", res.data);
-        resolve(!!(res.statusCode && res.statusCode >= 200 && res.statusCode < 300));
+        console.error("bind-phone", res.data);
+        if (!!(res.statusCode && res.statusCode >= 200 && res.statusCode < 300)) {
+          resolve(res.data as RegistResponse);
+        } else {
+          reject({ success: false, message: res.errMsg, data: { user: null } });
+        }
       },
       fail: () => {
         console.error("注册失败");
-        resolve(false);
+        reject({ success: false, message: "请求失败", data: { user: null } });
       },
     });
   });
@@ -49,10 +60,17 @@ export const login = async (refresh: boolean = false): Promise<IDType> => {
     }
   });
 };
+export interface ProfileResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: UserType;
+  };
+}
 
 // 绑定/上报用户资料（昵称、头像）
-export const profile = async (nickname: string, avatar: string): Promise<boolean> => {
-  return new Promise((resolve) => {
+export const profile = async (nickname: string, avatar: string): Promise<ProfileResponse> => {
+  return new Promise((resolve, reject) => {
     wx.request({
       url: `${global.url}/wechat/profile`,
       method: "POST",
@@ -63,21 +81,33 @@ export const profile = async (nickname: string, avatar: string): Promise<boolean
       data: { nickname, avatar },
       success: (res) => {
         console.error("profile", res.data);
-        resolve(!!(res.statusCode && res.statusCode >= 200 && res.statusCode < 300));
+        if (!!(res.statusCode && res.statusCode >= 200 && res.statusCode < 300)) {
+          resolve(res.data as ProfileResponse);
+        } else {
+          reject(res.errMsg);
+        }
       },
       fail: (e) => {
         console.error("profile fail", e);
-        resolve(false);
+        reject(e);
       },
     });
   });
 };
 
+export interface BindPhoneResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: UserType;
+  };
+}
+
 // 绑定/校验手机号：优先走 code 模式（新版 getPhoneNumber），兼容加密数据
 export const bindPhone = async (
   payload: { code: string } | { encryptedData: string; iv: string; code?: string },
-): Promise<boolean> => {
-  return new Promise((resolve) => {
+): Promise<BindPhoneResponse> => {
+  return new Promise((resolve, reject) => {
     wx.request({
       url: `${global.url}/wechat/phone`,
       method: "POST",
@@ -87,9 +117,16 @@ export const bindPhone = async (
       },
       data: payload,
       success: (res) => {
-        resolve(!!(res.statusCode && res.statusCode >= 200 && res.statusCode < 300));
+        console.error("bindPhone", res.data);
+        if (!!(res.statusCode && res.statusCode >= 200 && res.statusCode < 300)) {
+          resolve(res.data as BindPhoneResponse);
+        } else {
+          reject({ success: false, message: res.errMsg, data: { user: null } });
+        }
       },
-      fail: () => resolve(false),
+      fail: () => {
+        reject({ success: false, message: "请求失败", data: { user: null } });
+      },
     });
   });
 };
