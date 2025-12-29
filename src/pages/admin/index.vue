@@ -9,7 +9,9 @@ const devices = ref<DeviceType[]>([]);
 const loading = ref(true);
 const saving = ref<Record<number, boolean>>({});
 const tagTimers = ref<Record<number, number>>({});
-
+const goBack = () => {
+  uni.navigateBack();
+};
 onMounted(async () => {
   try {
     id.value = await login();
@@ -49,7 +51,7 @@ const goDeviceManage = (deviceId: number) => {
       <view class="title small">设备列表</view>
       <view class="subtitle">当前共有 {{ devices.length }} 台设备</view>
       <view class="device-list">
-        <view v-for="(d, i) in devices" :key="d.id">
+        <view v-for="d in devices" :key="d.id">
           <view class="hr" />
           <view class="card">
             <view class="line"
@@ -71,6 +73,13 @@ const goDeviceManage = (deviceId: number) => {
           <view class="ops" v-if="saving[d.id]">
             <text class="saving">保存中...</text>
           </view>
+        </view>
+        <view class="actions">
+          <!--
+        <button class="btn small block" @tap="console.log('添加设备')">添加设备</button>
+        -->
+          <!--返回上一页按钮-->
+          <button class="btn small block" @tap="goBack">返回</button>
         </view>
       </view>
     </view>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineEmits, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { getObjectUrl } from "@/services/cloud";
 import type { SetupInfo } from "@/services/checkin";
 const props = defineProps<{

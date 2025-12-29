@@ -99,7 +99,9 @@ const confirmAssign = async () => {
       // 可选：刷新列表
       try {
         devices.value = await getDevices();
-      } catch {}
+      } catch {
+        // 刷新失败时静默处理
+      }
       assignVisible.value = false;
     }
   } finally {
@@ -114,7 +116,9 @@ const removeAdmin = async (deviceId: number, userId: number) => {
   if (ok) {
     try {
       devices.value = await getDevices();
-    } catch {}
+    } catch {
+      // 刷新失败时静默处理
+    }
   }
 };
 
@@ -265,7 +269,11 @@ onMounted(async () => {
       </view>
 
       <view class="actions">
+        <!--
         <button class="btn small block" @tap="console.log('添加设备')">添加设备</button>
+        -->
+        <!--返回上一页按钮-->
+        <button class="btn small block" @tap="goBack">返回</button>
       </view>
     </view>
   </view>

@@ -1,6 +1,11 @@
-// https://vitejs.dev/config/
+/**
+ * 全局配置
+ * @deprecated 请使用 @/config 代替
+ */
+import config from "@/config";
+
 export default {
-  url: "https://w.4mr.cn/v2",
-  a1_url: "https://file.4mr.cn/v1",
-  key: "buj1aban.c0m",
+  url: config.apiUrl,
+  a1_url: config.a1ApiUrl,
+  key: config.hashSalt,
 };

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { defineProps } from "vue";
-
 const props = defineProps<{
   currentStep: number;
   steps: Array<{ title: string; desc: string }>;

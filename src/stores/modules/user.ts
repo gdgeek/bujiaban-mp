@@ -1,15 +1,16 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import type { UserInfo } from "@/types/user";
 
 // 定义 Store
 export const useUserStore = defineStore(
   "user",
   () => {
     // 用户信息
-    const userInfo = ref<any>();
+    const userInfo = ref<UserInfo | undefined>();
 
     // 保存用户信息，登录时使用
-    const setUserInfo = (val: any) => {
+    const setUserInfo = (val: UserInfo) => {
       userInfo.value = val;
     };
 
@@ -18,17 +19,27 @@ export const useUserStore = defineStore(
       userInfo.value = undefined;
     };
 
+    // 检查是否是管理员
+    const isAdmin = () => {
+      const role = userInfo.value?.role?.toLowerCase() || "";
+      return role === "root" || role === "manager";
+    };
+
+    // 检查是否是root用户
+    const isRoot = () => {
+      return userInfo.value?.role?.toLowerCase() === "root";
+    };
+
     return {
       userInfo,
       setUserInfo,
       clearUserInfo,
+      isAdmin,
+      isRoot,
     };
   },
   // 持久化
   {
-    // 网页端配置
-    // persist: true,
-    // 小程序端配置
     persist: {
       storage: {
         getItem(key) {

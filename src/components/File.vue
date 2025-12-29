@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, defineProps } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 
 // 定义组件属性
 import { getSignedVideoUrl } from "@/utils/video";

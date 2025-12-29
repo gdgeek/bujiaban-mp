@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, defineProps, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 
 import { postData } from "@/utils/common";
 

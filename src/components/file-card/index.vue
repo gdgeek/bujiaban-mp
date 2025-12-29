@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineProps } from "vue";
+import { ref, computed, onMounted } from "vue";
 import type { FileType } from "@/services/checkin";
 //import type { Video } from "@/types/video";
 import { getSignedVideoUrl } from "@/utils/video";

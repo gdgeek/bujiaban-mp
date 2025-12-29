@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, defineProps } from "vue";
+import { ref, computed, watch } from "vue";
 import { postData } from "@/utils/common"; // 导入 postData 函数
 import type { IDType, SetupInfo } from "@/services/checkin";
 // 增加属性父级别属性
