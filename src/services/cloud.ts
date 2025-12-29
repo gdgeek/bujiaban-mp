@@ -1,6 +1,7 @@
 import COS from "cos-js-sdk-v5";
-import global from "@/utils/global";
-// 定义云存储信息的类型
+import config from "@/config";
+
+/** 云存储信息类型 */
 interface CloudStorageInfo {
   bucket: string;
   region: string;
@@ -13,44 +14,62 @@ interface CloudStorageInfo {
   requestId: string;
 }
 
+/** API响应结构 */
 interface ApiResponse {
   message: string;
   success: boolean;
   data: CloudStorageInfo;
 }
 
-// 获取云存储信息的API
+/** 云存储信息缓存 */
+let cloudInfoCache: CloudStorageInfo | null = null;
+let cloudInfoCacheTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+
+/**
+ * 获取云存储信息（带缓存）
+ */
 export const getCloudStorageInfoAPI = async (): Promise<CloudStorageInfo> => {
+  // 检查缓存是否有效
+  if (cloudInfoCache && Date.now() - cloudInfoCacheTime < CACHE_DURATION) {
+    return cloudInfoCache;
+  }
+
   try {
     const response = await uni.request({
-      url: `${global.url}/tencent-cloud/store`,
+      url: `${config.apiUrl}/tencent-cloud/store`,
       method: "GET",
     });
 
-    // 将response.data转为ApiResponse类型
     const result = response.data as unknown as ApiResponse;
 
-    if (response.statusCode === 200 && result && result.success) {
+    if (response.statusCode === 200 && result?.success) {
+      cloudInfoCache = result.data;
+      cloudInfoCacheTime = Date.now();
       return result.data;
     }
 
     throw new Error("获取云存储信息失败");
   } catch (error) {
-    console.error("获取云存储信息失败:", error);
+    console.error("[cloud] 获取云存储信息失败:", error);
     throw error;
   }
 };
 
-// 获取COS实例
-let cosInstance: any = null;
-export const getCosInstance = async (): Promise<any> => {
-  try {
-    if (cosInstance) return cosInstance;
+/** COS实例缓存 */
+let cosInstance: COS | null = null;
 
+/**
+ * 获取COS实例（单例模式）
+ */
+export const getCosInstance = async (): Promise<COS> => {
+  if (cosInstance) return cosInstance;
+
+  try {
     const cloudInfo = await getCloudStorageInfoAPI();
 
     cosInstance = new COS({
-      getAuthorization: (_options: any, callback: Function) => {
+      getAuthorization: (_options, callback) => {
         callback({
           TmpSecretId: cloudInfo.tmpSecretId,
           TmpSecretKey: cloudInfo.tmpSecretKey,
@@ -63,50 +82,52 @@ export const getCosInstance = async (): Promise<any> => {
 
     return cosInstance;
   } catch (error) {
-    console.error("获取COS实例失败:", error);
+    console.error("[cloud] 获取COS实例失败:", error);
     throw error;
   }
 };
 
-// 获取文件URL
+/**
+ * 获取文件URL
+ */
 export const getObjectUrl = async (fileName: string): Promise<string> => {
   try {
-    const cos = await getCosInstance();
-    const cloudInfo = await getCloudStorageInfoAPI();
+    const [cos, cloudInfo] = await Promise.all([getCosInstance(), getCloudStorageInfoAPI()]);
+
     return new Promise((resolve, reject) => {
       cos.getObjectUrl(
         {
           Bucket: cloudInfo.bucket,
           Region: cloudInfo.region,
           Key: fileName,
-          Sign: true, // 是否签名
+          Sign: true,
         },
-        (err: any, data: any) => {
+        (err, data) => {
           if (err) {
-            console.error("获取文件URL失败:", err);
+            console.error("[cloud] 获取文件URL失败:", err);
             reject(err);
           } else {
-            console.log("获取文件URL成功:", data.Url);
             resolve(data.Url);
           }
         },
       );
     });
   } catch (error) {
-    console.error("获取文件URL失败:", error);
+    console.error("[cloud] 获取文件URL失败:", error);
     throw error;
   }
 };
 
-// 上传文件
+/**
+ * 上传文件
+ */
 export const uploadFile = async (
   file: File | Blob | UniApp.ChooseImageSuccessCallbackResultFile,
   fileName: string,
   onProgress?: (progress: number) => void,
 ): Promise<string> => {
   try {
-    const cos = await getCosInstance();
-    const cloudInfo = await getCloudStorageInfoAPI();
+    const [cos, cloudInfo] = await Promise.all([getCosInstance(), getCloudStorageInfoAPI()]);
 
     return new Promise((resolve, reject) => {
       cos.putObject(
@@ -114,19 +135,18 @@ export const uploadFile = async (
           Bucket: cloudInfo.bucket,
           Region: cloudInfo.region,
           Key: fileName,
-          Body: file,
-          onProgress: (info: any) => {
+          Body: file as File,
+          onProgress: (info) => {
             const percent = Math.floor(info.percent * 100);
             onProgress?.(percent);
           },
         },
-        (err: any, data: any) => {
+        (err) => {
           if (err) {
-            console.error("上传文件失败:", err);
+            console.error("[cloud] 上传文件失败:", err);
             reject(err);
           } else {
-            console.log("上传文件成功:", data);
-            // 上传成功后获取文件URL并返回
+            console.debug("[cloud] 上传文件成功");
             getObjectUrl(fileName)
               .then((url) => resolve(url))
               .catch((error) => reject(error));
@@ -135,16 +155,17 @@ export const uploadFile = async (
       );
     });
   } catch (error) {
-    console.error("上传文件失败:", error);
+    console.error("[cloud] 上传文件失败:", error);
     throw error;
   }
 };
 
-// 删除文件
+/**
+ * 删除文件
+ */
 export const deleteFile = async (fileName: string): Promise<void> => {
   try {
-    const cos = await getCosInstance();
-    const cloudInfo = await getCloudStorageInfoAPI();
+    const [cos, cloudInfo] = await Promise.all([getCosInstance(), getCloudStorageInfoAPI()]);
 
     return new Promise((resolve, reject) => {
       cos.deleteObject(
@@ -153,28 +174,29 @@ export const deleteFile = async (fileName: string): Promise<void> => {
           Region: cloudInfo.region,
           Key: fileName,
         },
-        (err: any, data: any) => {
+        (err) => {
           if (err) {
-            console.error("删除文件失败:", err);
+            console.error("[cloud] 删除文件失败:", err);
             reject(err);
           } else {
-            console.log("删除文件成功:", data);
+            console.debug("[cloud] 删除文件成功");
             resolve();
           }
         },
       );
     });
   } catch (error) {
-    console.error("删除文件失败:", error);
+    console.error("[cloud] 删除文件失败:", error);
     throw error;
   }
 };
 
-// 批量删除文件
+/**
+ * 批量删除文件
+ */
 export const deleteMultipleFiles = async (fileNames: string[]): Promise<void> => {
   try {
-    const cos = await getCosInstance();
-    const cloudInfo = await getCloudStorageInfoAPI();
+    const [cos, cloudInfo] = await Promise.all([getCosInstance(), getCloudStorageInfoAPI()]);
 
     const objects = fileNames.map((name) => ({ Key: name }));
 
@@ -185,28 +207,45 @@ export const deleteMultipleFiles = async (fileNames: string[]): Promise<void> =>
           Region: cloudInfo.region,
           Objects: objects,
         },
-        (err: any, data: any) => {
+        (err) => {
           if (err) {
-            console.error("批量删除文件失败:", err);
+            console.error("[cloud] 批量删除文件失败:", err);
             reject(err);
           } else {
-            console.log("批量删除文件成功:", data);
+            console.debug("[cloud] 批量删除文件成功");
             resolve();
           }
         },
       );
     });
   } catch (error) {
-    console.error("批量删除文件失败:", error);
+    console.error("[cloud] 批量删除文件失败:", error);
     throw error;
   }
 };
 
-// 获取文件列表
-export const listFiles = async (prefix: string = "", delimiter: string = "/"): Promise<any> => {
+/** 文件信息 */
+interface CosFileInfo {
+  Key: string;
+  LastModified: string;
+  Size: string;
+}
+
+/** 文件列表结果 */
+interface ListFilesResult {
+  Contents: CosFileInfo[];
+  CommonPrefixes: Array<{ Prefix: string }>;
+}
+
+/**
+ * 获取文件列表
+ */
+export const listFiles = async (
+  prefix: string = "",
+  delimiter: string = "/",
+): Promise<ListFilesResult> => {
   try {
-    const cos = await getCosInstance();
-    const cloudInfo = await getCloudStorageInfoAPI();
+    const [cos, cloudInfo] = await Promise.all([getCosInstance(), getCloudStorageInfoAPI()]);
 
     return new Promise((resolve, reject) => {
       cos.getBucket(
@@ -216,19 +255,28 @@ export const listFiles = async (prefix: string = "", delimiter: string = "/"): P
           Prefix: prefix,
           Delimiter: delimiter,
         },
-        (err: any, data: any) => {
+        (err, data) => {
           if (err) {
-            console.error("获取文件列表失败:", err);
+            console.error("[cloud] 获取文件列表失败:", err);
             reject(err);
           } else {
-            console.log("获取文件列表成功:", data);
-            resolve(data);
+            console.debug("[cloud] 获取文件列表成功");
+            resolve(data as unknown as ListFilesResult);
           }
         },
       );
     });
   } catch (error) {
-    console.error("获取文件列表失败:", error);
+    console.error("[cloud] 获取文件列表失败:", error);
     throw error;
   }
+};
+
+/**
+ * 清除缓存（用于刷新凭证）
+ */
+export const clearCache = (): void => {
+  cloudInfoCache = null;
+  cloudInfoCacheTime = 0;
+  cosInstance = null;
 };

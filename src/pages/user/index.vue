@@ -9,6 +9,7 @@ import {
 } from "@/services/login";
 
 import type { IDType, UserType } from "@/services/checkin";
+import type { WxGetPhoneNumberEvent, WxUserProfileResult } from "@/types/events";
 
 const loading = ref(false);
 const hasProfile = ref(false);
@@ -46,7 +47,7 @@ const maskPhone = (tel: string) => {
 // 必须在用户点击回调中直接调用 getUserProfile
 const onGetProfile = async () => {
   try {
-    const res: any = await new Promise((resolve, reject) => {
+    const res = await new Promise<WxUserProfileResult>((resolve, reject) => {
       wx.getUserProfile({
         desc: "用于完善用户资料",
         success: resolve,
@@ -54,11 +55,11 @@ const onGetProfile = async () => {
       });
     });
 
-    const userInfo: any = res?.userInfo;
+    const userInfo = res.userInfo;
     nickname.value = userInfo.nickName || "";
     avatarUrl.value = userInfo.avatarUrl || "";
 
-    console.log("获取到用户信息:", userInfo);
+    console.debug("[用户] 获取到用户信息");
     loading.value = true;
     const response: ProfileResponse = await profile(nickname.value, avatarUrl.value);
     hasProfile.value = response.success;
@@ -68,7 +69,7 @@ const onGetProfile = async () => {
     });
     id.value!.user = response.data.user;
   } catch (e) {
-    console.error("获取用户信息失败", e);
+    console.warn("[用户] 获取用户信息失败:", e);
     uni.showToast({ title: "用户取消或失败", icon: "none" });
   } finally {
     loading.value = false;
@@ -76,16 +77,16 @@ const onGetProfile = async () => {
 };
 
 // 获取手机号（新版返回 code）
-const onGetPhoneNumber = async (e: any) => {
-  if (e?.detail?.errMsg?.indexOf("ok") === -1) {
+const onGetPhoneNumber = async (e: WxGetPhoneNumberEvent) => {
+  if (e.detail.errMsg?.indexOf("ok") === -1) {
     uni.showToast({ title: "未授权手机号", icon: "none" });
     return;
   }
   loading.value = true;
   try {
-    const code: string | undefined = e?.detail?.code as string | undefined;
+    const code = e.detail.code;
     if (code) {
-      console.error("获取到手机号:", code);
+      console.debug("[用户] 获取到手机号code");
       let response: RegistResponse = await regist(code);
       hasPhone.value = response.success;
       uni.showToast({

@@ -5,6 +5,7 @@ import { login } from "@/services/login";
 import ArrayListInput from "@/components/ArrayListInput.vue";
 import { getDeviceWithSetup, putSetup, type DeviceType, type SetupType } from "@/api/device.ts";
 import { getCheckinList, type VerseType } from "@/api/a1.ts";
+import type { UniInputEvent, UniPickerChangeEvent } from "@/types/events";
 const deviceId = ref<number | null>(null);
 const loading = ref(true);
 const device = ref<DeviceType | null>(null);
@@ -52,9 +53,9 @@ const goBack = () => {
   uni.navigateBack();
 };
 
-const onInput = (field: keyof typeof setupForm.value, e: any) => {
-  const v = (e?.detail?.value ?? "") as string;
-  (setupForm.value as any)[field] = v;
+const onInput = (field: keyof typeof setupForm.value, e: UniInputEvent) => {
+  const v = e.detail.value ?? "";
+  setupForm.value[field] = v as never;
 };
 
 // 当前选中场景名称（用于下拉展示）
@@ -73,8 +74,8 @@ const selectedVerseIndex = computed(() => {
 });
 
 // 选择场景（picker 返回的是所选项索引）
-const onSceneChange = (e: any) => {
-  const idx = Number(e?.detail?.value ?? -1);
+const onSceneChange = (e: UniPickerChangeEvent) => {
+  const idx = Number(e.detail.value ?? -1);
   if (idx >= 0 && idx < verses.value.length) {
     const v = verses.value[idx];
     setupForm.value.scene_id = String(v.verse_id);

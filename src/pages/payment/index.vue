@@ -102,6 +102,7 @@ import {
 } from "@/utils/video";
 import type { IDType } from "@/services/checkin";
 import { login } from "@/services/login";
+import type { VideoMetadataEvent, VideoErrorEvent } from "@/types/events";
 // 获取安全区域信息
 const { safeAreaInsets } = uni.getWindowInfo();
 
@@ -308,25 +309,27 @@ const generateFramePoints = async (duration: number) => {
 };
 
 // 视频元数据加载完成事件
-const onVideoMetadataLoaded = (event: any) => {
+const onVideoMetadataLoaded = (event: VideoMetadataEvent) => {
   clearVideoTimeout();
-  const videoElement = event.target;
-  if (videoElement && videoElement.duration && !videoDurationResolved.value) {
-    console.log("视频元数据加载完成，时长:", videoElement.duration);
+  const duration = event.detail.duration;
+  if (duration && !videoDurationResolved.value) {
+    console.debug("[payment] 视频时长:", duration);
     videoDurationResolved.value = true;
 
     if (videoLoadResolve.value) {
-      videoLoadResolve.value(videoElement.duration);
+      videoLoadResolve.value(duration);
       videoLoadResolve.value = null;
     }
 
-    tempVideoUrl.value = ""; // 重置视频URL
+    tempVideoUrl.value = "";
   }
 };
 
 // 视频加载错误事件
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const onVideoError = (error: any) => {
-  console.error("视频加载错误:", error);
+  const errMsg = error?.detail?.errMsg || error?.errMsg || "未知错误";
+  console.warn("[payment] 视频加载错误:", errMsg);
   clearVideoTimeout();
 
   if (videoLoadResolve.value && !videoDurationResolved.value) {
@@ -348,7 +351,7 @@ const clearVideoTimeout = () => {
 
 // 获取视频时长
 const getVideoDuration = (url: string): Promise<number | null> => {
-  console.error(url);
+  console.debug("[payment] 加载视频");
   return new Promise((resolve) => {
     // 重置状态
     videoDurationResolved.value = false;

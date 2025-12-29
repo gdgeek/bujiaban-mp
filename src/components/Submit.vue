@@ -12,7 +12,7 @@ const input = ref(props.slogan || "");
 
 const emits = defineEmits<{
   (e: "setSlogan", val: string): void;
-  (e: "submit", val: any): void;
+  (e: "submit", val: unknown): void;
 }>();
 
 watch(
@@ -26,18 +26,24 @@ watch(
 
 const nextStep = async () => {
   emits("setSlogan", input.value);
-  console.error("前往下一步");
+  console.debug("[Submit] 前往下一步");
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const formReset = (e: any) => {
-  e.preventDefault();
+  e?.preventDefault?.();
   input.value = "";
-  console.error("Form reset");
+  console.debug("[Submit] 表单重置");
 };
 
-//presetSlogans 里面 的 text 换成 setup.slogans
 const presetSlogans = computed(() => {
-  let slogans: any[] = [];
+  interface SloganStyle {
+    color: string;
+    bgColor: string;
+    id: number;
+    text: string;
+  }
+  let slogans: SloganStyle[] = [];
   const style = [
     { color: "#E6F7FF", bgColor: "#1890FF" },
     { color: "#F6FFED", bgColor: "#52C41A" },

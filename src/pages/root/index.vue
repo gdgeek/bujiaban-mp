@@ -2,6 +2,7 @@
 import { ref, onMounted, readonly } from "vue";
 import { login } from "@/services/login";
 import type { IDType, UserType } from "@/services/checkin";
+import type { UniInputEvent } from "@/types/events";
 import ArrayListInput from "@/components/ArrayListInput.vue";
 import { getDevices, putDevice, deleteDevice, type DeviceType } from "@/api/device.ts";
 import { assign, unassign } from "@/api/root.ts";
@@ -79,8 +80,8 @@ const confirmDelete = async () => {
     deleting.value = false;
   }
 };
-const onAssignPhoneInput = (e: any) => {
-  assignPhone.value = (e?.detail?.value ?? "") as string;
+const onAssignPhoneInput = (e: UniInputEvent) => {
+  assignPhone.value = e.detail.value ?? "";
 };
 const confirmAssign = async () => {
   const phone = (assignPhone.value || "").trim();
@@ -122,8 +123,8 @@ const removeAdmin = async (deviceId: number, userId: number) => {
   }
 };
 
-const onTagInput = (idx: number, e: any) => {
-  const v = (e?.detail?.value ?? "") as string;
+const onTagInput = (idx: number, e: UniInputEvent) => {
+  const v = e.detail.value ?? "";
   const item = devices.value[idx];
   if (!item) return;
   // 本地更新
@@ -149,9 +150,9 @@ const onTagInput = (idx: number, e: any) => {
 
 // 提取设备类型：优先 setup.type，其次 deviceType/type 字段，兜底 "-"
 const getDeviceType = (d: DeviceType): string => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const s: any = d?.setup || {};
-  return s.type || s.deviceType || (d as any).deviceType || (d as any).type || "-";
+  const setup = d?.setup as Record<string, unknown> | undefined;
+  const device = d as unknown as Record<string, unknown>;
+  return (setup?.type ?? setup?.deviceType ?? device?.deviceType ?? device?.type ?? "-") as string;
 };
 
 const goBack = () => {

@@ -23,7 +23,6 @@ watch(
   () => step.value,
   (value: number, oldValue: number) => {
     if (value === 2 && intervalId === null) {
-      //向 refresh 里面增加参数
       intervalId = setInterval(() => refresh(null, "token,file,device"), 1800);
     } else if (oldValue == 2) {
       if (intervalId) {
@@ -31,7 +30,7 @@ watch(
         intervalId = null;
       }
     }
-    console.error("Step changed:", value);
+    console.debug("[Recode] Step changed:", value);
   },
 );
 //增加属性父级别属性
@@ -40,8 +39,11 @@ const props = defineProps<{
   token: string | null;
 }>();
 
-const refresh = async (context: any | undefined | null, expand: string = "token,file") => {
-  console.error("刷新数据", props.id?.token.accessToken);
+const refresh = async (
+  context: Record<string, unknown> | null | undefined,
+  expand: string = "token,file",
+) => {
+  console.debug("[Recode] 刷新数据");
   if (props.token && props.id) {
     const ret = await postData(props.id!.unionid, props.token!, status.value, context, expand);
     if (ret.data.file) {

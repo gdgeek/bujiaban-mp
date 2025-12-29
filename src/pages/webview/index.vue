@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
+import type { WebViewLoadEvent, WebViewMessageEvent, UniErrorEvent } from "@/types/events";
 
 // web-view URL
 const webviewUrl = ref("");
@@ -32,17 +33,17 @@ const signedUrl = ref("");
 onLoad((query) => {
   if (query && query.key) {
     videoKey.value = decodeURIComponent(query.key as string);
-    console.log("接收到视频key:", videoKey.value);
+    console.debug("[webview] 接收到视频key");
 
     // 接收签名URL
     if (query.url) {
       signedUrl.value = decodeURIComponent(query.url as string);
-      console.log("接收到签名URL:", signedUrl.value);
+      console.debug("[webview] 接收到签名URL");
     }
 
     initWebviewUrl();
   } else {
-    console.error("缺少key参数");
+    console.warn("[webview] 缺少key参数");
     uni.showToast({
       title: "缺少视频参数",
       icon: "none",
@@ -83,22 +84,21 @@ const initWebviewUrl = () => {
     }
 
     webviewUrl.value = url;
-    console.log("当前小程序环境:", env);
-    console.log("加载视频URL:", webviewUrl.value);
+    console.debug("[webview] 当前环境:", env);
   } catch (err) {
-    console.error("获取小程序信息失败:", err);
+    console.error("[webview] 获取小程序信息失败:", err);
   }
 };
 
 // 处理web-view加载成功
-const onWebViewLoaded = (event: any) => {
-  console.log("web-view加载成功:", event);
+const onWebViewLoaded = (event: WebViewLoadEvent) => {
+  console.debug("[webview] 加载成功");
   isLoaded.value = true;
 };
 
 // 处理web-view加载错误
-const onWebViewError = (event: any) => {
-  console.error("web-view加载失败:", event);
+const onWebViewError = (event: UniErrorEvent) => {
+  console.error("[webview] 加载失败:", event);
   uni.showToast({
     title: "视频页面加载失败，请检查网络",
     icon: "none",
@@ -106,8 +106,8 @@ const onWebViewError = (event: any) => {
 };
 
 // 处理web-view消息
-const handleMessage = (event: any) => {
-  console.log("收到web-view消息", event);
+const handleMessage = (event: WebViewMessageEvent) => {
+  console.debug("[webview] 收到消息");
 };
 
 const onShareAppMessage = () => {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import type { UniInputEvent } from "@/types/events";
 
 const props = defineProps<{
   items: string[];
@@ -10,8 +11,8 @@ const emit = defineEmits<{
   (e: "setValue", v: string[]): void;
 }>();
 
-const updateSlogan = (idx: number, e: any) => {
-  const v = (e?.detail?.value ?? "") as string;
+const updateSlogan = (idx: number, e: UniInputEvent) => {
+  const v = e.detail.value ?? "";
   const arr = (props.items || []).slice();
   arr[idx] = v;
   emit("setValue", arr);
