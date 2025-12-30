@@ -79,7 +79,11 @@ export function request<T = unknown>(options: RequestOptions): Promise<T> {
 /**
  * GET请求快捷方法
  */
-export function get<T = unknown>(url: string, params?: Record<string, unknown>): Promise<T> {
+export function get<T = unknown>(
+  url: string,
+  params?: Record<string, unknown>,
+  baseUrl?: string,
+): Promise<T> {
   let finalUrl = url;
   if (params) {
     const query = Object.entries(params)
@@ -90,7 +94,7 @@ export function get<T = unknown>(url: string, params?: Record<string, unknown>):
       finalUrl += (url.includes("?") ? "&" : "?") + query;
     }
   }
-  return request<T>({ url: finalUrl, method: "GET" });
+  return request<T>({ url: finalUrl, method: "GET", baseUrl });
 }
 
 /**

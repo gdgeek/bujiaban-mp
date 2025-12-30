@@ -1,10 +1,8 @@
 /// <reference types="vitest" />
-import { defineConfig } from "vite";
-import uni from "@dcloudio/vite-plugin-uni";
+import { defineConfig } from "vitest/config";
 import { resolve } from "path";
 
 export default defineConfig({
-  plugins: [uni()],
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),
@@ -14,7 +12,7 @@ export default defineConfig({
     globals: true,
     environment: "node",
     include: ["src/**/__tests__/**/*.test.ts"],
-    exclude: ["node_modules", "dist"],
+    exclude: ["node_modules", "dist", "dist-*"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
