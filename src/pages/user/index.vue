@@ -6,9 +6,9 @@ import {
   regist,
   type ProfileResponse,
   type RegistResponse,
-} from "@/services/login";
+} from "@/api/login";
 
-import type { IDType, UserType } from "@/services/checkin";
+import type { IDType, UserType } from "@/api/checkin";
 import type { WxGetPhoneNumberEvent, WxUserProfileResult } from "@/types/events";
 
 const loading = ref(false);

@@ -100,8 +100,8 @@ import {
   downloadAndSaveVideo,
   handlePayment,
 } from "@/utils/video";
-import type { IDType } from "@/services/checkin";
-import { login } from "@/services/login";
+import type { IDType } from "@/api/checkin";
+import { login } from "@/api/login";
 import type { VideoMetadataEvent, VideoErrorEvent } from "@/types/events";
 // 获取安全区域信息
 const { safeAreaInsets } = uni.getWindowInfo();

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
-import { login } from "@/services/login";
-import { getQueryString } from "@/services/checkin";
-import type { IDType } from "@/services/checkin";
+import { login } from "@/api/login";
+import { getQueryString } from "@/api/checkin";
+import type { IDType } from "@/api/checkin";
 import FooterCopyright from "@/components/FooterCopyright.vue";
 
 import Recode from "@/components/Recode.vue";

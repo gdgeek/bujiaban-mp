@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { postData } from "@/utils/common"; // 导入 postData 函数
-import type { IDType, SetupInfo } from "@/services/checkin";
+import type { IDType, SetupInfo } from "@/api/checkin";
 // 增加属性父级别属性
 const props = defineProps<{
   slogan?: string;

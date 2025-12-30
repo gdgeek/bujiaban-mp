@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, readonly } from "vue";
-import { login } from "@/services/login";
-import type { IDType, UserType } from "@/services/checkin";
+import { login } from "@/api/login";
+import type { IDType, UserType } from "@/api/checkin";
 import type { UniInputEvent } from "@/types/events";
 import ArrayListInput from "@/components/ArrayListInput.vue";
-import { getDevices, putDevice, deleteDevice, type DeviceType } from "@/api/device.ts";
+import { getDevices, putDevice, deleteDevice, type DeviceType } from "@/api/device";
 import { assign, unassign } from "@/api/root.ts";
 const id = ref<IDType | null>(null);
 const devices = ref<DeviceType[]>([]);

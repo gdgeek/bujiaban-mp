@@ -3,8 +3,8 @@
  * 提供统一的认证状态和权限检查
  */
 import { ref, computed } from "vue";
-import { login } from "@/services/login";
-import type { IDType } from "@/services/checkin";
+import { login } from "@/api/login";
+import type { IDType } from "@/api/checkin";
 
 export function useAuth() {
   const id = ref<IDType | null>(null);

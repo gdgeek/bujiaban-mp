@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
-import { getObjectUrl } from "@/services/cloud";
-import type { SetupInfo } from "@/services/checkin";
+import { getObjectUrl } from "@/api/cloud";
+import type { SetupInfo } from "@/api/checkin";
 const props = defineProps<{
   slogan: string;
   setup: SetupInfo | null;

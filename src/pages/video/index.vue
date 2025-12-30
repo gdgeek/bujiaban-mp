@@ -40,9 +40,9 @@ import { useVideoStore } from "@/stores/modules/video";
 import FileCard from "@/components/file-card/index.vue";
 import { getFileList } from "@/utils/common";
 import FooterCopyright from "@/components/FooterCopyright.vue";
-import type { IDType, FileType } from "@/services/checkin";
+import type { IDType, FileType } from "@/api/checkin";
 import global from "@/utils/global";
-import { login } from "@/services/login";
+import { login } from "@/api/login";
 const { safeAreaInsets } = uni.getWindowInfo();
 
 const list = ref<FileType[] | null>(null);

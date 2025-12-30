@@ -3,14 +3,14 @@ import { ref, computed, watch, onMounted } from "vue";
 
 import { postData } from "@/utils/common";
 
-import type { ApiResponse, FileInfo, ReportInfo, StatusData, SetupInfo } from "@/services/checkin";
+import type { ApiResponse, FileInfo, ReportInfo, StatusData, SetupInfo } from "@/api/checkin";
 
 import Submit from "@/components/Submit.vue";
 import PictureSelect from "@/components/PictureSelect.vue";
 import File from "@/components/File.vue";
 import Recoding from "@/components/Recoding.vue";
 import Step from "@/components/Step.vue";
-import type { IDType } from "@/services/checkin";
+import type { IDType } from "@/api/checkin";
 const step = ref<number>(-1);
 const file = ref<FileInfo | null>(null);
 const device = ref<ReportInfo | null>(null);

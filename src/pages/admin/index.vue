@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { login } from "@/services/login";
-import type { IDType } from "@/services/checkin";
-import { putDevice, type DeviceType, manageDevice } from "@/api/device.ts";
+import { login } from "@/api/login";
+import type { IDType } from "@/api/checkin";
+import { putDevice, type DeviceType, manageDevice } from "@/api/device";
 import { assign } from "@/api/root.ts";
 const id = ref<IDType | null>(null);
 const devices = ref<DeviceType[]>([]);

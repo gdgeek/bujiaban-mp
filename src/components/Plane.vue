@@ -4,8 +4,8 @@ import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { postData } from "@/utils/common";
 // 定义组件属性
 import { getSignedVideoUrl } from "@/utils/video";
-import { type ApiResponse } from "@/services/checkin";
-import type { IDType, SetupInfo, FileInfo } from "@/services/checkin";
+import { type ApiResponse } from "@/api/checkin";
+import type { IDType, SetupInfo, FileInfo } from "@/api/checkin";
 const previewImageLoading = ref(true); //预览图片载入
 
 // 预览图URL

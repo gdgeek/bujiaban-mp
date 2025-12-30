@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
-import { login } from "@/services/login";
+import { login } from "@/api/login";
 import ArrayListInput from "@/components/ArrayListInput.vue";
-import { getDeviceWithSetup, putSetup, type DeviceType, type SetupType } from "@/api/device.ts";
-import { getCheckinList, type VerseType } from "@/api/a1.ts";
+import { getDeviceWithSetup, putSetup, type DeviceType, type SetupType } from "@/api/device";
+import { getCheckinList, type VerseType } from "@/api/a1";
 import type { UniInputEvent, UniPickerChangeEvent } from "@/types/events";
 const deviceId = ref<number | null>(null);
 const loading = ref(true);

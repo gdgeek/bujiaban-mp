@@ -1,6 +1,6 @@
 import config from "@/config";
 import { get, post, put, del } from "@/utils/request";
-import type { UserType } from "@/services/checkin";
+import type { UserType } from "@/api/checkin";
 
 /**
  * 设备配置类型

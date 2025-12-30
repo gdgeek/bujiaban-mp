@@ -1,6 +1,6 @@
-import type { IDType } from "@/services/checkin";
-import { getObjectUrl } from "@/services/cloud";
-import { wxPay, generateOrderNo } from "@/services/pay";
+import type { IDType } from "@/api/checkin";
+import { getObjectUrl } from "@/api/cloud";
+import { wxPay, generateOrderNo } from "@/api/pay";
 import config from "@/config";
 
 /** COS默认域名 */

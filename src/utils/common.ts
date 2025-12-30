@@ -1,6 +1,6 @@
 import CryptoJS from "crypto-js";
 import config from "@/config";
-import type { FileType, IDType, ApiResponse } from "@/services/checkin";
+import type { FileType, IDType, ApiResponse } from "@/api/checkin";
 
 // 从本地存储读取 accessToken（不引入跨文件依赖）
 

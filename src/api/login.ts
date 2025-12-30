@@ -1,5 +1,5 @@
 import { wxLogin, type UserType } from "./checkin";
-import { type IDType } from "@/services/checkin";
+import { type IDType } from "@/api/checkin";
 import { loadId, saveId, buildAuthHeader } from "@/utils/common";
 import config from "@/config";
 
