@@ -40,6 +40,9 @@
     "build:quickapp-webview-union": "uni build -p quickapp-webview-union",
     "tsc": "vue-tsc --noEmit --skipLibCheck",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "prepare": "husky install",
     "lint-staged": "lint-staged"
   },
@@ -84,7 +87,7 @@
     "@uni-helper/uni-app-types": "1.0.0-alpha.6",
     "@uni-helper/uni-ui-types": "1.0.0-alpha.6",
     "@vue/eslint-config-prettier": "^7.1.0",
-    "@vue/eslint-config-typescript": "^11.0.3",
+    "@vue/eslint-config-typescript": "^13.0.0",
     "@vue/runtime-core": "^3.4.21",
     "@vue/tsconfig": "^0.7.0",
     "eslint": "^8.57.1",
@@ -96,6 +99,8 @@
     "sass": "^1.71.0",
     "typescript": "^5.8.3",
     "vite": "5.2.8",
+    "vitest": "^1.6.0",
+    "@vitest/coverage-v8": "^1.6.0",
     "vue-tsc": "^2.2.0"
   }
 }
