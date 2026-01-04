@@ -72,7 +72,7 @@
     "crypto-js": "^4.2.0",
     "pinia": "2.0.27",
     "pinia-plugin-persistedstate": "^3.2.3",
-    "vue": "^3.4.21",
+    "vue": "^3.5.26",
     "vue-i18n": "^9.1.9"
   },
   "devDependencies": {
