@@ -96,7 +96,7 @@
     "husky": "^8.0.3",
     "lint-staged": "^13.3.0",
     "miniprogram-api-typings": "^4.0.7",
-    "prettier": "^2.8.8",
+    "prettier": "^3.7.4",
     "sass": "^1.71.0",
     "typescript": "^5.5.4",
     "vite": "5.2.8",
