@@ -90,7 +90,7 @@
     "@vue/eslint-config-prettier": "^7.1.0",
     "@vue/eslint-config-typescript": "^13.0.0",
     "@vue/runtime-core": "^3.4.21",
-    "@vue/tsconfig": "^0.7.0",
+    "@vue/tsconfig": "^0.8.1",
     "eslint": "^8.57.1",
     "eslint-plugin-vue": "^9.33.0",
     "husky": "^8.0.3",
