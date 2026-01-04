@@ -6,6 +6,5 @@ import config from "@/config";
 
 export default {
   url: config.apiUrl,
-  a1_url: config.a1ApiUrl,
   key: config.hashSalt,
 };

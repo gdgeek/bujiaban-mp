@@ -8,11 +8,6 @@ describe("config/index.ts", () => {
       expect(typeof config.apiUrl).toBe("string");
     });
 
-    it("should have a1ApiUrl property", () => {
-      expect(config.a1ApiUrl).toBeDefined();
-      expect(typeof config.a1ApiUrl).toBe("string");
-    });
-
     it("should have cloudEnv property", () => {
       expect(config.cloudEnv).toBeDefined();
       expect(typeof config.cloudEnv).toBe("string");
@@ -27,10 +22,6 @@ describe("config/index.ts", () => {
   describe("config values", () => {
     it("apiUrl should be a valid URL format", () => {
       expect(config.apiUrl).toMatch(/^https?:\/\/.+/);
-    });
-
-    it("a1ApiUrl should be a valid URL format", () => {
-      expect(config.a1ApiUrl).toMatch(/^https?:\/\/.+/);
     });
 
     it("cloudEnv should not be empty", () => {
