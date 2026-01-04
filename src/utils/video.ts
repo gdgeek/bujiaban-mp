@@ -1,7 +1,5 @@
-import type { IDType } from "@/api/checkin";
 import { getObjectUrl } from "@/api/cloud";
 import { wxPay, generateOrderNo } from "@/api/pay";
-import config from "@/config";
 
 /** COS默认域名 */
 const COS_DEFAULT_DOMAIN = "https://game-1251022382.cos.ap-nanjing.myqcloud.com";

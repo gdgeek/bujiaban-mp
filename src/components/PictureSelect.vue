@@ -82,13 +82,7 @@ const goBack = () => {
 };
 
 const submitForm = () => {
-  // 获取选中的图片原始路径（非签名URL）
-  let image = null;
   if (selected.value !== null && props.setup && props.setup.thumbs.length > 0) {
-    const index = selected.value - 1;
-    if (index >= 0 && index < props.setup.thumbs.length) {
-      image = props.setup.thumbs[index];
-    }
     emits("setPicture", selected.value);
   }
 };

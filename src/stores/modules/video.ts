@@ -1,8 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import type { Video } from "@/types/video";
-import { formatDate } from "@/utils/format";
-import { getObjectUrl } from "@/api/cloud";
 
 export const useVideoStore = defineStore("video", () => {
   // 视频列表数据

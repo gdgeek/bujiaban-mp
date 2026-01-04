@@ -3,7 +3,8 @@
  * 统一管理所有配置项，从环境变量读取敏感信息
  */
 
-// Vite 环境变量类型声明
+// Vite 环境变量类型声明 (用于 import.meta.env 类型推断)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ImportMetaEnv {
   readonly VITE_API_URL: string;
   readonly VITE_A1_API_URL: string;

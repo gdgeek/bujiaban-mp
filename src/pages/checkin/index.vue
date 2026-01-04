@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { login } from "@/api/login";
 import { getQueryString } from "@/api/checkin";
@@ -48,19 +48,6 @@ const updateAgreementChecked = (checked: boolean) => {
   agreementChecked.value = checked;
   saveAgreementToStorage(checked);
 };
-
-const type = computed<undefined | null | string>(() => {
-  //检查 token.value  第一个字母，是E还是C
-  if (!token.value) return undefined;
-  if (token.value.startsWith("E")) {
-    return "E";
-  } else if (token.value.startsWith("C")) {
-    return "C";
-  } else if (token.value.startsWith("R")) {
-    return "R";
-  }
-  return null;
-});
 
 const getToken = () => {
   const pages = getCurrentPages();
@@ -125,11 +112,6 @@ const closeAgreementModal = () => {
   showDisclaimerModal.value = false;
 };
 
-const isExpired = (expires: string) => {
-  const now = new Date();
-  const expireTime = new Date(expires);
-  return now > expireTime;
-};
 onLoad(async () => {
   token.value = getToken(); //得到token
 

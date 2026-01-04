@@ -1,4 +1,3 @@
-import config from "@/config";
 import { get, post, put, del } from "@/utils/request";
 import type { UserType } from "@/api/checkin";
 

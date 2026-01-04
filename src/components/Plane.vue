@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, watch, onMounted, onUnmounted } from "vue";
 
 import { postData } from "@/utils/common";
 // 定义组件属性
@@ -85,7 +85,7 @@ const downloadVideo = async (key: string) => {
   });
 };
 
-let intervalId: number | null = null;
+let intervalId: ReturnType<typeof setInterval> | null = null;
 //增加属性父级别属性
 const props = defineProps<{
   id: IDType | null;

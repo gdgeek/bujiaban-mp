@@ -2,13 +2,11 @@
 import { ref, onMounted } from "vue";
 import { login } from "@/api/login";
 import type { IDType } from "@/api/checkin";
-import { putDevice, type DeviceType, manageDevice } from "@/api/device";
-import { assign } from "@/api/root.ts";
+import { type DeviceType, manageDevice } from "@/api/device";
 const id = ref<IDType | null>(null);
 const devices = ref<DeviceType[]>([]);
 const loading = ref(true);
 const saving = ref<Record<number, boolean>>({});
-const tagTimers = ref<Record<number, number>>({});
 const goBack = () => {
   uni.navigateBack();
 };

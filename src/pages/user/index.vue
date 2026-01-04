@@ -1,14 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
-import {
-  login,
-  profile,
-  regist,
-  type ProfileResponse,
-  type RegistResponse,
-} from "@/api/login";
+import { login, profile, regist, type ProfileResponse, type RegistResponse } from "@/api/login";
 
-import type { IDType, UserType } from "@/api/checkin";
+import type { IDType } from "@/api/checkin";
 import type { WxGetPhoneNumberEvent, WxUserProfileResult } from "@/types/events";
 
 const loading = ref(false);
@@ -28,10 +22,6 @@ const isAdmin = computed(() => {
 const isRoot = computed(() => {
   const role = id.value?.user?.role?.toLowerCase?.() || "";
   return role === "root";
-});
-const isManager = computed(() => {
-  const role = id.value?.user?.role?.toLowerCase?.() || "";
-  return role === "manager";
 });
 
 onMounted(async () => {

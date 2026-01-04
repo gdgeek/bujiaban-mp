@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, readonly } from "vue";
+import { ref, onMounted } from "vue";
 import { login } from "@/api/login";
 import type { IDType, UserType } from "@/api/checkin";
 import type { UniInputEvent } from "@/types/events";
@@ -146,13 +146,6 @@ const onTagInput = (idx: number, e: UniInputEvent) => {
       delete tagTimers.value[id];
     }
   }, 600) as unknown as number;
-};
-
-// 提取设备类型：优先 setup.type，其次 deviceType/type 字段，兜底 "-"
-const getDeviceType = (d: DeviceType): string => {
-  const setup = d?.setup as Record<string, unknown> | undefined;
-  const device = d as unknown as Record<string, unknown>;
-  return (setup?.type ?? setup?.deviceType ?? device?.deviceType ?? device?.type ?? "-") as string;
 };
 
 const goBack = () => {

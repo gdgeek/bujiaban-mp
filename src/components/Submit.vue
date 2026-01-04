@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { postData } from "@/utils/common"; // 导入 postData 函数
-import type { IDType, SetupInfo } from "@/api/checkin";
+import type { SetupInfo } from "@/api/checkin";
 // 增加属性父级别属性
 const props = defineProps<{
   slogan?: string;
   setup: SetupInfo;
 }>();
 
-const input = ref(props.slogan || "");
+const input = ref("");
 
 const emits = defineEmits<{
   (e: "setSlogan", val: string): void;
@@ -18,10 +17,9 @@ const emits = defineEmits<{
 watch(
   () => props.slogan,
   (newVal) => {
-    if (newVal) {
-      input.value = newVal;
-    }
+    input.value = newVal || "";
   },
+  { immediate: true },
 );
 
 const nextStep = async () => {

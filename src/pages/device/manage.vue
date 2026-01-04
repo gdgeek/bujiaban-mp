@@ -49,10 +49,6 @@ onLoad(async (opts) => {
   }
 });
 
-const goBack = () => {
-  uni.navigateBack();
-};
-
 const onInput = (field: keyof typeof setupForm.value, e: UniInputEvent) => {
   const v = e.detail.value ?? "";
   setupForm.value[field] = v as never;

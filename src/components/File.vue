@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, onMounted } from "vue";
 
 // 定义组件属性
 import { getSignedVideoUrl } from "@/utils/video";
-import type { IDType, SetupInfo, FileInfo } from "@/api/checkin";
+import type { SetupInfo, FileInfo } from "@/api/checkin";
 const previewImageLoading = ref(true); //预览图片载入
 
 // 预览图URL

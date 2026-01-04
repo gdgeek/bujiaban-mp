@@ -37,9 +37,9 @@ module.exports = {
         endOfLine: "auto",
       },
     ],
-    "vue/multi-word-component-names": ["off"],
-    "vue/no-setup-props-destructure": ["off"],
+    "vue/multi-word-component-names": ["warn"],
+    "vue/no-setup-props-destructure": ["warn"],
     "vue/no-deprecated-html-element-is": ["off"],
-    "@typescript-eslint/no-unused-vars": ["off"],
+    "@typescript-eslint/no-unused-vars": ["warn"],
   },
 };

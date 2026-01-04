@@ -102,7 +102,7 @@ import {
 } from "@/utils/video";
 import type { IDType } from "@/api/checkin";
 import { login } from "@/api/login";
-import type { VideoMetadataEvent, VideoErrorEvent } from "@/types/events";
+import type { VideoMetadataEvent } from "@/types/events";
 // 获取安全区域信息
 const { safeAreaInsets } = uni.getWindowInfo();
 
@@ -117,8 +117,6 @@ const paymentInfo = ref({
   // duration: 0,
 });
 const loading = ref(false);
-// 视频签名URL
-const videoUrl = ref<string>("");
 // 是否已经购买过该文件
 const alreadyPurchased = ref<boolean>(false);
 const PURCHASED_FILES_STORAGE_KEY = "AR_PURCHASED_FILES";
@@ -247,7 +245,7 @@ const savePurchasedFile = (videoKey: string): void => {
 // 加载视频URL和时长相关
 const tempVideoUrl = ref<string>("");
 const videoDurationResolved = ref<boolean>(false);
-const videoLoadTimeout = ref<number | null>(null);
+const videoLoadTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 const videoLoadResolve = ref<((duration: number | null) => void) | null>(null);
 
 // 获取视频的不同时间点截帧

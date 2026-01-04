@@ -16,9 +16,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
-import type { WebViewLoadEvent, WebViewMessageEvent, UniErrorEvent } from "@/types/events";
+import type { UniErrorEvent } from "@/types/events";
 
 // web-view URL
 const webviewUrl = ref("");
@@ -91,7 +91,7 @@ const initWebviewUrl = () => {
 };
 
 // 处理web-view加载成功
-const onWebViewLoaded = (event: WebViewLoadEvent) => {
+const onWebViewLoaded = () => {
   console.debug("[webview] 加载成功");
   isLoaded.value = true;
 };
@@ -106,7 +106,7 @@ const onWebViewError = (event: UniErrorEvent) => {
 };
 
 // 处理web-view消息
-const handleMessage = (event: WebViewMessageEvent) => {
+const handleMessage = () => {
   console.debug("[webview] 收到消息");
 };
 
