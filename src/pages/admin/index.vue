@@ -1,4 +1,5 @@
 <script setup lang="ts">
+defineOptions({ name: "AdminPage" });
 import { ref, onMounted } from "vue";
 import { login } from "@/api/login";
 import type { IDType } from "@/api/checkin";

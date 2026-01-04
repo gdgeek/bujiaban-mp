@@ -1,5 +1,6 @@
 import global from "@/utils/global";
 import { buildAuthHeader, calculateHash } from "@/utils/common";
+import logger from "@/utils/logger";
 
 export interface CheckinInfo {
   created_at: string;
@@ -96,7 +97,7 @@ export const wxLogin = async (): Promise<LoginResponse> => {
             },
             method: "POST",
             success: function (res) {
-              console.debug("[checkin] wxLogin 成功");
+              logger.debug("checkin", "wxLogin 成功");
               resolve(res.data as LoginResponse);
             },
             fail: function (res) {
@@ -195,7 +196,7 @@ export const localRefresh = async (
       },
       data,
       success: function (res) {
-        console.debug("[checkin] localRefresh 成功");
+        logger.debug("checkin", "localRefresh 成功");
         resolve(res.data as ApiResponse);
       },
       fail: function (res) {

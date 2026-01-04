@@ -1,10 +1,12 @@
 <script setup lang="ts">
+defineOptions({ name: "CheckinPage" });
 import { ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { login } from "@/api/login";
 import { getQueryString } from "@/api/checkin";
 import type { IDType } from "@/api/checkin";
 import FooterCopyright from "@/components/FooterCopyright.vue";
+import logger from "@/utils/logger";
 
 import Recode from "@/components/Recode.vue";
 
@@ -26,7 +28,7 @@ const agreementContent = ref("");
 const saveAgreementToStorage = (checked: boolean) => {
   try {
     uni.setStorageSync(AGREEMENT_STORAGE_KEY, checked);
-    console.log("协议勾选状态已成功保存到本地存储");
+    logger.debug("checkin", "协议勾选状态已保存到本地存储");
   } catch (e) {
     console.error("保存协议勾选状态到本地存储失败:", e);
   }
@@ -143,7 +145,7 @@ const handleScan = () => {
   uni.scanCode({
     scanType: ["qrCode"],
     success: (res) => {
-      console.log("扫码结果：", res.result);
+      logger.info("checkin", "扫码结果：", res.result);
       // 解析扫码结果
       if (res.result && res.result.includes("w.4mr.cn/t")) {
         try {
@@ -151,7 +153,7 @@ const handleScan = () => {
           const newToken = getQueryString(res.result, "k");
 
           if (newToken) {
-            console.log("检测到AR打卡token:", newToken);
+            logger.info("checkin", "检测到AR打卡token:", newToken);
             // 跳转到当前页面并带上新token
             uni.reLaunch({
               url: `/pages/checkin/index?q=${encodeURIComponent(

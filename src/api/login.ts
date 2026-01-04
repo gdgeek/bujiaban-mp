@@ -2,6 +2,7 @@ import { wxLogin, type UserType } from "./checkin";
 import { type IDType } from "@/api/checkin";
 import { loadId, saveId, buildAuthHeader } from "@/utils/common";
 import config from "@/config";
+import logger from "@/utils/logger";
 
 const isExpired = (expires: string) => {
   const now = new Date();
@@ -28,7 +29,7 @@ export const regist = async (code: string): Promise<RegistResponse> => {
       },
       data: { code },
       success: (res) => {
-        console.debug("[login] bind-phone 成功");
+        logger.debug("login", "bind-phone 成功");
         if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data as RegistResponse);
         } else {
@@ -81,7 +82,7 @@ export const profile = async (nickname: string, avatar: string): Promise<Profile
       },
       data: { nickname, avatar },
       success: (res) => {
-        console.debug("[login] profile 成功");
+        logger.debug("login", "profile 成功");
         if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data as ProfileResponse);
         } else {
@@ -118,7 +119,7 @@ export const bindPhone = async (
       },
       data: payload,
       success: (res) => {
-        console.debug("[login] bindPhone 成功");
+        logger.debug("login", "bindPhone 成功");
         if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data as BindPhoneResponse);
         } else {

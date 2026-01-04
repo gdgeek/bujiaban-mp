@@ -1,6 +1,7 @@
 import CryptoJS from "crypto-js";
 import config from "@/config";
 import type { FileType, IDType, ApiResponse } from "@/api/checkin";
+import logger from "@/utils/logger";
 
 // 从本地存储读取 accessToken（不引入跨文件依赖）
 
@@ -8,7 +9,7 @@ const OPENID_STORAGE_KEY = "AR_CHECKIN_OPENID";
 export const saveId = (id: IDType) => {
   try {
     uni.setStorageSync(OPENID_STORAGE_KEY, id);
-    console.debug("[common] openid已成功保存到本地存储");
+    logger.debug("common", "openid已成功保存到本地存储");
   } catch (e) {
     console.error("[common] 保存openid到本地存储失败:", e);
   }
@@ -40,7 +41,7 @@ export function getToken(): string | null {
 export function buildAuthHeader(): Record<string, string> {
   const at = getToken();
   // 调试日志改为debug级别
-  console.debug("[common] buildAuthHeader token:", at ? "***" : "null");
+  logger.debug("common", "buildAuthHeader token:", at ? "***" : "null");
   return at ? { Authorization: `Bearer ${at}` } : {};
 }
 
@@ -66,7 +67,7 @@ export function getFileList(id: string): Promise<FileType[]> {
         ...buildAuthHeader(),
       },
       success: (res) => {
-        console.debug("[common] getFileList 成功");
+        logger.debug("common", "getFileList 成功");
         resolve(res.data as FileType[]);
       },
       fail: (err) => {
@@ -108,7 +109,7 @@ export function postData(
       },
       data,
       success: function (res) {
-        console.debug("[common] postData 成功");
+        logger.debug("common", "postData 成功");
         resolve(res.data as ApiResponse);
       },
       fail: function (res) {

@@ -1,8 +1,10 @@
 <script setup lang="ts">
+defineOptions({ name: "RootPage" });
 import { ref, onMounted } from "vue";
 import { login } from "@/api/login";
 import type { IDType, UserType } from "@/api/checkin";
 import type { UniInputEvent } from "@/types/events";
+import logger from "@/utils/logger";
 import ArrayListInput from "@/components/ArrayListInput.vue";
 import { getDevices, putDevice, deleteDevice, type DeviceType } from "@/api/device";
 import { assign, unassign } from "@/api/root.ts";
@@ -38,7 +40,7 @@ const changeAdmin = (list: string[], d: DeviceType) => {
       }
     });
   }
-  console.log("changeAdmin", list);
+  logger.debug("root", "changeAdmin", list);
 };
 
 // 删除设备弹窗

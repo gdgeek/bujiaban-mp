@@ -2,6 +2,7 @@
  * 微信支付相关服务
  */
 import config from "@/config";
+import logger from "@/utils/logger";
 
 /** 微信支付请求参数 */
 interface WxPayOrderParams {
@@ -114,7 +115,7 @@ export const wxPay = async (params: WxPayOrderParams): Promise<boolean> => {
       const isDevtools = uni.getSystemInfoSync().platform === "devtools";
       const requestPayment = isDevtools ? mockPayment : uni.requestPayment;
 
-      console.debug("[pay] 发起支付");
+      logger.debug("pay", "发起支付");
 
       requestPayment({
         provider: "wxpay",
@@ -125,7 +126,7 @@ export const wxPay = async (params: WxPayOrderParams): Promise<boolean> => {
         signType: payParams.signType,
         paySign: payParams.paySign,
         success: () => {
-          console.debug("[pay] 支付成功");
+          logger.debug("pay", "支付成功");
           resolve(true);
         },
         fail: (err: { errMsg: string }) => {
@@ -133,7 +134,7 @@ export const wxPay = async (params: WxPayOrderParams): Promise<boolean> => {
           resolve(false);
         },
         complete: () => {
-          console.debug("[pay] 支付流程结束");
+          logger.debug("pay", "支付流程结束");
         },
       });
     });
@@ -147,7 +148,7 @@ export const wxPay = async (params: WxPayOrderParams): Promise<boolean> => {
  * 开发工具中模拟支付
  */
 const mockPayment = (options: PaymentOptions): void => {
-  console.debug("[pay] 开发工具模拟支付");
+  logger.debug("pay", "开发工具模拟支付");
   uni.showModal({
     title: "模拟支付",
     content: "当前在开发工具中，无法真实唤起支付。是否模拟支付成功？",

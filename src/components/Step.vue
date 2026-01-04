@@ -1,4 +1,5 @@
 <script setup lang="ts">
+defineOptions({ name: "StepIndicator" });
 const props = defineProps<{
   currentStep: number;
   steps: Array<{ title: string; desc: string }>;

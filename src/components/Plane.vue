@@ -1,4 +1,5 @@
 <script setup lang="ts">
+defineOptions({ name: "VideoPlane" });
 import { ref, watch, onMounted, onUnmounted } from "vue";
 
 import { postData } from "@/utils/common";

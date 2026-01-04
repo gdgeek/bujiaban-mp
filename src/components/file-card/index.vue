@@ -27,9 +27,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+defineOptions({ name: "FileCard" });
 import type { FileType } from "@/api/checkin";
 //import type { Video } from "@/types/video";
 import { getSignedVideoUrl } from "@/utils/video";
+import logger from "@/utils/logger";
 
 const props = defineProps<{
   video: FileType;
@@ -69,14 +71,14 @@ const updateThumbnailUrl = async () => {
 
 // 图片加载错误处理
 const onImageError = () => {
-  console.log("图片加载失败，使用占位图");
+  logger.info("file-card", "图片加载失败，使用占位图");
   imageLoadError.value = true;
   thumbnailUrl.value = "/static/images/video_placeholder.png";
 };
 
 // 处理视频服务
 const downloadVideo = async () => {
-  console.log("准备处理视频下载:", props.video.id);
+  logger.info("file-card", "准备处理视频下载:", props.video.id);
 
   loading.value = true;
 

@@ -17,8 +17,10 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+defineOptions({ name: "WebviewPage" });
 import { onLoad } from "@dcloudio/uni-app";
 import type { UniErrorEvent } from "@/types/events";
+import logger from "@/utils/logger";
 
 // web-view URL
 const webviewUrl = ref("");
@@ -33,12 +35,12 @@ const signedUrl = ref("");
 onLoad((query) => {
   if (query && query.key) {
     videoKey.value = decodeURIComponent(query.key as string);
-    console.debug("[webview] 接收到视频key");
+    logger.debug("webview", "接收到视频key");
 
     // 接收签名URL
     if (query.url) {
       signedUrl.value = decodeURIComponent(query.url as string);
-      console.debug("[webview] 接收到签名URL");
+      logger.debug("webview", "接收到签名URL");
     }
 
     initWebviewUrl();
@@ -84,7 +86,7 @@ const initWebviewUrl = () => {
     }
 
     webviewUrl.value = url;
-    console.debug("[webview] 当前环境:", env);
+    logger.debug("webview", "当前环境:", env);
   } catch (err) {
     console.error("[webview] 获取小程序信息失败:", err);
   }
@@ -92,7 +94,7 @@ const initWebviewUrl = () => {
 
 // 处理web-view加载成功
 const onWebViewLoaded = () => {
-  console.debug("[webview] 加载成功");
+  logger.debug("webview", "加载成功");
   isLoaded.value = true;
 };
 
@@ -107,7 +109,7 @@ const onWebViewError = (event: UniErrorEvent) => {
 
 // 处理web-view消息
 const handleMessage = () => {
-  console.debug("[webview] 收到消息");
+  logger.debug("webview", "收到消息");
 };
 
 const onShareAppMessage = () => {

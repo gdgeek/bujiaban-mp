@@ -1,6 +1,8 @@
 <script setup lang="ts">
+defineOptions({ name: "FormSubmit" });
 import { ref, computed, watch } from "vue";
 import type { SetupInfo } from "@/api/checkin";
+import logger from "@/utils/logger";
 // 增加属性父级别属性
 const props = defineProps<{
   slogan?: string;
@@ -24,14 +26,14 @@ watch(
 
 const nextStep = async () => {
   emits("setSlogan", input.value);
-  console.debug("[Submit] 前往下一步");
+  logger.debug("Submit", "前往下一步");
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const formReset = (e: any) => {
   e?.preventDefault?.();
   input.value = "";
-  console.debug("[Submit] 表单重置");
+  logger.debug("Submit", "表单重置");
 };
 
 const presetSlogans = computed(() => {

@@ -41,5 +41,6 @@ module.exports = {
     "vue/no-setup-props-destructure": ["warn"],
     "vue/no-deprecated-html-element-is": ["off"],
     "@typescript-eslint/no-unused-vars": ["warn"],
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
   },
 };

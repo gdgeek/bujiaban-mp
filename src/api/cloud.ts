@@ -1,5 +1,6 @@
 import COS from "cos-js-sdk-v5";
 import config from "@/config";
+import logger from "@/utils/logger";
 
 /** 云存储信息类型 */
 interface CloudStorageInfo {
@@ -146,7 +147,7 @@ export const uploadFile = async (
             console.error("[cloud] 上传文件失败:", err);
             reject(err);
           } else {
-            console.debug("[cloud] 上传文件成功");
+            logger.debug("cloud", "上传文件成功");
             getObjectUrl(fileName)
               .then((url) => resolve(url))
               .catch((error) => reject(error));
@@ -179,7 +180,7 @@ export const deleteFile = async (fileName: string): Promise<void> => {
             console.error("[cloud] 删除文件失败:", err);
             reject(err);
           } else {
-            console.debug("[cloud] 删除文件成功");
+            logger.debug("cloud", "删除文件成功");
             resolve();
           }
         },
@@ -212,7 +213,7 @@ export const deleteMultipleFiles = async (fileNames: string[]): Promise<void> =>
             console.error("[cloud] 批量删除文件失败:", err);
             reject(err);
           } else {
-            console.debug("[cloud] 批量删除文件成功");
+            logger.debug("cloud", "批量删除文件成功");
             resolve();
           }
         },
@@ -260,7 +261,7 @@ export const listFiles = async (
             console.error("[cloud] 获取文件列表失败:", err);
             reject(err);
           } else {
-            console.debug("[cloud] 获取文件列表成功");
+            logger.debug("cloud", "获取文件列表成功");
             resolve(data as unknown as ListFilesResult);
           }
         },

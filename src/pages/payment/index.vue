@@ -91,6 +91,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: "PaymentPage" });
 import { ref, computed } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import FooterCopyright from "@/components/FooterCopyright.vue";
@@ -103,6 +104,7 @@ import {
 import type { IDType } from "@/api/checkin";
 import { login } from "@/api/login";
 import type { VideoMetadataEvent } from "@/types/events";
+import logger from "@/utils/logger";
 // 获取安全区域信息
 const { safeAreaInsets } = uni.getWindowInfo();
 
@@ -201,7 +203,7 @@ const toggleSelectFrame = (index: number) => {
 
 // 处理截帧图片加载错误
 const onFrameError = (index: number) => {
-  console.log("截帧图片加载失败:", index);
+  logger.info("payment", "截帧图片加载失败:", index);
   frameImages.value[index].loading = false;
   // 错误占位图
   frameImages.value[index].url = "/static/images/video_placeholder.png";
@@ -311,7 +313,7 @@ const onVideoMetadataLoaded = (event: VideoMetadataEvent) => {
   clearVideoTimeout();
   const duration = event.detail.duration;
   if (duration && !videoDurationResolved.value) {
-    console.debug("[payment] 视频时长:", duration);
+    logger.debug("payment", "视频时长:", duration);
     videoDurationResolved.value = true;
 
     if (videoLoadResolve.value) {
@@ -349,7 +351,7 @@ const clearVideoTimeout = () => {
 
 // 获取视频时长
 const getVideoDuration = (url: string): Promise<number | null> => {
-  console.debug("[payment] 加载视频");
+  logger.debug("payment", "加载视频");
   return new Promise((resolve) => {
     // 重置状态
     videoDurationResolved.value = false;
@@ -359,7 +361,7 @@ const getVideoDuration = (url: string): Promise<number | null> => {
     // 设置超时处理
     videoLoadTimeout.value = setTimeout(() => {
       if (!videoDurationResolved.value) {
-        console.log("获取视频时长超时");
+        logger.info("payment", "获取视频时长超时");
         videoDurationResolved.value = true;
         if (videoLoadResolve.value) {
           videoLoadResolve.value(null);
@@ -415,7 +417,7 @@ onLoad((query) => {
   try {
     if (query && query.params) {
       const params = JSON.parse(decodeURIComponent(query.params));
-      console.log("接收到参数:", params);
+      logger.info("payment", "接收到参数:", params);
       paymentInfo.value = { ...paymentInfo.value, ...params };
 
       // 检查是否已经购买过该文件

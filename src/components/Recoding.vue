@@ -1,4 +1,5 @@
 <script setup lang="ts">
+defineOptions({ name: "VideoRecoding" });
 /**
  * 文件处理中状态组件
  * 显示录制完成后的处理中状态

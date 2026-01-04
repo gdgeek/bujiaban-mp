@@ -1,5 +1,7 @@
 <script setup lang="ts">
+defineOptions({ name: "VideoRecode" });
 import { ref, computed, watch, onMounted } from "vue";
+import logger from "@/utils/logger";
 
 import { postData } from "@/utils/common";
 
@@ -28,7 +30,7 @@ watch(
         intervalId = null;
       }
     }
-    console.debug("[Recode] Step changed:", value);
+    logger.debug("Recode", "Step changed:", value);
   },
 );
 //增加属性父级别属性
@@ -41,7 +43,7 @@ const refresh = async (
   context: Record<string, unknown> | null | undefined,
   expand: string = "token,file",
 ) => {
-  console.debug("[Recode] 刷新数据");
+  logger.debug("Recode", "刷新数据");
   if (props.token && props.id) {
     const ret = await postData(props.id!.unionid, props.token!, status.value, context, expand);
     if (ret.data.file) {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+defineOptions({ name: "DeviceManage" });
 import { ref, computed } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { login } from "@/api/login";

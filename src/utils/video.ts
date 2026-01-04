@@ -1,5 +1,6 @@
 import { getObjectUrl } from "@/api/cloud";
 import { wxPay, generateOrderNo } from "@/api/pay";
+import logger from "@/utils/logger";
 
 /** COS默认域名 */
 const COS_DEFAULT_DOMAIN = "https://game-1251022382.cos.ap-nanjing.myqcloud.com";
@@ -52,7 +53,7 @@ export const checkAlbumPermission = async (): Promise<boolean> => {
           uni.authorize({
             scope: "scope.writePhotosAlbum",
             success: () => {
-              console.debug("[video] 相册授权成功");
+              logger.debug("video", "相册授权成功");
               resolve();
             },
             fail: (err) => {
@@ -63,7 +64,7 @@ export const checkAlbumPermission = async (): Promise<boolean> => {
         });
         return true;
       } catch {
-        console.debug("[video] 用户拒绝首次授权，引导去设置页");
+        logger.debug("video", "用户拒绝首次授权，引导去设置页");
       }
     }
 

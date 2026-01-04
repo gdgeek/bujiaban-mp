@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { getObjectUrl } from "@/api/cloud";
 import type { SetupInfo } from "@/api/checkin";
+import logger from "@/utils/logger";
 const props = defineProps<{
   slogan: string;
   setup: SetupInfo | null;
@@ -37,7 +38,7 @@ const getSignedPictureUrls = async () => {
       );
 
       signedPictureUrls.value = urls;
-      console.log("已获取签名图片URLs:", urls);
+      logger.debug("PictureSelect", "已获取签名图片URLs:", urls);
     } catch (error) {
       console.error("获取签名图片URLs失败:", error);
     } finally {

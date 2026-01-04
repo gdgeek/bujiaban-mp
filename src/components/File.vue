@@ -1,4 +1,5 @@
 <script setup lang="ts">
+defineOptions({ name: "VideoFile" });
 import { ref, onMounted } from "vue";
 
 // 定义组件属性

@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+defineOptions({ name: "VideoPage" });
 import { onShow } from "@dcloudio/uni-app";
 import { useVideoStore } from "@/stores/modules/video";
 import FileCard from "@/components/file-card/index.vue";

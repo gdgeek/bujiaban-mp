@@ -1,6 +1,8 @@
 <script setup lang="ts">
+defineOptions({ name: "UserPage" });
 import { ref, onMounted, computed } from "vue";
 import { login, profile, regist, type ProfileResponse, type RegistResponse } from "@/api/login";
+import logger from "@/utils/logger";
 
 import type { IDType } from "@/api/checkin";
 import type { WxGetPhoneNumberEvent, WxUserProfileResult } from "@/types/events";
@@ -49,7 +51,7 @@ const onGetProfile = async () => {
     nickname.value = userInfo.nickName || "";
     avatarUrl.value = userInfo.avatarUrl || "";
 
-    console.debug("[用户] 获取到用户信息");
+    logger.debug("用户", "获取到用户信息");
     loading.value = true;
     const response: ProfileResponse = await profile(nickname.value, avatarUrl.value);
     hasProfile.value = response.success;
@@ -76,7 +78,7 @@ const onGetPhoneNumber = async (e: WxGetPhoneNumberEvent) => {
   try {
     const code = e.detail.code;
     if (code) {
-      console.debug("[用户] 获取到手机号code");
+      logger.debug("用户", "获取到手机号code");
       let response: RegistResponse = await regist(code);
       hasPhone.value = response.success;
       uni.showToast({
