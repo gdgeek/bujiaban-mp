@@ -98,6 +98,7 @@
     "miniprogram-api-typings": "^4.0.7",
     "prettier": "^2.8.8",
     "sass": "^1.71.0",
+    "sass-embedded": "^1.97.1",
     "typescript": "^5.5.4",
     "vite": "5.2.8",
     "vitest": "^1.6.0",
