@@ -34,5 +34,8 @@
   "create-uniapp-view.style": "scss",
   // uniapp 创建视图时，样式是否添加 scoped
   "create-uniapp-view.scoped": false,
-  "i18n-ally.localesPaths": [""]
+  "i18n-ally.localesPaths": [
+    ""
+  ],
+  "kiroAgent.configureMCP": "Disabled"
 }

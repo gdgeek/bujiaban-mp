@@ -1,99 +1,208 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, develop]
   pull_request:
-    branches: [main, master]
+    branches: [main, develop]
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint
-
+  # 代码质量检查和测试
   test:
-    name: Test
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: ${{ matrix.node-version }}
           cache: "npm"
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript type check
+        run: pnpm run tsc
+
+      - name: ESLint check
+        run: pnpm run lint
+
+      - name: Run tests
+        run: pnpm run test
 
       - name: Run tests with coverage
-        run: npm run test:coverage
+        run: pnpm run test:coverage
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
         with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 7
+          file: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
 
-  typecheck:
-    name: Type Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run TypeScript check
-        run: npm run tsc
-
+  # 构建检查
   build:
-    name: Build
     runs-on: ubuntu-latest
-    needs: [lint, test, typecheck]
+    needs: test
+
+    strategy:
+      matrix:
+        platform: [h5, mp-weixin]
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20.x"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build WeChat Mini Program
-        run: npm run build:mp-weixin
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
         with:
-          name: mp-weixin-dist
-          path: dist/build/mp-weixin/
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build for ${{ matrix.platform }}
+        run: |
+          if [ "${{ matrix.platform }}" = "h5" ]; then
+            pnpm run build:h5
+          elif [ "${{ matrix.platform }}" = "mp-weixin" ]; then
+            pnpm run build:mp-weixin
+          fi
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_CLOUD_ENV: ${{ secrets.VITE_CLOUD_ENV }}
+          VITE_HASH_SALT: ${{ secrets.VITE_HASH_SALT }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-${{ matrix.platform }}
+          path: dist/
           retention-days: 7
+
+  # 安全扫描
+  security:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run npm audit
+        run: npm audit --audit-level moderate
+        continue-on-error: true
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  # 部署到测试环境 (仅在 develop 分支)
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build for H5
+        run: pnpm run build:h5
+        env:
+          VITE_API_URL: ${{ secrets.STAGING_API_URL }}
+          VITE_CLOUD_ENV: ${{ secrets.STAGING_CLOUD_ENV }}
+          VITE_HASH_SALT: ${{ secrets.VITE_HASH_SALT }}
+
+      - name: Deploy to staging
+        run: |
+          echo "部署到测试环境..."
+          # 这里可以添加具体的部署命令
+          # 例如: rsync, scp, 或者云服务商的部署工具
+
+  # 部署到生产环境 (仅在 main 分支)
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build for production
+        run: |
+          pnpm run build:h5
+          pnpm run build:mp-weixin
+        env:
+          VITE_API_URL: ${{ secrets.PROD_API_URL }}
+          VITE_CLOUD_ENV: ${{ secrets.PROD_CLOUD_ENV }}
+          VITE_HASH_SALT: ${{ secrets.VITE_HASH_SALT }}
+
+      - name: Deploy to production
+        run: |
+          echo "部署到生产环境..."
+          # 这里可以添加具体的部署命令
+
+  # 通知
+  notify:
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: always()
+
+    steps:
+      - name: Notify on success
+        if: needs.test.result == 'success' && needs.build.result == 'success'
+        run: |
+          echo "✅ CI/CD 流水线执行成功"
+
+      - name: Notify on failure
+        if: needs.test.result == 'failure' || needs.build.result == 'failure'
+        run: |
+          echo "❌ CI/CD 流水线执行失败"

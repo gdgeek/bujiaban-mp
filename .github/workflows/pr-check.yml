@@ -1,0 +1,133 @@
+name: PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check commit messages
+        run: |
+          # 检查提交信息格式 (Conventional Commits)
+          echo "检查提交信息格式..."
+          git log --oneline ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | while read line; do
+            if ! echo "$line" | grep -qE "^[a-f0-9]+ (feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?: .+"; then
+              echo "❌ 提交信息格式不符合规范: $line"
+              echo "请使用格式: type(scope): description"
+              echo "例如: feat(user): add login functionality"
+              exit 1
+            fi
+          done
+
+      - name: Check file changes
+        run: |
+          # 检查是否有敏感文件变更
+          changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+
+          # 检查是否修改了配置文件
+          if echo "$changed_files" | grep -E "\.(env|config)\." > /dev/null; then
+            echo "⚠️  检测到配置文件变更，请确认是否需要更新环境变量"
+          fi
+
+          # 检查是否有大文件
+          for file in $changed_files; do
+            if [ -f "$file" ] && [ $(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo 0) -gt 1048576 ]; then
+              echo "❌ 文件过大 (>1MB): $file"
+              exit 1
+            fi
+          done
+
+      - name: TypeScript type check
+        run: pnpm run tsc
+
+      - name: ESLint check
+        run: pnpm run lint
+
+      - name: Run tests
+        run: pnpm run test
+
+      - name: Build check
+        run: pnpm run build:h5
+        env:
+          VITE_API_URL: "https://api.example.com"
+          VITE_CLOUD_ENV: "test-env"
+          VITE_HASH_SALT: "test-salt"
+
+      - name: Check bundle size
+        run: |
+          # 检查构建产物大小
+          if [ -d "dist" ]; then
+            size=$(du -sh dist | cut -f1)
+            echo "📦 构建产物大小: $size"
+
+            # 如果大小超过 10MB 给出警告
+            size_bytes=$(du -sb dist | cut -f1)
+            if [ $size_bytes -gt 10485760 ]; then
+              echo "⚠️  构建产物较大，请检查是否包含不必要的文件"
+            fi
+          fi
+
+      - name: Comment PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' && comment.body.includes('🤖 PR 检查结果')
+            );
+
+            const body = `🤖 PR 检查结果
+
+            ✅ TypeScript 类型检查通过
+            ✅ ESLint 代码规范检查通过
+            ✅ 单元测试通过
+            ✅ 构建检查通过
+
+            📊 检查统计:
+            - 提交数量: ${{ github.event.pull_request.commits }}
+            - 文件变更: +${{ github.event.pull_request.additions }} -${{ github.event.pull_request.deletions }}
+
+            🚀 此 PR 已准备好合并！`;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
