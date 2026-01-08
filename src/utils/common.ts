@@ -88,9 +88,12 @@ export function postData(
   return new Promise((resolve, reject) => {
     const time: string = Math.floor(Date.now() / 1000).toString();
     const hash = calculateHash(token, time, id);
-    const url = `${config.apiUrl}/applet/refresh?time=${time}&hash=${hash}&expand=${expand}`;
+    const t = getToken();
+
+    const url = `${config.apiUrl}/applet/refresh?time=${time}&hash=${hash}&expand=${expand}&t=${t}`;
 
     let data: { token: string; id: string; status?: string; data?: string } = { token, id };
+    console.error(data);
 
     if (context) {
       data = { ...data, data: JSON.stringify(context) };

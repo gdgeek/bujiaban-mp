@@ -1,11 +1,20 @@
 <script setup lang="ts">
 defineOptions({ name: "VideoFile" });
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 
 // 定义组件属性
 import { getSignedVideoUrl } from "@/utils/video";
 import type { SetupInfo, FileInfo } from "@/api/checkin";
 const previewImageLoading = ref(true); //预览图片载入
+
+//增加属性父级别属性
+const props = defineProps<{
+  file: FileInfo | null;
+  setup: SetupInfo;
+}>();
+
+const fileKey = computed(() => (typeof props.file?.key === "string" ? props.file.key : ""));
+const fileName = computed(() => fileKey.value.split("/").pop() || "AR打卡视频");
 
 // 预览图URL
 const previewImageUrl = ref<string>(""); //预览图url
@@ -13,13 +22,21 @@ const videoUrl = ref<string>(""); //视频url
 //const file = ref<FileInfo | null | undefined>(null); //文件url
 
 onMounted(async () => {
-  if (props.file) {
-    previewImageUrl.value = await getSignedVideoUrl(props.file.key, true);
-    videoUrl.value = await getSignedVideoUrl(props.file.key);
+  if (fileKey.value) {
+    previewImageUrl.value = await getSignedVideoUrl(fileKey.value, true);
+    videoUrl.value = await getSignedVideoUrl(fileKey.value);
   }
 });
 
-const downloadVideo = async (key: string) => {
+const downloadVideo = async (key?: string) => {
+  if (typeof key !== "string" || !key) {
+    uni.showToast({
+      title: "文件信息不完整",
+      icon: "none",
+    });
+    return;
+  }
+
   const price = props.setup!.money;
   const shots: Array<number> = props.setup.shots;
 
@@ -44,12 +61,6 @@ const downloadVideo = async (key: string) => {
     },
   });
 };
-
-//增加属性父级别属性
-const props = defineProps<{
-  file: FileInfo | null;
-  setup: SetupInfo;
-}>();
 
 const getPriceDisplay = () => {
   try {
@@ -87,7 +98,7 @@ const getPriceDisplay = () => {
             <view class="file-icon">
               <image src="/static/icons/video_icon.png" mode="aspectFit"></image>
             </view>
-            <view class="file-name">{{ props.file.key.split("/").pop() }}</view>
+            <view class="file-name">{{ fileName }}</view>
           </view>
 
           <!-- 视频第一帧预览 -->
@@ -116,7 +127,7 @@ const getPriceDisplay = () => {
             <!-- 下载视频按钮 -->
             <button
               class="action-button download-button full-width"
-              @click="downloadVideo(props.file.key)"
+              @click="downloadVideo(fileKey)"
             >
               <view class="button-icon"
                 ><image src="/static/icons/download.png" mode="aspectFit"></image

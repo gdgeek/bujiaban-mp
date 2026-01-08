@@ -11,6 +11,7 @@ import Submit from "@/components/Submit.vue";
 import PictureSelect from "@/components/PictureSelect.vue";
 import File from "@/components/File.vue";
 import Recoding from "@/components/Recoding.vue";
+import Step from "@/components/Step.vue";
 const step = ref<number>(-1);
 const file = ref<FileInfo | null>(null);
 const device = ref<ReportInfo | null>(null);
@@ -45,20 +46,22 @@ const refresh = async (
 ) => {
   logger.debug("Recode", "刷新数据");
   if (props.token && props.id) {
-    const ret = await postData(props.id!.unionid, props.token!, status.value, context, expand);
-    if (ret.data.file) {
-      file.value = ret.data.file;
+    const response = await postData(props.id!.unionid, props.token!, status.value, context, expand);
+    const data = response.data;
+    console.error("刷新结果", data);
+    if (data.file) {
+      file.value = data.file;
       if (file.value != null) {
         step.value = 3;
       }
     }
-    if (ret.data.device) {
-      device.value = ret.data.device;
+    if (data.device) {
+      device.value = data.device;
     }
-    if (ret.data.setup) {
-      setup.value = ret.data.setup;
+    if (data.setup) {
+      setup.value = data.setup;
     }
-    return ret;
+    return response;
   }
   return undefined;
 };
@@ -116,10 +119,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <view class="content-wrapper" :loading="true">
+  <view class="content-wrappe [{{ step }}]
     <!-- 进度指示器 -->
     <view class="progress-tracker">
-      <step :currentStep="step" :steps="steps" style="width: 100%" />
+      <Step :currentStep="step" :steps="steps" style="width: 100%" />
     </view>
 
     <view v-if="setup">

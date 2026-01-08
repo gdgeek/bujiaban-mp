@@ -52,8 +52,11 @@ const props = defineProps<{
 // 步骤指示器
 .steps {
   display: flex;
+  flex-direction: row;
   align-items: center;
   position: relative;
+  width: 100%;
+  min-height: 100rpx;
 }
 
 .step-item {
@@ -62,6 +65,7 @@ const props = defineProps<{
   align-items: center;
   flex: 1;
   position: relative;
+  min-width: 0;
 }
 
 // 步骤圆圈

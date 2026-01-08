@@ -16,8 +16,8 @@ import {
   getDevice,
   getDeviceWithSetup,
   manageDevice,
-  DeviceType,
-  SetupType,
+  type DeviceType,
+  type SetupType,
 } from "../device";
 
 describe("device.ts", () => {
