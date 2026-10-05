@@ -7,7 +7,7 @@ const mockWxRequest = vi.fn();
   request: mockWxRequest,
 };
 
-import { getCheckinList, VerseType } from "../a1";
+import { getCheckinList, type VerseType } from "../a1";
 
 describe("a1.ts", () => {
   beforeEach(() => {
