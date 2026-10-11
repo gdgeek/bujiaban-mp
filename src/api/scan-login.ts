@@ -184,18 +184,19 @@ export async function approveAdminLogin(
   isCancelled: () => boolean = () => false,
 ): Promise<void> {
   validateTicket(ticket);
+  const apiBase = `${ticket.origin}${
+    ticket.origin === "https://checkin.voxel.cn" ? "/api/v2" : "/v2"
+  }`;
   const checkActive = () => {
     if (isCancelled()) throw new Error("已取消登录");
   };
   checkActive();
   const code = await freshWechatCode();
   checkActive();
-  const login = await targetPost(
-    `${ticket.origin}/v2/site/login`,
-    { code },
-    "目标后端登录失败，请重试",
-    [ticket.secret, code],
-  );
+  const login = await targetPost(`${apiBase}/site/login`, { code }, "目标后端登录失败，请重试", [
+    ticket.secret,
+    code,
+  ]);
   checkActive();
   const data = login.data;
   const token = isRecord(data) && isRecord(data.token) ? data.token.accessToken : undefined;
@@ -203,7 +204,7 @@ export async function approveAdminLogin(
     throw new Error("目标后端登录失败，请重试");
   }
   const approval = await targetPost(
-    `${ticket.origin}/v2/web-login/tickets/${ticket.id}/approve`,
+    `${apiBase}/web-login/tickets/${ticket.id}/approve`,
     { secret: ticket.secret },
     "确认登录失败，请刷新二维码后重试",
     [ticket.secret, token, code],

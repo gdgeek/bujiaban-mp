@@ -13,7 +13,7 @@ interface ImportMetaEnv {
 
 // 默认配置值（作为环境变量未设置时的后备）
 const defaults = {
-  apiUrl: "https://checkin.voxel.cn/v2",
+  apiUrl: "https://checkin.voxel.cn/api/v2",
   cloudEnv: "game-9ghhigyq57e00dc3",
   hashSalt: "buj1aban.c0m",
 };

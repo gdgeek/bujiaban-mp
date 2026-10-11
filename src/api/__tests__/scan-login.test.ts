@@ -89,6 +89,11 @@ describe("admin login QR protocol", () => {
     qr("https://x.b0.01xr.com:443"),
     qr("https://X.B0.01XR.COM"),
     qr("https://x.b0.01xr.com\\@evil.example"),
+    qr("https://checkin.voxel.cn/"),
+    qr("https://checkin.voxel.cn/v2"),
+    qr("https://checkin.voxel.cn/api/v2"),
+    qr("https://checkin.voxel.cn?evil=1"),
+    qr("https://checkin.voxel.cn#fragment"),
   ])("rejects an untrusted or noncanonical origin: %s", (value) => {
     expect(() => api.parseAdminLoginQr(value)).toThrow();
   });
@@ -121,7 +126,10 @@ describe("admin login QR protocol", () => {
   });
 
   it("does not trust malformed allowlist values", () => {
-    vi.stubEnv("VITE_ADMIN_LOGIN_ORIGINS", "https://x.b0.01xr.com/path,https://user@x.b0.01xr.com");
+    vi.stubEnv(
+      "VITE_ADMIN_LOGIN_ORIGINS",
+      "https://x.b0.01xr.com/path,https://user@x.b0.01xr.com,https://checkin.voxel.cn/api/v2",
+    );
     expect(api?.getTrustedAdminLoginOrigins()).toEqual([]);
     expect(() => api.parseAdminLoginQr(qr())).toThrow("不受信任");
   });
@@ -217,15 +225,19 @@ describe("confirmation and credentials stay within the target backend", () => {
     vi.unstubAllGlobals();
   });
 
-  it.each(["https://x.b1.01xr.com", "https://checkin.voxel.cn"])(
+  it.each([
+    ["https://checkin.voxel.cn", "/api/v2"],
+    ["https://x.b0.01xr.com", "/v2"],
+    ["https://x.b1.01xr.com", "/v2"],
+    ["https://x.4mr.cn", "/v2"],
+  ])(
     "allows an ordinary user to approve %s using only a fresh target Bearer",
-    async (target) => {
+    async (target, apiPath) => {
       loginSpy.mockImplementation((options) =>
         options.success?.({ code: "fresh-b1-code", errMsg: "login:ok" }),
       );
       requestSpy.mockImplementation((options) => {
         if (options.url.endsWith("/site/login")) {
-          expect(options.url).toBe(`${target}/v2/site/login`);
           expect(options.method).toBe("POST");
           expect(options.header).toEqual({ "Content-Type": "application/json" });
           expect(options.data).toEqual({ code: "fresh-b1-code" });
@@ -239,7 +251,6 @@ describe("confirmation and credentials stay within the target backend", () => {
             }),
           );
         } else {
-          expect(options.url).toBe(`${target}/v2/web-login/tickets/${id}/approve`);
           expect(options.method).toBe("POST");
           expect(options.header).toEqual({
             "Content-Type": "application/json",
@@ -254,6 +265,10 @@ describe("confirmation and credentials stay within the target backend", () => {
       await expect(
         api?.approveAdminLogin?.({ id, secret, origin: target }),
       ).resolves.toBeUndefined();
+      expect(requestSpy.mock.calls.map(([options]) => options.url)).toEqual([
+        `${target}${apiPath}/site/login`,
+        `${target}${apiPath}/web-login/tickets/${id}/approve`,
+      ]);
       expect(loginSpy).toHaveBeenCalledTimes(1);
       expect(requestSpy).toHaveBeenCalledTimes(2);
       expect(storageReadSpy).not.toHaveBeenCalled();
@@ -292,15 +307,18 @@ describe("confirmation and credentials stay within the target backend", () => {
     },
   );
 
-  it("does not approve when target login fails", async () => {
-    requestSpy.mockImplementation((options) =>
-      options.success(success({ success: false, message: "微信身份无法识别", data: null }, 403)),
-    );
-    await expect(api?.approveAdminLogin?.({ id, secret, origin })).rejects.toThrow(
-      "微信身份无法识别",
-    );
-    expect(requestSpy).toHaveBeenCalledTimes(1);
-  });
+  it.each([origin, "https://checkin.voxel.cn"])(
+    "does not approve or retry when %s login fails",
+    async (target) => {
+      requestSpy.mockImplementation((options) =>
+        options.success(success({ success: false, message: "微信身份无法识别", data: null }, 403)),
+      );
+      await expect(api?.approveAdminLogin?.({ id, secret, origin: target })).rejects.toThrow(
+        "微信身份无法识别",
+      );
+      expect(requestSpy).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it.each([undefined, "", "bad\r\ntoken", "bad\n"])(
     "rejects missing or unsafe target credentials",

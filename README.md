@@ -24,9 +24,9 @@ pnpm run dev:mp-weixin
 
 ### API 入口与后端切换
 
-默认、开发和生产配置统一使用 `https://checkin.voxel.cn/v2`。该入口由服务端反向代理到 B0 主后端与 B1 备用后端，自动切换由代理负责；小程序继续使用现有请求流程，不重试业务写操作。启用前需在微信小程序管理后台的 request 合法域名中加入 `https://checkin.voxel.cn`，并保持开发者工具 `urlCheck: true`。
+默认、开发和生产配置统一使用 `https://checkin.voxel.cn/api/v2`。该入口由服务端反向代理到 B0 主后端与 B1 备用后端，自动切换由代理负责；小程序继续使用现有请求流程，不重试业务写操作。启用前需在微信小程序管理后台的 request 合法域名中加入 `https://checkin.voxel.cn`，并保持开发者工具 `urlCheck: true`。
 
-管理后台扫码登录仍使用二维码中的 origin，重新获取目标后端的微信凭据；默认与环境配置同时信任 `https://checkin.voxel.cn`，并保留 `https://x.b0.01xr.com`、`https://x.b1.01xr.com` 和 `https://x.4mr.cn` 以兼容现有二维码。B0 与 B1 生成新二维码时应统一使用 `https://checkin.voxel.cn` 作为 canonical origin。
+管理后台扫码登录仍使用二维码中的 origin，重新获取目标后端的微信凭据；默认与环境配置同时信任 `https://checkin.voxel.cn`，并保留 `https://x.b0.01xr.com`、`https://x.b1.01xr.com` 和 `https://x.4mr.cn` 以兼容现有二维码。二维码的 canonical origin 必须保持根 origin，不包含路径：`https://checkin.voxel.cn` 的登录与审批请求使用 `/api/v2`，其他可信直连 origin 继续使用 `/v2`。B0 与 B1 生成新二维码时应统一使用 `https://checkin.voxel.cn` 作为 canonical origin。
 
 统一域名不会自动保证现有 Bearer Token 可在两个后端通用；上线前须验证 B0 签发的 Token 在 B1 仍能通过鉴权，并确认扫码登录状态可跨后端继续处理。腾讯云 COS 的上传、下载和删除仍由 COS SDK 直接访问存储域名。
 
