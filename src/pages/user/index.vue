@@ -1,30 +1,21 @@
 <script setup lang="ts">
 defineOptions({ name: "UserPage" });
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import { login, profile, regist, type ProfileResponse, type RegistResponse } from "@/api/login";
 import logger from "@/utils/logger";
+import { beginAdminLoginScan } from "@/api/scan-login";
 
 import type { IDType } from "@/api/checkin";
 import type { WxGetPhoneNumberEvent, WxUserProfileResult } from "@/types/events";
 
 const loading = ref(false);
+const scanningAdminLogin = ref(false);
 const hasProfile = ref(false);
 const hasPhone = ref(false);
 const nickname = ref("");
 const avatarUrl = ref("");
 
 const id = ref<IDType | null>(null);
-
-// 角色是否具备管理权限
-const isAdmin = computed(() => {
-  const role = id.value?.user?.role?.toLowerCase?.() || "";
-  return role === "root" || role === "manager";
-});
-
-const isRoot = computed(() => {
-  const role = id.value?.user?.role?.toLowerCase?.() || "";
-  return role === "root";
-});
 
 onMounted(async () => {
   id.value = await login(true);
@@ -95,19 +86,23 @@ const onGetPhoneNumber = async (e: WxGetPhoneNumberEvent) => {
   }
 };
 
-const gotoRoot = () => {
-  if (!isAdmin.value) {
-    uni.showToast({ title: "暂无权限", icon: "none" });
-    return;
-  }
-  uni.navigateTo({ url: "/pages/root/index" });
-};
-const gotoAdmin = () => {
-  if (!isAdmin.value) {
-    uni.showToast({ title: "暂无权限", icon: "none" });
-    return;
-  }
+const gotoMyDevices = () => {
   uni.navigateTo({ url: "/pages/admin/index" });
+};
+
+const onScanAdminLogin = async () => {
+  if (scanningAdminLogin.value) return;
+  scanningAdminLogin.value = true;
+  try {
+    await beginAdminLoginScan();
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : "扫码失败，请重试",
+      icon: "none",
+    });
+  } finally {
+    scanningAdminLogin.value = false;
+  }
 };
 </script>
 
@@ -154,23 +149,16 @@ const gotoAdmin = () => {
       </view>
 
       <button
-        v-if="isAdmin"
-        :size="'mini'"
         class="btn primary"
-        style="margin-top: 28rpx"
-        @tap="gotoAdmin"
+        :loading="scanningAdminLogin"
+        :disabled="scanningAdminLogin"
+        @tap="onScanAdminLogin"
       >
-        进入管理后台
+        扫码登录设备后台
       </button>
 
-      <button
-        v-if="isRoot"
-        :size="'mini'"
-        class="btn primary"
-        style="margin-top: 28rpx"
-        @tap="gotoRoot"
-      >
-        根用户管理控制
+      <button :size="'mini'" class="btn primary" style="margin-top: 28rpx" @tap="gotoMyDevices">
+        我的关联设备
       </button>
     </view>
   </view>

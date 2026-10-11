@@ -29,6 +29,12 @@
       }
     },
     {
+      "path": "pages/auth/confirm",
+      "style": {
+        "navigationBarTitleText": "确认登录"
+      }
+    },
+    {
       "path": "pages/video/index",
       "style": {
         "navigationBarTitleText": "记录管理",
@@ -46,13 +52,7 @@
     {
       "path": "pages/admin/index",
       "style": {
-        "navigationBarTitleText": "管理后台"
-      }
-    },
-    {
-      "path": "pages/root/index",
-      "style": {
-        "navigationBarTitleText": "root用户管理"
+        "navigationBarTitleText": "我的关联设备"
       }
     },
     {

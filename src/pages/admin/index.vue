@@ -32,7 +32,7 @@ const goDeviceManage = (deviceId: number) => {
 <template>
   <view class="admin-page">
     <view class="header">
-      <text class="title">管理后台</text>
+      <text class="title">我的关联设备</text>
     </view>
 
     <view v-if="loading">加载中...</view>
@@ -42,13 +42,10 @@ const goDeviceManage = (deviceId: number) => {
         <text class="label">当前用户</text>
         <text class="value">{{ id?.user?.nickname || id?.openid || "未登录" }}</text>
       </view>
-      <view class="row">
-        <text class="label">角色</text>
-        <text class="value">{{ id?.user?.role || "-" }}</text>
-      </view>
       <view class="divider" />
-      <view class="title small">设备列表</view>
-      <view class="subtitle">当前共有 {{ devices.length }} 台设备</view>
+      <view class="title small">关联设备列表</view>
+      <view class="subtitle">仅显示当前微信账号关联的设备，共 {{ devices.length }} 台</view>
+      <view v-if="!devices.length" class="empty">暂无关联设备</view>
       <view class="device-list">
         <view v-for="d in devices" :key="d.id">
           <view class="hr" />

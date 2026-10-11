@@ -92,7 +92,7 @@ jobs:
           VITE_HASH_SALT: ${{ secrets.VITE_HASH_SALT }}
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.platform }}
           path: dist/

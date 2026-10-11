@@ -50,7 +50,7 @@
   "mp-weixin": {
     "appid": "wx6ca0cec5dae8f51b",
     "setting": {
-      "urlCheck": false
+      "urlCheck": true
     },
     "usingComponents": true,
     "lazyCodeLoading": "requiredComponents"

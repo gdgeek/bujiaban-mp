@@ -119,7 +119,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <view class="content-wrappe [{{ step }}]
+  <view class="content-wrapper">
     <!-- 进度指示器 -->
     <view class="progress-tracker">
       <Step :currentStep="step" :steps="steps" style="width: 100%" />
