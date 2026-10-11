@@ -1,4 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi, type MockInstance } from "vitest";
+import { loadEnv } from "vite";
 import * as api from "../scan-login";
 const id = "0123456789abcdef0123456789abcdef";
 const secret = "0123456789abcdef".repeat(4);
@@ -19,6 +20,30 @@ describe("admin login QR protocol", () => {
   it("parses a canonical login QR for the default B0 backend", () => {
     expect(api?.parseAdminLoginQr(qr())).toEqual({ id, secret, origin });
   });
+
+  it("accepts the unified checkin origin by default", () => {
+    const target = "https://checkin.voxel.cn";
+    expect(api.parseAdminLoginQr(qr(target))).toEqual({ id, secret, origin: target });
+  });
+
+  it.each(["development", "production"])(
+    "trusts checkin and the existing backends in the %s configuration",
+    (mode) => {
+      const env = loadEnv(mode, process.cwd());
+      vi.stubEnv("VITE_ADMIN_LOGIN_ORIGINS", env.VITE_ADMIN_LOGIN_ORIGINS);
+      expect(api.getTrustedAdminLoginOrigins()).toEqual([
+        "https://checkin.voxel.cn",
+        "https://x.b0.01xr.com",
+        "https://x.b1.01xr.com",
+        "https://x.4mr.cn",
+      ]);
+      expect(api.parseAdminLoginQr(qr("https://checkin.voxel.cn"))).toEqual({
+        id,
+        secret,
+        origin: "https://checkin.voxel.cn",
+      });
+    },
+  );
 
   it("accepts the deployment canonical origin shared with the mini program API", () => {
     const canonical = "https://x.4mr.cn";
@@ -192,49 +217,53 @@ describe("confirmation and credentials stay within the target backend", () => {
     vi.unstubAllGlobals();
   });
 
-  it("allows an ordinary user to approve B1 using only a fresh target Bearer", async () => {
-    const target = "https://x.b1.01xr.com";
-    loginSpy.mockImplementation((options) =>
-      options.success?.({ code: "fresh-b1-code", errMsg: "login:ok" }),
-    );
-    requestSpy.mockImplementation((options) => {
-      if (options.url.endsWith("/site/login")) {
-        expect(options.url).toBe(`${target}/v2/site/login`);
-        expect(options.method).toBe("POST");
-        expect(options.header).toEqual({ "Content-Type": "application/json" });
-        expect(options.data).toEqual({ code: "fresh-b1-code" });
-        options.success(
-          success({
-            success: true,
-            data: {
-              token: { accessToken: "temporary-b1-token" },
-              user: { id: 42, role: "user" },
-            },
-          }),
-        );
-      } else {
-        expect(options.url).toBe(`${target}/v2/web-login/tickets/${id}/approve`);
-        expect(options.method).toBe("POST");
-        expect(options.header).toEqual({
-          "Content-Type": "application/json",
-          Authorization: "Bearer temporary-b1-token",
-        });
-        expect(options.data).toEqual({ secret });
-        options.success(
-          success({ success: true, message: "已确认", data: { status: "approved" } }),
-        );
-      }
-    });
-    await expect(api?.approveAdminLogin?.({ id, secret, origin: target })).resolves.toBeUndefined();
-    expect(loginSpy).toHaveBeenCalledTimes(1);
-    expect(requestSpy).toHaveBeenCalledTimes(2);
-    expect(storageReadSpy).not.toHaveBeenCalled();
-    expect(storageWriteSpy).not.toHaveBeenCalled();
-    expect(consoleSpy).not.toHaveBeenCalled();
-    expect(uni.getStorageSync("AR_CHECKIN_OPENID")).toEqual({
-      token: { accessToken: "original-global-token" },
-    });
-  });
+  it.each(["https://x.b1.01xr.com", "https://checkin.voxel.cn"])(
+    "allows an ordinary user to approve %s using only a fresh target Bearer",
+    async (target) => {
+      loginSpy.mockImplementation((options) =>
+        options.success?.({ code: "fresh-b1-code", errMsg: "login:ok" }),
+      );
+      requestSpy.mockImplementation((options) => {
+        if (options.url.endsWith("/site/login")) {
+          expect(options.url).toBe(`${target}/v2/site/login`);
+          expect(options.method).toBe("POST");
+          expect(options.header).toEqual({ "Content-Type": "application/json" });
+          expect(options.data).toEqual({ code: "fresh-b1-code" });
+          options.success(
+            success({
+              success: true,
+              data: {
+                token: { accessToken: "temporary-b1-token" },
+                user: { id: 42, role: "user" },
+              },
+            }),
+          );
+        } else {
+          expect(options.url).toBe(`${target}/v2/web-login/tickets/${id}/approve`);
+          expect(options.method).toBe("POST");
+          expect(options.header).toEqual({
+            "Content-Type": "application/json",
+            Authorization: "Bearer temporary-b1-token",
+          });
+          expect(options.data).toEqual({ secret });
+          options.success(
+            success({ success: true, message: "已确认", data: { status: "approved" } }),
+          );
+        }
+      });
+      await expect(
+        api?.approveAdminLogin?.({ id, secret, origin: target }),
+      ).resolves.toBeUndefined();
+      expect(loginSpy).toHaveBeenCalledTimes(1);
+      expect(requestSpy).toHaveBeenCalledTimes(2);
+      expect(storageReadSpy).not.toHaveBeenCalled();
+      expect(storageWriteSpy).not.toHaveBeenCalled();
+      expect(consoleSpy).not.toHaveBeenCalled();
+      expect(uni.getStorageSync("AR_CHECKIN_OPENID")).toEqual({
+        token: { accessToken: "original-global-token" },
+      });
+    },
+  );
 
   it("revalidates the target before authentication", async () => {
     await expect(

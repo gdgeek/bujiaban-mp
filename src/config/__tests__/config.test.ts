@@ -1,5 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import { loadEnv } from "vite";
 import config from "../index";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.resetModules();
+});
 
 describe("config/index.ts", () => {
   describe("config object", () => {
@@ -31,5 +37,25 @@ describe("config/index.ts", () => {
     it("hashSalt should not be empty", () => {
       expect(config.hashSalt.length).toBeGreaterThan(0);
     });
+  });
+
+  describe("unified proxy routing", () => {
+    it("uses checkin as the default API when no environment override is present", async () => {
+      vi.stubEnv("VITE_API_URL", "");
+      vi.resetModules();
+      const { config: defaults } = await import("../index");
+      expect(defaults.apiUrl).toBe("https://checkin.voxel.cn/v2");
+    });
+
+    it.each(["development", "production"])(
+      "uses checkin for the %s API configuration",
+      async (mode) => {
+        const env = loadEnv(mode, process.cwd());
+        vi.stubEnv("VITE_API_URL", env.VITE_API_URL);
+        vi.resetModules();
+        const { config: configured } = await import("../index");
+        expect(configured.apiUrl).toBe("https://checkin.voxel.cn/v2");
+      },
+    );
   });
 });

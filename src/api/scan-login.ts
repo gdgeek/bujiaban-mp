@@ -5,7 +5,12 @@ export interface AdminLoginTicket {
   readonly origin: string;
 }
 
-const DEFAULT_ORIGINS = ["https://x.b0.01xr.com", "https://x.b1.01xr.com", "https://x.4mr.cn"];
+const DEFAULT_ORIGINS = [
+  "https://checkin.voxel.cn",
+  "https://x.b0.01xr.com",
+  "https://x.b1.01xr.com",
+  "https://x.4mr.cn",
+];
 const INVALID_QR = "无效的管理后台登录二维码，请刷新后重试";
 let pendingTicket: AdminLoginTicket | null = null;
 
