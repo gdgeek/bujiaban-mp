@@ -4,6 +4,9 @@ import { ref, onMounted, computed } from "vue";
 
 // 定义组件属性
 import { getSignedVideoUrl } from "@/utils/video";
+import config from "@/config";
+import { isLegacyApiUrl } from "@/config/backend";
+const apiUrl = config.apiUrl;
 import type { SetupInfo, FileInfo } from "@/api/checkin";
 const previewImageLoading = ref(true); //预览图片载入
 
@@ -23,8 +26,8 @@ const videoUrl = ref<string>(""); //视频url
 
 onMounted(async () => {
   if (fileKey.value) {
-    previewImageUrl.value = await getSignedVideoUrl(fileKey.value, true);
-    videoUrl.value = await getSignedVideoUrl(fileKey.value);
+    previewImageUrl.value = await getSignedVideoUrl(fileKey.value, true, 0.01, apiUrl);
+    videoUrl.value = await getSignedVideoUrl(fileKey.value, false, 0.01, apiUrl);
   }
 });
 
@@ -37,13 +40,13 @@ const downloadVideo = async (key?: string) => {
     return;
   }
 
-  const price = props.setup!.money;
   const shots: Array<number> = props.setup.shots;
 
   // 准备参数
   const params = {
-    videoKey: key,
-    price: price,
+    ...(isLegacyApiUrl(apiUrl)
+      ? { videoKey: key, price: props.setup.money }
+      : { videoId: props.file?.file_id }),
     shots: shots,
     title: key.split("/").pop() || "AR打卡视频",
     action: "download",
@@ -88,7 +91,7 @@ const getPriceDisplay = () => {
       <view class="status-card" :class="{ 'animation-active': false }">
         <block v-if="props.file">
           <view class="status-icon success-icon">
-            <image src="/static/icons/success.png" mode="aspectFit"></image>
+            <image class="file-image" src="/static/icons/success.png" mode="aspectFit"></image>
           </view>
           <view class="status-title">🎉 录制完成！</view>
           <view class="status-description"
@@ -96,7 +99,7 @@ const getPriceDisplay = () => {
           >
           <view class="file-info">
             <view class="file-icon">
-              <image src="/static/icons/video_icon.png" mode="aspectFit"></image>
+              <image class="file-image" src="/static/icons/video_icon.png" mode="aspectFit"></image>
             </view>
             <view class="file-name">{{ fileName }}</view>
           </view>
@@ -108,11 +111,11 @@ const getPriceDisplay = () => {
               <!-- 加载动画 -->
               <view class="preview-loading" v-if="previewImageLoading">
                 <view class="loading-spinner"></view>
-                <text class="loading-text">加载预览中!...</text>
+                <text class="file-text loading-text">加载预览中!...</text>
               </view>
               <!-- 预览图 - 使用签名后的URL -->
               <image
-                class="preview-image"
+                class="file-image preview-image"
                 :class="{ 'image-loaded': !previewImageLoading }"
                 :src="previewImageUrl"
                 mode="widthFix"
@@ -130,17 +133,17 @@ const getPriceDisplay = () => {
               @click="downloadVideo(fileKey)"
             >
               <view class="button-icon"
-                ><image src="/static/icons/download.png" mode="aspectFit"></image
+                ><image class="file-image" src="/static/icons/download.png" mode="aspectFit"></image
               ></view>
 
-              <text>文件下载</text>
+              <text class="file-text">文件下载</text>
             </button>
           </view>
 
           <!-- 支付说明 -->
           <view class="payment-tips">
-            <image src="/static/icons/tip.png" mode="aspectFit" class="tip-icon"></image>
-            <text class="tip-text"
+            <image src="/static/icons/tip.png" mode="aspectFit" class="file-image tip-icon"></image>
+            <text class="file-text tip-text"
               >拍摄服务费¥{{ getPriceDisplay() }}，支付完成后可获取打卡文件并保存到相册</text
             >
           </view>
@@ -231,7 +234,7 @@ const getPriceDisplay = () => {
         transition: transform 0.6s ease;
       }
 
-      text {
+      .file-text {
         position: relative;
         z-index: 2;
       }
@@ -360,7 +363,7 @@ const getPriceDisplay = () => {
     justify-content: center;
     margin-bottom: 30rpx;
 
-    image {
+    .file-image {
       width: 100rpx;
       height: 100rpx;
     }
@@ -397,7 +400,7 @@ const getPriceDisplay = () => {
         animation: success-ring 1.5s ease-in-out infinite;
       }
 
-      image {
+      .file-image {
         width: 100rpx;
         height: 100rpx;
         position: relative;
@@ -443,7 +446,7 @@ const getPriceDisplay = () => {
         animation: recording-scan 2s linear infinite;
       }
 
-      image {
+      .file-image {
         position: relative;
         z-index: 2;
         filter: brightness(1.1) drop-shadow(0 4rpx 12rpx rgba(250, 173, 20, 0.4));
@@ -483,7 +486,7 @@ const getPriceDisplay = () => {
         animation: success-glow 2s ease-in-out infinite;
       }
 
-      image {
+      .file-image {
         position: relative;
         z-index: 2;
         filter: brightness(1.2) drop-shadow(0 6rpx 15rpx rgba(82, 196, 26, 0.4));
@@ -524,7 +527,7 @@ const getPriceDisplay = () => {
         animation: pulse-ring 3s ease-in-out infinite;
       }
 
-      image {
+      .file-image {
         position: relative;
         z-index: 2;
         filter: brightness(1.1) drop-shadow(0 2rpx 6rpx rgba(74, 144, 226, 0.2));
@@ -562,7 +565,7 @@ const getPriceDisplay = () => {
       height: 60rpx;
       margin-right: 20rpx;
 
-      image {
+      .file-image {
         width: 100%;
         height: 100%;
       }
@@ -757,14 +760,14 @@ const getPriceDisplay = () => {
         margin-bottom: 0;
       }
 
-      image {
+      .file-image {
         width: 40rpx;
         height: 40rpx;
         margin-right: 16rpx;
         filter: drop-shadow(0 2rpx 4rpx rgba(74, 144, 226, 0.2));
       }
 
-      text {
+      .file-text {
         font-size: 26rpx;
         color: #999;
         font-weight: 500;
@@ -811,14 +814,14 @@ const getPriceDisplay = () => {
       align-items: center;
       justify-content: center;
 
-      image {
+      .file-image {
         width: 100%;
         height: 100%;
         vertical-align: middle;
       }
     }
 
-    text {
+    .file-text {
       line-height: 1;
       display: flex;
       align-items: center;

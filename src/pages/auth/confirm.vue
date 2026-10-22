@@ -1,4 +1,5 @@
 <script setup lang="ts">
+defineOptions({ name: "AdminLoginConfirmation" });
 import { ref } from "vue";
 import { onLoad, onUnload } from "@dcloudio/uni-app";
 import { approveAdminLogin, takePendingAdminLogin, type AdminLoginTicket } from "@/api/scan-login";

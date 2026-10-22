@@ -2,6 +2,7 @@
  * 应用配置模块
  * 统一管理所有配置项，从环境变量读取敏感信息
  */
+import { getActiveApiUrl } from "./backend";
 
 // Vite 环境变量类型声明 (用于 import.meta.env 类型推断)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -13,7 +14,6 @@ interface ImportMetaEnv {
 
 // 默认配置值（作为环境变量未设置时的后备）
 const defaults = {
-  apiUrl: "https://checkin.voxel.cn/api/v2",
   cloudEnv: "game-9ghhigyq57e00dc3",
   hashSalt: "buj1aban.c0m",
 };
@@ -24,7 +24,9 @@ const defaults = {
  */
 export const config = {
   /** 主API地址 */
-  apiUrl: (import.meta.env?.VITE_API_URL as string) || defaults.apiUrl,
+  get apiUrl(): string {
+    return getActiveApiUrl();
+  },
 
   /** 微信云开发环境ID */
   cloudEnv: (import.meta.env?.VITE_CLOUD_ENV as string) || defaults.cloudEnv,

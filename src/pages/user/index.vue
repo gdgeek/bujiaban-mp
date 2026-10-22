@@ -16,11 +16,24 @@ const nickname = ref("");
 const avatarUrl = ref("");
 
 const id = ref<IDType | null>(null);
+const loginError = ref("");
 
-onMounted(async () => {
-  id.value = await login(true);
-  //id.value.user = null;
-});
+const loadUser = async () => {
+  if (loading.value) return;
+  loading.value = true;
+  loginError.value = "";
+  try {
+    id.value = await login(true);
+  } catch {
+    id.value = null;
+    loginError.value = "登录失败，请重试";
+    uni.showToast({ title: loginError.value, icon: "none" });
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(loadUser);
 
 const maskPhone = (tel: string) => {
   if (!tel || tel === "--") return "--";
@@ -29,6 +42,7 @@ const maskPhone = (tel: string) => {
 
 // 必须在用户点击回调中直接调用 getUserProfile
 const onGetProfile = async () => {
+  if (!id.value || loading.value) return;
   try {
     const res = await new Promise<WxUserProfileResult>((resolve, reject) => {
       wx.getUserProfile({
@@ -61,6 +75,7 @@ const onGetProfile = async () => {
 
 // 获取手机号（新版返回 code）
 const onGetPhoneNumber = async (e: WxGetPhoneNumberEvent) => {
+  if (!id.value || loading.value) return;
   if (e.detail.errMsg?.indexOf("ok") === -1) {
     uni.showToast({ title: "未授权手机号", icon: "none" });
     return;
@@ -81,6 +96,8 @@ const onGetPhoneNumber = async (e: WxGetPhoneNumberEvent) => {
     } else {
       uni.showToast({ title: "未获取到手机号", icon: "none" });
     }
+  } catch {
+    uni.showToast({ title: "绑定手机号失败，请重试", icon: "none" });
   } finally {
     loading.value = false;
   }
@@ -112,6 +129,10 @@ const onScanAdminLogin = async () => {
       <view class="title">用户信息</view>
 
       <view class="desc">用于打卡下载、订单与素材同步</view>
+      <view v-if="loginError" class="login-error">
+        <text>{{ loginError }}</text>
+        <button class="btn" :loading="loading" :disabled="loading" @tap="loadUser">重试登录</button>
+      </view>
       <!-- 用户卡片 -->
       <view class="user-card" v-if="id && id.user">
         <view class="user-left">
@@ -130,13 +151,14 @@ const onScanAdminLogin = async () => {
 
       <view class="divider" />
       <!-- 必须由点击触发 -->
-      <button v-if="!id?.user?.nickname" class="btn" :disabled="loading" @tap="onGetProfile">
+      <button v-if="!id?.user?.nickname" class="btn" :disabled="loading || !id" @tap="onGetProfile">
         授权头像昵称
       </button>
 
       <button
         v-if="!id?.user?.tel"
         class="btn"
+        :disabled="loading || !id"
         open-type="getPhoneNumber"
         @getphonenumber="onGetPhoneNumber"
       >
@@ -248,6 +270,11 @@ const onScanAdminLogin = async () => {
 }
 .divider {
   height: 24rpx;
+}
+.login-error {
+  margin-top: 24rpx;
+  color: #c0392b;
+  font-size: 26rpx;
 }
 .btn {
   margin-top: 20rpx;

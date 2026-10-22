@@ -1,12 +1,14 @@
 <script setup lang="ts">
 defineOptions({ name: "DeviceManage" });
 import { ref, computed } from "vue";
+import config from "@/config";
 import { onLoad } from "@dcloudio/uni-app";
 import { login } from "@/api/login";
 import ArrayListInput from "@/components/ArrayListInput.vue";
 import { getDeviceWithSetup, putSetup, type DeviceType, type SetupType } from "@/api/device";
 import { getCheckinList, type VerseType } from "@/api/a1";
 import type { UniInputEvent, UniPickerChangeEvent } from "@/types/events";
+const apiUrl = config.apiUrl;
 const deviceId = ref<number | null>(null);
 const loading = ref(true);
 const device = ref<DeviceType | null>(null);
@@ -21,33 +23,54 @@ const setupForm = ref({
 });
 const saving = ref(false);
 const verses = ref<VerseType[]>([]);
-onLoad(async (opts) => {
-  verses.value = await getCheckinList();
-  const raw = (opts as Record<string, any>) || {};
-  const idParam = Number(raw.deviceId ?? raw.id ?? 0);
-  deviceId.value = Number.isFinite(idParam) && idParam > 0 ? idParam : null;
+const sceneLoading = ref(false);
+const sceneError = ref("");
+const loadError = ref("");
+
+const loadScenes = async () => {
+  if (sceneLoading.value) return;
+  sceneLoading.value = true;
+  sceneError.value = "";
   try {
-    await login();
-    if (deviceId.value) {
-      const d = await getDeviceWithSetup(deviceId.value);
-      device.value = d;
-      const s = (d.setup || {}) as Partial<SetupType>;
-      setupForm.value = {
-        title: s.title ?? "",
-        money: s.money != null ? String(s.money) : "",
-        scene_id: s.scene_id != null ? String(s.scene_id) : "",
-        slogans: Array.isArray(s.slogans) && s.slogans.length ? [...s.slogans] : [""],
-        shots: Array.isArray(s.shots) && s.shots.length ? s.shots.map((n) => String(n)) : [""],
-        pictures:
-          Array.isArray((s as any).pictures) && (s as any).pictures.length
-            ? ([...(s as any).pictures] as string[])
-            : [""],
-        thumbs: Array.isArray(s.thumbs) && s.thumbs.length ? [...s.thumbs] : [""],
-      };
-    }
+    verses.value = await getCheckinList(apiUrl);
+  } catch {
+    sceneError.value = "场景列表加载失败";
+  } finally {
+    sceneLoading.value = false;
+  }
+};
+
+const loadDevice = async () => {
+  loading.value = true;
+  loadError.value = "";
+  try {
+    await login(false, apiUrl);
+    if (!deviceId.value) return;
+    const d = await getDeviceWithSetup(deviceId.value, apiUrl);
+    device.value = d;
+    const s = (d.setup || {}) as Partial<SetupType>;
+    setupForm.value = {
+      title: s.title ?? "",
+      money: s.money != null ? String(s.money) : "",
+      scene_id: s.scene_id != null ? String(s.scene_id) : "",
+      slogans: Array.isArray(s.slogans) && s.slogans.length ? [...s.slogans] : [""],
+      shots: Array.isArray(s.shots) && s.shots.length ? s.shots.map(String) : [""],
+      pictures: Array.isArray(s.pictures) && s.pictures.length ? [...s.pictures] : [""],
+      thumbs: Array.isArray(s.thumbs) && s.thumbs.length ? [...s.thumbs] : [""],
+    };
+  } catch {
+    loadError.value = "设备加载失败";
+    uni.showToast({ title: loadError.value, icon: "none" });
   } finally {
     loading.value = false;
   }
+};
+
+onLoad(async (opts) => {
+  const raw = (opts as Record<string, unknown>) || {};
+  const idParam = Number(raw.deviceId ?? raw.id ?? 0);
+  deviceId.value = Number.isFinite(idParam) && idParam > 0 ? idParam : null;
+  await Promise.all([loadScenes(), loadDevice()]);
 });
 
 const onInput = (field: keyof typeof setupForm.value, e: UniInputEvent) => {
@@ -59,7 +82,7 @@ const onInput = (field: keyof typeof setupForm.value, e: UniInputEvent) => {
 const selectedVerseName = computed(() => {
   const idNum = Number(setupForm.value.scene_id || 0);
   const found = verses.value.find((x) => x.verse_id === idNum);
-  return found?.name || "";
+  return found?.name || (setupForm.value.scene_id ? `场景 ${setupForm.value.scene_id}` : "");
 });
 
 const selectedVerseIndex = computed(() => {
@@ -80,7 +103,7 @@ const onSceneChange = (e: UniPickerChangeEvent) => {
 };
 
 const saveSetup = async () => {
-  if (!device.value) return;
+  if (!device.value || saving.value) return;
   const s = device.value.setup as SetupType | undefined;
   const toNumberArray = (txt: string[]) =>
     (txt || [])
@@ -103,7 +126,7 @@ const saveSetup = async () => {
   saving.value = true;
   try {
     if (s?.id) {
-      await putSetup(s.id, payload);
+      await putSetup(s.id, payload, apiUrl);
       uni.showToast({ title: "配置已保存", icon: "success" });
     } else {
       uni.showToast({ title: "缺少 setup.id，无法保存", icon: "none" });
@@ -125,7 +148,11 @@ const saveSetup = async () => {
     <view v-if="loading" class="card">加载中...</view>
     <view v-else class="card">
       <view v-if="!deviceId" class="empty">未提供设备ID</view>
-      <view v-else>
+      <view v-else-if="loadError" class="error-state">
+        <text>{{ loadError }}</text>
+        <button class="btn" size="mini" @tap="loadDevice">重试</button>
+      </view>
+      <view v-else-if="device">
         <view class="card">
           <view class="line"
             ><text class="k">设备ID</text><text class="v">{{ deviceId }}</text></view
@@ -169,10 +196,17 @@ const saveSetup = async () => {
               :range="verses"
               range-key="name"
               :value="selectedVerseIndex"
+              :disabled="sceneLoading || !verses.length"
               @change="onSceneChange"
             >
               <view class="input">{{ selectedVerseName || "请选择场景" }}</view>
             </picker>
+          </view>
+          <view v-if="sceneError" class="error-state">
+            <text>{{ sceneError }}</text>
+            <button class="btn" size="mini" :loading="sceneLoading" @tap="loadScenes">
+              重试场景
+            </button>
           </view>
           <ArrayListInput
             :title="'口号'"
@@ -252,6 +286,11 @@ const saveSetup = async () => {
 .empty {
   color: #999;
   font-size: 26rpx;
+}
+.error-state {
+  color: #e54d42;
+  font-size: 26rpx;
+  margin: 16rpx 0;
 }
 .actions {
   margin-top: 16rpx;

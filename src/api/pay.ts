@@ -2,10 +2,13 @@
  * 微信支付相关服务
  */
 import config from "@/config";
+import { isLegacyApiUrl } from "@/config/backend";
+import { get, request } from "@/utils/request";
 import logger from "@/utils/logger";
 
 /** 微信支付请求参数 */
 interface WxPayOrderParams {
+  file_id?: number;
   openid: string;
   out_trade_no: string;
   amount: number;
@@ -59,43 +62,45 @@ interface WxPayOrderQueryResponse {
     order_info: OrderInfo;
     trade_state: string;
     trade_state_desc: string;
+    unlocked?: boolean;
   };
-}
-
-/** 支付回调选项 */
-interface PaymentOptions {
-  provider?: string;
-  appId?: string;
-  timeStamp?: string;
-  nonceStr?: string;
-  package?: string;
-  signType?: string;
-  paySign?: string;
-  success?: (res: unknown) => void;
-  fail?: (err: { errMsg: string }) => void;
-  complete?: () => void;
 }
 
 /** 订单号随机数范围 */
 const ORDER_RANDOM_MIN = 100000;
 const ORDER_RANDOM_MAX = 999999;
 
+const requireFileId = (params: WxPayOrderParams): void => {
+  if (!Number.isSafeInteger(params.file_id) || Number(params.file_id) <= 0) {
+    throw new Error("文件信息不完整，请从记录页重新打开");
+  }
+};
+
 /**
  * 创建微信支付订单
  */
-export const createWxPayOrder = async (params: WxPayOrderParams): Promise<WxPayParams> => {
+export const createWxPayOrder = async (
+  params: WxPayOrderParams,
+  apiUrl = config.apiUrl,
+): Promise<WxPayParams> => {
+  const legacy = isLegacyApiUrl(apiUrl);
+  if (!legacy) requireFileId(params);
+  const data = legacy
+    ? {
+        openid: params.openid,
+        amount: params.amount,
+        out_trade_no: params.out_trade_no,
+        ...(params.description !== undefined ? { description: params.description } : {}),
+      }
+    : params;
   try {
-    const response = await uni.request({
-      url: `${config.apiUrl}/wechat-pay/wxpay-order`,
+    const result = await request<WxPayOrderResponse>({
+      url: "/wechat-pay/wxpay-order",
       method: "POST",
-      data: params,
+      data: data as unknown as Record<string, unknown>,
+      baseUrl: apiUrl,
     });
-
-    const result = response.data as unknown as WxPayOrderResponse;
-
-    if (response.statusCode === 200 && result?.code === 0) {
-      return result.data;
-    }
+    if (result?.code === 0 && result.data?.package) return result.data;
 
     throw new Error("创建微信支付订单失败");
   } catch (error) {
@@ -104,65 +109,64 @@ export const createWxPayOrder = async (params: WxPayOrderParams): Promise<WxPayP
   }
 };
 
+const requestWxPayment = (payParams: WxPayParams, legacy: boolean): Promise<boolean> =>
+  new Promise<boolean>((resolve, reject) => {
+    wx.requestPayment({
+      timeStamp: payParams.timeStamp,
+      nonceStr: payParams.nonceStr,
+      package: payParams.package,
+      signType: payParams.signType as "RSA",
+      paySign: payParams.paySign,
+      success: () => resolve(true),
+      fail: (error) => {
+        if (legacy || error.errMsg?.includes("cancel")) resolve(false);
+        else reject(new Error("支付状态暂时未知，请稍后重新查询"));
+      },
+    });
+  });
+
 /**
  * 调用微信支付
  */
-export const wxPay = async (params: WxPayOrderParams): Promise<boolean> => {
-  try {
-    const payParams = await createWxPayOrder(params);
-
-    return new Promise((resolve) => {
-      const isDevtools = uni.getSystemInfoSync().platform === "devtools";
-      const requestPayment = isDevtools ? mockPayment : uni.requestPayment;
-
-      logger.debug("pay", "发起支付");
-
-      requestPayment({
-        provider: "wxpay",
-        appId: payParams.appId,
-        timeStamp: payParams.timeStamp,
-        nonceStr: payParams.nonceStr,
-        package: payParams.package,
-        signType: payParams.signType,
-        paySign: payParams.paySign,
-        success: () => {
-          logger.debug("pay", "支付成功");
-          resolve(true);
-        },
-        fail: (err: { errMsg: string }) => {
-          console.warn("[pay] 支付失败:", err);
-          resolve(false);
-        },
-        complete: () => {
-          logger.debug("pay", "支付流程结束");
-        },
-      });
-    });
-  } catch (error) {
-    console.error("[pay] 发起支付失败:", error);
-    throw error;
+export const wxPay = async (
+  params: WxPayOrderParams,
+  apiUrl: string = config.apiUrl,
+): Promise<boolean> => {
+  if (isLegacyApiUrl(apiUrl)) {
+    const payParams = await createWxPayOrder(params, apiUrl);
+    return requestWxPayment(payParams, true);
   }
-};
-
-/**
- * 开发工具中模拟支付
- */
-const mockPayment = (options: PaymentOptions): void => {
-  logger.debug("pay", "开发工具模拟支付");
-  uni.showModal({
-    title: "模拟支付",
-    content: "当前在开发工具中，无法真实唤起支付。是否模拟支付成功？",
-    confirmText: "支付成功",
-    cancelText: "支付失败",
-    success: (res) => {
-      if (res.confirm) {
-        options.success?.({});
-      } else {
-        options.fail?.({ errMsg: "模拟支付失败" });
-      }
-    },
-    complete: options.complete,
-  });
+  requireFileId(params);
+  const pendingKey = `AR_PENDING_PAYMENT:${apiUrl}:${params.openid}:${params.file_id}`;
+  let orderNo = params.out_trade_no;
+  const pending = uni.getStorageSync(pendingKey);
+  if (typeof pending === "string" && /^[A-Za-z0-9_-]{6,32}$/.test(pending)) {
+    const previous = await queryWxPayOrder(pending, apiUrl);
+    if (previous.trade_state === "SUCCESS" && previous.unlocked === true) {
+      uni.removeStorageSync(pendingKey);
+      return true;
+    }
+    if (previous.trade_state === "NOTPAY" || previous.trade_state === "USERPAYING") {
+      orderNo = pending;
+    } else if (previous.trade_state !== "CLOSED" && previous.trade_state !== "PAYERROR") {
+      throw new Error("支付结果尚未确认，请稍后重试");
+    }
+  }
+  const payParams = await createWxPayOrder({ ...params, out_trade_no: orderNo }, apiUrl);
+  // This stores only an order to re-query, never a local paid/free entitlement.
+  uni.setStorageSync(pendingKey, orderNo);
+  const paid = await requestWxPayment(payParams, false);
+  if (!paid) {
+    uni.removeStorageSync(pendingKey);
+    return false;
+  }
+  const confirmed = await queryWxPayOrder(orderNo, apiUrl);
+  if (confirmed.trade_state !== "SUCCESS" || confirmed.unlocked !== true) {
+    throw new Error("支付结果尚未确认，请稍后重新查询");
+  }
+  uni.removeStorageSync(pendingKey);
+  logger.debug("pay", "服务端已确认文件解锁");
+  return true;
 };
 
 /**
@@ -170,18 +174,15 @@ const mockPayment = (options: PaymentOptions): void => {
  */
 export const queryWxPayOrder = async (
   out_trade_no: string,
+  apiUrl = config.apiUrl,
 ): Promise<WxPayOrderQueryResponse["data"]> => {
   try {
-    const response = await uni.request({
-      url: `${config.apiUrl}/wechat-pay/wxpay-query-order-by-out-trade-no?out_trade_no=${out_trade_no}`,
-      method: "GET",
-    });
-
-    const result = response.data as unknown as WxPayOrderQueryResponse;
-
-    if (response.statusCode === 200 && result?.code === 0) {
-      return result.data;
-    }
+    const result = await get<WxPayOrderQueryResponse>(
+      "/wechat-pay/wxpay-query-order-by-out-trade-no",
+      { out_trade_no },
+      apiUrl,
+    );
+    if (result?.code === 0) return result.data;
 
     throw new Error(`查询微信支付订单失败: ${result?.message || "未知错误"}`);
   } catch (error) {
@@ -193,10 +194,15 @@ export const queryWxPayOrder = async (
 /**
  * 检查订单是否支付成功
  */
-export const isOrderPaid = async (out_trade_no: string): Promise<boolean> => {
+export const isOrderPaid = async (
+  out_trade_no: string,
+  apiUrl = config.apiUrl,
+): Promise<boolean> => {
   try {
-    const orderInfo = await queryWxPayOrder(out_trade_no);
-    return orderInfo.trade_state === "SUCCESS";
+    const orderInfo = await queryWxPayOrder(out_trade_no, apiUrl);
+    return (
+      orderInfo.trade_state === "SUCCESS" && (isLegacyApiUrl(apiUrl) || orderInfo.unlocked === true)
+    );
   } catch (error) {
     console.error("[pay] 检查订单支付状态失败:", error);
     return false;

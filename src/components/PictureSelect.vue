@@ -318,7 +318,6 @@ onMounted(() => {
     box-shadow: 0 4rpx 8rpx rgba(24, 144, 255, 0.15);
   }
 
-  &[disabled],
   &.disabled {
     background: #91caff;
     color: #ffffff;

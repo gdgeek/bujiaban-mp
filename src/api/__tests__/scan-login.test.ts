@@ -144,11 +144,11 @@ describe("confirmation and credentials stay within the target backend", () => {
     success: (response: { data: unknown; statusCode: number }) => void;
     fail: (response: { errMsg: string }) => void;
   }
-  const requestSpy = vi.fn<[TestRequestOptions], void>();
-  const loginSpy = vi.fn<[WechatMiniprogram.LoginOption], void>();
-  let storageReadSpy: MockInstance<[string], unknown>;
-  let storageWriteSpy: MockInstance<[string, unknown], void>;
-  let consoleSpy: MockInstance<Parameters<typeof console.warn>, void>;
+  const requestSpy = vi.fn<(options: TestRequestOptions) => void>();
+  const loginSpy = vi.fn<(options: WechatMiniprogram.LoginOption) => void>();
+  let storageReadSpy: MockInstance<(key: string) => unknown>;
+  let storageWriteSpy: MockInstance<(key: string, value: unknown) => void>;
+  let consoleSpy: MockInstance<typeof console.warn>;
 
   beforeEach(() => {
     api?.takePendingAdminLogin?.();

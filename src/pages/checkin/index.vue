@@ -3,10 +3,11 @@ defineOptions({ name: "CheckinPage" });
 import { ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { login } from "@/api/login";
-import { getQueryString } from "@/api/checkin";
 import type { IDType } from "@/api/checkin";
 import FooterCopyright from "@/components/FooterCopyright.vue";
 import logger from "@/utils/logger";
+import { parseDeviceQr, buildDeviceQr } from "@/utils/device-qr";
+import { getApiUrlForVersion, selectDeviceApiVersion } from "@/config/backend";
 
 import Recode from "@/components/Recode.vue";
 
@@ -49,16 +50,6 @@ const getAgreementFromStorage = (): boolean => {
 const updateAgreementChecked = (checked: boolean) => {
   agreementChecked.value = checked;
   saveAgreementToStorage(checked);
-};
-
-const getToken = () => {
-  const pages = getCurrentPages();
-  const currentPage = pages[pages.length - 1] as unknown as { options: { q: string } };
-  const query = currentPage.options;
-  const decodedUrl = decodeURIComponent(query.q);
-  const result = getQueryString(decodedUrl, "k");
-
-  return result;
 };
 
 // 显示隐私协议详情
@@ -114,20 +105,26 @@ const closeAgreementModal = () => {
   showDisclaimerModal.value = false;
 };
 
-onLoad(async () => {
-  token.value = getToken(); //得到token
-
+onLoad(async (query) => {
   // 从本地存储中获取协议勾选状态
   agreementChecked.value = getAgreementFromStorage();
 
   try {
+    if (typeof query?.q === "string" && query.q) {
+      const qr = parseDeviceQr(decodeURIComponent(query.q));
+      // Select the realm before any login or recording request is started.
+      selectDeviceApiVersion(qr.version);
+      token.value = qr.token;
+    }
     id.value = await login();
   } catch (error) {
-    console.error("id 请求失败！" + error);
-    return;
+    uni.showToast({
+      title: error instanceof Error ? error.message : "二维码或登录信息无效，请重试",
+      icon: "none",
+    });
+  } finally {
+    loadingState.value = false;
   }
-
-  loadingState.value = false;
 });
 
 // 处理扫码功能
@@ -145,45 +142,21 @@ const handleScan = () => {
   uni.scanCode({
     scanType: ["qrCode"],
     success: (res) => {
-      logger.info("checkin", "扫码结果：", res.result);
-      // 解析扫码结果
-      if (res.result && res.result.includes("w.4mr.cn/t")) {
-        try {
-          // 从URL中提取k参数（小程序兼容方式）
-          const newToken = getQueryString(res.result, "k");
-
-          if (newToken) {
-            logger.info("checkin", "检测到AR打卡token:", newToken);
-            // 跳转到当前页面并带上新token
-            uni.reLaunch({
-              url: `/pages/checkin/index?q=${encodeURIComponent(
-                "https://w.4mr.cn/t?k=" + newToken,
-              )}`,
-              success: () => {
-                uni.showToast({
-                  title: "连接成功",
-                  icon: "success",
-                });
-              },
-              fail: (err) => {
-                console.error("页面跳转失败:", err);
-                uni.showToast({
-                  title: "连接失败",
-                  icon: "none",
-                });
-              },
-            });
-          }
-        } catch (error) {
-          console.error("解析扫码结果失败:", error);
-          uni.showToast({
-            title: "无效的二维码",
-            icon: "none",
-          });
-        }
-      } else {
+      try {
+        const qr = parseDeviceQr(res.result);
+        getApiUrlForVersion(qr.version);
+        uni.reLaunch({
+          url: `/pages/checkin/index?q=${encodeURIComponent(buildDeviceQr(qr))}`,
+          success: () => {
+            uni.showToast({ title: "连接成功", icon: "success" });
+          },
+          fail: () => {
+            uni.showToast({ title: "连接失败", icon: "none" });
+          },
+        });
+      } catch (error) {
         uni.showToast({
-          title: "不支持的二维码格式",
+          title: error instanceof Error ? error.message : "无效的设备二维码",
           icon: "none",
         });
       }

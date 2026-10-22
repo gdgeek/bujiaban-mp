@@ -12,8 +12,8 @@ export interface VerseType {
 /**
  * 获取打卡列表
  */
-export function getCheckinList(): Promise<VerseType[]> {
-  return get<VerseType[]>("/server/scenes")
+export function getCheckinList(apiUrl: string = config.apiUrl): Promise<VerseType[]> {
+  return get<VerseType[]>("/server/scenes", undefined, apiUrl)
     .then((data) => data)
     .catch((err) => {
       console.warn("获取打卡列表失败:", err);

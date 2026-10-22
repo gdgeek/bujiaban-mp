@@ -19,6 +19,13 @@ describe("a1.ts", () => {
   });
 
   describe("getCheckinList", () => {
+    it("uses the API captured by the device page", async () => {
+      mockWxRequest.mockImplementation((options) => {
+        expect(options.url).toBe("https://x.4mr.cn/v2/server/scenes");
+        options.success({ statusCode: 200, data: [] });
+      });
+      expect(await getCheckinList("https://x.4mr.cn/v2")).toEqual([]);
+    });
     it("should return verse list on success", async () => {
       const mockData: VerseType[] = [
         { verse_id: 1, name: "诗篇第一篇" },

@@ -14,9 +14,6 @@ onHide(() => {
 </script>
 
 <style lang="scss">
-// 字体图标
-@use "@/styles/fonts.scss";
-
 view,
 navigator,
 input,

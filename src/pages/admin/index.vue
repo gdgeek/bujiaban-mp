@@ -1,6 +1,8 @@
 <script setup lang="ts">
 defineOptions({ name: "AdminPage" });
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
+import config from "@/config";
+import { onShow } from "@dcloudio/uni-app";
 import { login } from "@/api/login";
 import type { IDType } from "@/api/checkin";
 import { type DeviceType, manageDevice } from "@/api/device";
@@ -11,14 +13,22 @@ const saving = ref<Record<number, boolean>>({});
 const goBack = () => {
   uni.navigateBack();
 };
-onMounted(async () => {
+const loadError = ref("");
+const loadDevices = async () => {
+  const apiUrl = config.apiUrl;
+  loading.value = true;
+  loadError.value = "";
   try {
-    id.value = await login();
-    devices.value = await manageDevice();
+    id.value = await login(false, apiUrl);
+    devices.value = await manageDevice(apiUrl);
+  } catch {
+    loadError.value = "关联设备加载失败";
+    uni.showToast({ title: loadError.value, icon: "none" });
   } finally {
     loading.value = false;
   }
-});
+};
+onShow(loadDevices);
 
 const goDeviceManage = (deviceId: number) => {
   uni.navigateTo({ url: `/pages/device/manage?deviceId=${deviceId}` });
@@ -38,14 +48,22 @@ const goDeviceManage = (deviceId: number) => {
     <view v-if="loading">加载中...</view>
 
     <view v-else>
+      <view v-if="loadError" class="err">
+        <text>{{ loadError }}</text>
+        <button class="btn" size="mini" @tap="loadDevices">重试</button>
+      </view>
       <view class="row">
         <text class="label">当前用户</text>
         <text class="value">{{ id?.user?.nickname || id?.openid || "未登录" }}</text>
       </view>
       <view class="divider" />
       <view class="title small">关联设备列表</view>
-      <view class="subtitle">仅显示当前微信账号关联的设备，共 {{ devices.length }} 台</view>
-      <view v-if="!devices.length" class="empty">暂无关联设备</view>
+      <view class="subtitle"
+        >仅显示当前微信账号关联的设备<text v-if="!loadError"
+          >，共 {{ devices.length }} 台</text
+        ></view
+      >
+      <view v-if="!loadError && !devices.length" class="empty">暂无关联设备</view>
       <view class="device-list">
         <view v-for="d in devices" :key="d.id">
           <view class="hr" />

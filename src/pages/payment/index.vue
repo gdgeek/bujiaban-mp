@@ -27,7 +27,9 @@
             <text class="label">服务费用:</text>
             <text class="value purchased" v-if="alreadyPurchased">已购买</text>
             <text class="value purchased" v-else-if="paymentInfo.price === 0">免费</text>
-            <text class="value" v-else>¥{{ ((paymentInfo.price || 0) / 100).toFixed(2) }}</text>
+            <text class="value" v-else>{{
+              paymentInfo.price === null ? "待确认" : "¥" + (paymentInfo.price / 100).toFixed(2)
+            }}</text>
           </view>
         </view>
 
@@ -71,7 +73,10 @@
         </view>
 
         <!-- <button class="pay-button" @click="handlePay" :loading="loading">支付服务费</button> -->
+        <view v-if="metadataLoading" class="file-status">正在核对文件信息...</view>
+        <view v-if="fileError" class="file-status">{{ fileError }}</view>
         <button
+          :disabled="metadataLoading || !!fileError || loading"
           class="pay-button"
           @click="handlePay"
           :loading="loading"
@@ -93,7 +98,7 @@
 <script setup lang="ts">
 defineOptions({ name: "PaymentPage" });
 import { ref, computed } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onUnload } from "@dcloudio/uni-app";
 import FooterCopyright from "@/components/FooterCopyright.vue";
 import {
   getSignedVideoUrl,
@@ -105,6 +110,13 @@ import type { IDType } from "@/api/checkin";
 import { login } from "@/api/login";
 import type { VideoMetadataEvent } from "@/types/events";
 import logger from "@/utils/logger";
+import { getDownloadFile, isFileDownloadAllowed } from "@/api/files";
+import config from "@/config";
+import { isLegacyApiUrl } from "@/config/backend";
+
+const apiUrl = config.apiUrl;
+const legacyPayment = isLegacyApiUrl(apiUrl);
+const purchasedFilesKey = `AR_PURCHASED_FILES:${encodeURIComponent(apiUrl.replace(/\/+$/, ""))}`;
 // 获取安全区域信息
 const { safeAreaInsets } = uni.getWindowInfo();
 
@@ -112,8 +124,8 @@ const { safeAreaInsets } = uni.getWindowInfo();
 const paymentInfo = ref({
   videoId: 0,
   videoKey: "",
-  price: 0,
-  shots: [],
+  price: null as number | null,
+  shots: [] as number[],
   title: "",
   action: "",
   // duration: 0,
@@ -121,7 +133,10 @@ const paymentInfo = ref({
 const loading = ref(false);
 // 是否已经购买过该文件
 const alreadyPurchased = ref<boolean>(false);
-const PURCHASED_FILES_STORAGE_KEY = "AR_PURCHASED_FILES";
+const metadataLoading = ref(true);
+const fileError = ref("");
+let pageActive = true;
+let completionTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 视频截帧相关
 interface FrameImage {
@@ -216,32 +231,71 @@ const formatTime = (seconds: number): string => {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 };
 
-// 检查文件是否已购买
-const checkIfAlreadyPurchased = (videoKey: string): boolean => {
+const readPurchasedFiles = (storageKey: string): string[] => {
   try {
-    const purchasedFiles = uni.getStorageSync(PURCHASED_FILES_STORAGE_KEY) || [];
-    return purchasedFiles.includes(videoKey);
-  } catch (error) {
-    console.error("检查已购买文件出错:", error);
-    return false;
+    const stored: unknown = uni.getStorageSync(storageKey);
+    return Array.isArray(stored) &&
+      stored.every((key) => typeof key === "string" && key.length > 0 && key.trim() === key)
+      ? stored
+      : [];
+  } catch {
+    return [];
   }
 };
 
-// 记录已购买的文件
-const savePurchasedFile = (videoKey: string): void => {
-  try {
-    let purchasedFiles = uni.getStorageSync(PURCHASED_FILES_STORAGE_KEY) || [];
-    if (!Array.isArray(purchasedFiles)) {
-      purchasedFiles = [];
-    }
+// Only v0 can use historical purchases; v1 always obtains entitlement from its server.
+const purchasedFiles = (): string[] =>
+  legacyPayment
+    ? [...readPurchasedFiles(purchasedFilesKey), ...readPurchasedFiles("AR_PURCHASED_FILES")]
+    : [];
 
-    if (!purchasedFiles.includes(videoKey)) {
-      purchasedFiles.push(videoKey);
-      uni.setStorageSync(PURCHASED_FILES_STORAGE_KEY, purchasedFiles);
-    }
-  } catch (error) {
-    console.error("保存已购买文件记录出错:", error);
+const saveLegacyPurchase = () => {
+  const key = paymentInfo.value.videoKey;
+  alreadyPurchased.value = true;
+  try {
+    uni.setStorageSync(purchasedFilesKey, [
+      ...new Set([...readPurchasedFiles(purchasedFilesKey), key]),
+    ]);
+  } catch {
+    // The successful payment still permits this session's download.
+    console.warn("[payment] 无法保存旧设备的已购记录");
   }
+};
+
+const loadLegacyParams = (params: Record<string, unknown>) => {
+  const key = params.videoKey;
+  const price = params.price;
+  if (
+    typeof key !== "string" ||
+    !key ||
+    key.trim() !== key ||
+    key.length > 2048 ||
+    /^[a-z][a-z\d+.-]*:|^\/|[\\?#]/i.test(key) ||
+    Array.from(key).some((character) => character.charCodeAt(0) < 32) ||
+    key.split("/").some((part) => part === "." || part === "..") ||
+    typeof price !== "number" ||
+    !Number.isSafeInteger(price) ||
+    price < 0 ||
+    price > 2147483647
+  )
+    throw new Error("文件信息或收费金额无效，请从记录页重新打开");
+  paymentInfo.value.videoKey = key;
+  paymentInfo.value.price = price;
+  paymentInfo.value.title =
+    typeof params.title === "string" && params.title.trim()
+      ? params.title
+      : key.split("/").pop() || "视频文件";
+  alreadyPurchased.value = purchasedFiles().includes(key);
+};
+
+const refreshDownloadFile = async () => {
+  const file = await getDownloadFile(paymentInfo.value.videoId, apiUrl);
+  if (!pageActive) throw new Error("页面已关闭");
+  paymentInfo.value.videoKey = file.key;
+  paymentInfo.value.price = file.price;
+  paymentInfo.value.title = file.key.split("/").pop() || "视频文件";
+  alreadyPurchased.value = file.unlocked === 1;
+  return file;
 };
 
 // 加载视频URL和时长相关
@@ -256,7 +310,7 @@ const loadVideoFrames = async () => {
 
   try {
     // 获取视频URL
-    const videoUrl = await getSignedVideoUrl(paymentInfo.value.videoKey);
+    const videoUrl = await getSignedVideoUrl(paymentInfo.value.videoKey, false, 0.01, apiUrl);
 
     // 动态获取视频时长
     const duration = await getVideoDuration(videoUrl);
@@ -292,7 +346,7 @@ const generateFramePoints = async (duration: number) => {
   for (const time of framePoints) {
     try {
       // 获取特定时间点的视频截帧
-      const url = await getSignedVideoUrl(paymentInfo.value.videoKey, true, time);
+      const url = await getSignedVideoUrl(paymentInfo.value.videoKey, true, time, apiUrl);
       frames.push({
         url,
         time,
@@ -412,75 +466,87 @@ const downloadAndSaveImage = async (url: string): Promise<boolean> => {
   }
 };
 
-// 接收页面参数
-onLoad((query) => {
+// Version 0 keeps the existing route protocol; version 1 reads price and entitlement from its server.
+onLoad(async (query) => {
   try {
-    if (query && query.params) {
-      const params = JSON.parse(decodeURIComponent(query.params));
-      logger.info("payment", "接收到参数:", params);
-      paymentInfo.value = { ...paymentInfo.value, ...params };
-
-      // 检查是否已经购买过该文件
-      if (paymentInfo.value.videoKey) {
-        alreadyPurchased.value = checkIfAlreadyPurchased(paymentInfo.value.videoKey);
-      }
-
-      // 加载视频截帧
-      loadVideoFrames();
+    const params = query?.params ? JSON.parse(decodeURIComponent(query.params)) : {};
+    if (!params || typeof params !== "object" || Array.isArray(params)) {
+      throw new Error("文件信息无效，请从记录页重新打开");
     }
+    paymentInfo.value.videoId = Number(params.videoId);
+    paymentInfo.value.shots = Array.isArray(params.shots)
+      ? params.shots.filter(
+          (value: unknown): value is number =>
+            typeof value === "number" && Number.isFinite(value) && value > 0,
+        )
+      : [];
+    if (legacyPayment) {
+      loadLegacyParams(params);
+    } else {
+      await login(false, apiUrl);
+      await refreshDownloadFile();
+      if (!alreadyPurchased.value && paymentInfo.value.price === null) {
+        fileError.value = "该历史文件尚未确认收费金额，请联系管理员";
+      }
+    }
+    if (!fileError.value) await loadVideoFrames();
   } catch (error) {
-    console.error("解析参数错误:", error);
-    uni.showToast({
-      title: "参数错误",
-      icon: "error",
-    });
+    if (pageActive)
+      fileError.value = error instanceof Error ? error.message : "文件信息加载失败，请重新打开";
+  } finally {
+    if (pageActive) metadataLoading.value = false;
   }
+});
+
+onUnload(() => {
+  pageActive = false;
+  clearVideoTimeout();
+  if (completionTimer !== null) clearTimeout(completionTimer);
+  videoLoadResolve.value?.(null);
+  videoLoadResolve.value = null;
 });
 
 // 处理下载
 const handlePay = async () => {
-  // 获取openid
-  const id: IDType | null = await login();
-  if (!id!.openid) {
-    uni.showToast({
-      title: "请先登录",
-      icon: "none",
-    });
-
-    // 跳转到登录或打卡页面获取openid
-    setTimeout(() => {
-      uni.redirectTo({
-        url: "/pages/checkin/index",
-      });
-    }, 1500);
-    return;
-  }
-
+  if (!pageActive || loading.value || metadataLoading.value || fileError.value) return;
+  loading.value = true;
   try {
-    loading.value = true;
+    const id: IDType = await login(false, apiUrl);
+    if (!id.openid) throw new Error("请重新登录");
+    const file = legacyPayment ? null : await refreshDownloadFile();
+    if (!pageActive) return;
+    if (file && !isFileDownloadAllowed(file) && file.price === null) {
+      throw new Error("该历史文件尚未确认收费金额，请联系管理员");
+    }
 
     // 先检查相册权限
     const hasPermission = await checkAlbumPermission();
+    if (!pageActive) return;
     if (!hasPermission) {
       loading.value = false;
       return;
     }
 
-    // 检查是否已经购买过该文件或价格为0，如果是则跳过支付流程
-    let paySuccess = alreadyPurchased.value || paymentInfo.value.price === 0;
-
+    let paySuccess = legacyPayment
+      ? alreadyPurchased.value || paymentInfo.value.price === 0
+      : isFileDownloadAllowed(file!);
     if (!paySuccess) {
-      paySuccess = await handlePayment({
-        openid: id!.openid,
-        amount: paymentInfo.value.price || 0,
-        description: `AR打卡服务:${paymentInfo.value.title}`,
-      });
+      paySuccess = await handlePayment(
+        {
+          ...(file ? { file_id: file.id } : {}),
+          openid: id.openid,
+          amount: paymentInfo.value.price!,
+          description: `AR打卡服务:${paymentInfo.value.title}`,
+        },
+        apiUrl,
+      );
+      if (!legacyPayment && paySuccess && !isFileDownloadAllowed(await refreshDownloadFile())) {
+        throw new Error("支付结果尚未确认，请稍后重新打开文件");
+      }
     }
 
-    // 支付成功或价格为0，记录为已购买
-    if (paySuccess && paymentInfo.value.videoKey) {
-      savePurchasedFile(paymentInfo.value.videoKey);
-    }
+    if (legacyPayment && paySuccess && !alreadyPurchased.value) saveLegacyPurchase();
+    if (!pageActive) return;
 
     if (paySuccess) {
       if (!alreadyPurchased.value) {
@@ -497,8 +563,9 @@ const handlePay = async () => {
 
       if (paymentInfo.value.videoKey) {
         // 获取签名URL
-        const signedUrl = await getSignedVideoUrl(paymentInfo.value.videoKey);
+        const signedUrl = await getSignedVideoUrl(paymentInfo.value.videoKey, false, 0.01, apiUrl);
 
+        if (!pageActive) return;
         // 下载并保存视频
         const downloadSuccess = await downloadAndSaveVideo(signedUrl);
 
@@ -521,8 +588,9 @@ const handlePay = async () => {
           uni.hideLoading();
         }
 
-        if (downloadSuccess) {
-          setTimeout(() => {
+        if (downloadSuccess && pageActive) {
+          completionTimer = setTimeout(() => {
+            if (!pageActive) return;
             const successMessage =
               selectedFrames.length > 0
                 ? `文件已成功下载并保存到相册，${imageSuccessCount}张截图已保存`
@@ -554,8 +622,8 @@ const handlePay = async () => {
     console.error("下载过程中出错:", error);
     uni.hideLoading();
     uni.showToast({
-      title: "操作失败",
-      icon: "error",
+      title: error instanceof Error ? error.message : "操作失败，请重试",
+      icon: "none",
     });
   } finally {
     loading.value = false;

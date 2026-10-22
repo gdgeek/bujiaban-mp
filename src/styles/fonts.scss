@@ -1,55 +1,53 @@
 @font-face {
-  font-family: 'bujiaban-mp';  /* Project id 4419566 */
-  src: url('//at.alicdn.com/t/c/font_4419566_me5igzucgj.woff2?t=1746587786102') format('woff2'),
-       url('//at.alicdn.com/t/c/font_4419566_me5igzucgj.woff?t=1746587786102') format('woff'),
-       url('//at.alicdn.com/t/c/font_4419566_me5igzucgj.ttf?t=1746587786102') format('truetype'),
-       url('//at.alicdn.com/t/c/font_4419566_me5igzucgj.svg?t=1746587786102#bujiaban-mp') format('svg');
+  font-family: "bujiaban-mp"; /* Project id 4419566 */
+  src: url("https://at.alicdn.com/t/c/font_4419566_me5igzucgj.woff2?t=1746587786102")
+    format("woff2");
 }
 
-[class^='icon-'],
-[class*=' icon-'] {
-  font-family: 'bujiaban-mp' !important;
+[class^="icon-"],
+[class*=" icon-"] {
+  font-family: "bujiaban-mp" !important;
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 .icon-star:before {
-  content: '\e6cc';
+  content: "\e6cc";
 }
 
 .icon-like:before {
-  content: '\e66d';
+  content: "\e66d";
 }
 
 .icon-clock:before {
-  content: '\e638';
+  content: "\e638";
 }
 
 .icon-service:before {
-  content: '\e67e';
+  content: "\e67e";
 }
 
 .icon-setting:before {
-  content: '\e6b2';
+  content: "\e6b2";
 }
 
 .icon-share:before {
-  content: '\e67d';
+  content: "\e67d";
 }
 
 .icon-user:before {
-  content: '\e64b';
+  content: "\e64b";
 }
 
 .icon-home:before {
-  content: '\e62a';
+  content: "\e62a";
 }
 
 .icon-edit:before {
-  content: '\e670';
+  content: "\e670";
 }
 
 .icon-arrow-right:before {
-  content: '\e61a';
+  content: "\e61a";
 }

@@ -1,6 +1,7 @@
 {
   "name": "bujiaban-mp",
   "version": "0.1.0",
+  "packageManager": "pnpm@9.15.1",
   "author": {
     "name": "bujiban",
     "url": "https://bujiban.com/"
@@ -69,14 +70,18 @@
     "@dcloudio/uni-mp-xhs": "3.0.0-4080720251210001",
     "@dcloudio/uni-quickapp-webview": "3.0.0-4080720251210001",
     "cos-js-sdk-v5": "^1.10.1",
+    "cos-wx-sdk-v5": "1.8.0",
     "crypto-js": "^4.2.0",
     "pinia": "2.0.27",
     "pinia-plugin-persistedstate": "^3.2.3",
-    "vue": "^3.4.21",
-    "vue-i18n": "^9.1.9"
+    "vue": "3.5.42",
+    "vue-i18n": "^9.1.9",
+    "fast-xml-parser": "4.5.7",
+    "mime": "2.6.0",
+    "strnum": "1.1.2"
   },
   "devDependencies": {
-    "@dcloudio/types": "^3.4.8",
+    "@dcloudio/types": "3.4.19",
     "@dcloudio/uni-automator": "3.0.0-4080720251210001",
     "@dcloudio/uni-cli-shared": "3.0.0-4080720251210001",
     "@dcloudio/uni-stacktracey": "3.0.0-4080720251210001",
@@ -86,10 +91,10 @@
     "@types/node": "^18.19.96",
     "@uni-helper/uni-app-types": "1.0.0-alpha.6",
     "@uni-helper/uni-ui-types": "1.0.0-alpha.6",
-    "@vitest/coverage-v8": "^1.6.0",
+    "@vitest/coverage-v8": "3.2.7",
     "@vue/eslint-config-prettier": "^7.1.0",
     "@vue/eslint-config-typescript": "^13.0.0",
-    "@vue/runtime-core": "^3.4.21",
+    "@vue/runtime-core": "3.5.42",
     "@vue/tsconfig": "^0.7.0",
     "eslint": "^8.57.1",
     "eslint-plugin-vue": "^9.33.0",
@@ -100,8 +105,56 @@
     "sass": "^1.71.0",
     "sass-embedded": "^1.97.1",
     "typescript": "^5.5.4",
-    "vite": "5.2.8",
-    "vitest": "^1.6.0",
+    "vite": "6.4.5",
+    "vitest": "3.2.7",
     "vue-tsc": "^2.2.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "6.4.5",
+      "fast-xml-parser@4.5.0": "4.5.7",
+      "rollup": "4.59.0",
+      "proxy-addr": "2.0.8",
+      "postcss": "8.5.18",
+      "jpeg-js": "0.4.4",
+      "path-to-regexp@0.1.10": "0.1.13",
+      "path-to-regexp@0.1.12": "0.1.13",
+      "minimatch@3.1.2": "3.1.4",
+      "minimatch@9.0.5": "9.0.7",
+      "flatted": "3.4.2",
+      "socket.io-parser": "4.2.7",
+      "picomatch@2.3.1": "2.3.2",
+      "lodash": "4.18.0",
+      "immutable@4.3.7": "4.3.9",
+      "immutable@5.1.1": "5.1.8",
+      "@babel/plugin-transform-modules-systemjs": "7.29.4",
+      "form-data@3.0.4": "3.0.5",
+      "ws@8.18.0": "8.21.0",
+      "ws@8.18.1": "8.21.0",
+      "ws@7.5.10": "7.5.11",
+      "brace-expansion@1.1.11": "1.1.20",
+      "brace-expansion@2.0.1": "2.1.6",
+      "js-yaml@3.14.1": "3.15.2",
+      "js-yaml@4.1.0": "4.3.2",
+      "engine.io": "6.6.10",
+      "nanoid@3.3.11": "3.3.18",
+      "@intlify/core-base@9.1.9": "9.1.11",
+      "@intlify/message-resolver@9.1.9": "9.1.11",
+      "browserslist": "4.28.7",
+      "source-map-js": "1.2.2",
+      "tinypool": "2.1.2",
+      "ws@8.17.1": "8.21.0",
+      "@intlify/message-resolver@9.1.10": "9.1.11",
+      "adm-zip": "0.6.1",
+      "@vue/server-renderer": "3.5.42"
+    },
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "@dcloudio/vite-plugin-uni>vite": "6.4.5"
+      }
+    }
+  },
+  "engines": {
+    "node": "^20.0.0 || >=22.0.0"
   }
 }

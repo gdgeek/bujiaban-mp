@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- Console calls are the behavior under test. */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { logger } from "../logger";
 

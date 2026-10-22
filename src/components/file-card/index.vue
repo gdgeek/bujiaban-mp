@@ -14,12 +14,17 @@
       <text class="video-date">上传日期: {{ video.created_at }}</text>
     </view>
     <view class="video-actions">
-      <button class="action-button download-button full-width" @click="downloadVideo()">
+      <button
+        :disabled="loading"
+        :loading="loading"
+        class="action-button download-button full-width"
+        @click="downloadVideo()"
+      >
         <view class="button-icon"
-          ><image src="/static/icons/download.png" mode="aspectFit"></image
+          ><image class="button-image" src="/static/icons/download.png" mode="aspectFit"></image
         ></view>
         <!-- <text>拍摄服务费(¥0.01)</text> -->
-        <text>文件下载</text>
+        <text class="button-text">文件下载</text>
       </button>
     </view>
   </view>
@@ -31,6 +36,9 @@ defineOptions({ name: "FileCard" });
 import type { FileType } from "@/api/checkin";
 //import type { Video } from "@/types/video";
 import { getSignedVideoUrl } from "@/utils/video";
+import config from "@/config";
+import { isLegacyApiUrl } from "@/config/backend";
+const apiUrl = config.apiUrl;
 import logger from "@/utils/logger";
 
 const props = defineProps<{
@@ -60,7 +68,7 @@ const videoTitle = computed(() => {
 const updateThumbnailUrl = async () => {
   if (props.video.key && !imageLoadError.value) {
     try {
-      thumbnailUrl.value = await getSignedVideoUrl(props.video.key, true);
+      thumbnailUrl.value = await getSignedVideoUrl(props.video.key, true, 0.01, apiUrl);
     } catch (error) {
       console.error("获取视频缩略图失败:", error);
       // 使用占位图
@@ -84,8 +92,9 @@ const downloadVideo = async () => {
 
   try {
     const params = {
-      videoKey: props.video.key,
-      price: 0,
+      ...(isLegacyApiUrl(apiUrl)
+        ? { videoKey: props.video.key, price: 0 }
+        : { videoId: props.video.id }),
       title: videoTitle.value || "AR打卡视频",
       action: "download",
     };
@@ -198,14 +207,14 @@ onMounted(async () => {
     align-items: center;
     justify-content: center;
 
-    image {
+    .button-image {
       width: 100%;
       height: 100%;
       vertical-align: middle;
     }
   }
 
-  text {
+  .button-text {
     line-height: 1;
     display: flex;
     align-items: center;

@@ -11,7 +11,11 @@ defineOptions({ name: "VideoRecoding" });
     <view class="main-content">
       <view class="status-card">
         <view class="status-icon linked-icon">
-          <image src="/static/icons/file_handling.png" mode="aspectFit"></image>
+          <image
+            class="status-icon-image"
+            src="/static/icons/file_handling.png"
+            mode="aspectFit"
+          ></image>
         </view>
         <view class="status-title">文件处理中</view>
         <view class="status-description">文件已经录制完成，正在进行最后的处理！</view>
@@ -52,7 +56,7 @@ defineOptions({ name: "VideoRecoding" });
     justify-content: center;
     margin-bottom: 30rpx;
 
-    image {
+    .status-icon-image {
       width: 100rpx;
       height: 100rpx;
     }
@@ -75,7 +79,7 @@ defineOptions({ name: "VideoRecoding" });
         animation: connection-wave 2s ease-out infinite;
       }
 
-      image {
+      .status-icon-image {
         width: 100rpx;
         height: 100rpx;
         position: relative;

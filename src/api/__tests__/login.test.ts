@@ -1,50 +1,125 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { login } from "../login";
+import { wxLogin, type IDType } from "../checkin";
+import config from "@/config";
 
-// 提取 isExpired 逻辑进行测试 (该函数在 login.ts 中是私有的，需要通过间接方式测试)
-// 这里我们测试相同的逻辑
+const STORAGE_KEY = `AR_CHECKIN_OPENID:${encodeURIComponent(config.apiUrl)}`;
+const session = (): IDType => ({
+  token: {
+    accessToken: "new-access-token",
+    refreshToken: "new-refresh-token",
+    expires: "2099/01/01 12:00:00",
+  },
+  user: null,
+  openid: "test-openid",
+  unionid: "test-unionid",
+});
 
-describe("login.ts - isExpired logic", () => {
+describe("WeChat login", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    uni.removeStorageSync(STORAGE_KEY);
+    vi.spyOn(wx, "login").mockImplementation((options) => {
+      const result = { code: "fresh-wechat-code", errMsg: "login:ok" };
+      options?.success?.(result);
+      return Promise.resolve(result);
+    });
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  // 模拟 isExpired 函数逻辑
-  const isExpired = (expires: string) => {
-    const now = new Date();
-    const expireTime = new Date(expires);
-    return new Date(now.getTime() + 3000) > expireTime; // 3秒后过期
-  };
-
-  describe("isExpired", () => {
-    it("should return true for past dates", () => {
-      vi.setSystemTime(new Date("2025-01-04T12:00:00Z"));
-      expect(isExpired("2025-01-04T11:59:00Z")).toBe(true);
+  function respond(statusCode: number, data: unknown) {
+    return vi.spyOn(wx, "request").mockImplementation((options) => {
+      options.success?.({ statusCode, data } as WechatMiniprogram.RequestSuccessCallbackResult);
+      return {} as WechatMiniprogram.RequestTask;
     });
+  }
 
-    it("should return true for dates within 3 seconds", () => {
-      vi.setSystemTime(new Date("2025-01-04T12:00:00Z"));
-      // 2 seconds from now - still considered expired due to 3s buffer
-      expect(isExpired("2025-01-04T12:00:02Z")).toBe(true);
-    });
+  it("uses a valid cached session without another WeChat login", async () => {
+    const cached = session();
+    uni.setStorageSync(STORAGE_KEY, cached);
+    await expect(login()).resolves.toEqual(cached);
+    expect(wx.login).not.toHaveBeenCalled();
+  });
 
-    it("should return false for future dates beyond 3 seconds", () => {
-      vi.setSystemTime(new Date("2025-01-04T12:00:00Z"));
-      // 5 seconds from now - not expired
-      expect(isExpired("2025-01-04T12:00:05Z")).toBe(false);
-    });
+  it.each([400, 401, 403, 500])("rejects HTTP %s without saving credentials", async (status) => {
+    respond(status, { success: true, data: session(), message: "failed" });
+    await expect(login(true)).rejects.toThrow();
+    expect(uni.getStorageSync(STORAGE_KEY)).toBeFalsy();
+  });
 
-    it("should return false for dates far in the future", () => {
-      vi.setSystemTime(new Date("2025-01-04T12:00:00Z"));
-      expect(isExpired("2025-01-05T12:00:00Z")).toBe(false);
-    });
+  it("rejects a business failure without saving its data", async () => {
+    respond(200, { success: false, data: session(), message: "登录失败" });
+    await expect(login(true)).rejects.toThrow();
+    expect(uni.getStorageSync(STORAGE_KEY)).toBeFalsy();
+  });
 
-    it("should handle ISO date strings", () => {
-      vi.setSystemTime(new Date("2025-01-04T12:00:00.000Z"));
-      expect(isExpired("2025-01-04T12:00:10.000Z")).toBe(false);
+  it.each([
+    null,
+    {},
+    { ...session(), token: {} },
+    { ...session(), token: { ...session().token, accessToken: "" } },
+    { ...session(), token: { ...session().token, accessToken: "bad\r\nheader" } },
+    { ...session(), token: { ...session().token, expires: "not-a-date" } },
+    { ...session(), token: { ...session().token, expires: "2000/01/01 12:00:00" } },
+  ])("rejects malformed login credentials: %j", async (data) => {
+    respond(200, { success: true, data });
+    await expect(wxLogin()).rejects.toThrow();
+    expect(uni.getStorageSync(STORAGE_KEY)).toBeFalsy();
+  });
+
+  it("replaces a cached session whose expiry cannot be parsed", async () => {
+    uni.setStorageSync(STORAGE_KEY, {
+      ...session(),
+      token: { ...session().token, expires: "not-a-date" },
     });
+    const fresh = session();
+    respond(200, { success: true, data: fresh, message: "success" });
+    await expect(login()).resolves.toEqual(fresh);
+    expect(wx.login).toHaveBeenCalledTimes(1);
+    expect(uni.getStorageSync(STORAGE_KEY)).toEqual(fresh);
+  });
+
+  it("accepts a legitimate new user without a unionid or profile", async () => {
+    const fresh = { ...session(), unionid: null, user: null };
+    respond(200, { success: true, data: fresh, message: "success" });
+    await expect(login(true)).resolves.toEqual(fresh);
+    expect(uni.getStorageSync(STORAGE_KEY)).toEqual(fresh);
+  });
+
+  it("shares an in-flight WeChat login between concurrent callers", async () => {
+    let finish: (() => void) | undefined;
+    vi.spyOn(wx, "request").mockImplementation((options) => {
+      finish = () =>
+        options.success?.({
+          statusCode: 200,
+          data: { success: true, data: session(), message: "success" },
+        } as unknown as WechatMiniprogram.RequestSuccessCallbackResult);
+      return {} as WechatMiniprogram.RequestTask;
+    });
+    const first = login(true);
+    const second = login(true);
+    expect(wx.login).toHaveBeenCalledTimes(1);
+    finish?.();
+    await expect(Promise.all([first, second])).resolves.toEqual([session(), session()]);
+  });
+
+  it("clears invalidated credentials when forced login fails", async () => {
+    uni.setStorageSync(STORAGE_KEY, session());
+    respond(401, { success: false, message: "invalid login" });
+    await expect(login(true)).rejects.toThrow();
+    expect(uni.getStorageSync(STORAGE_KEY)).toBeFalsy();
+  });
+
+  it("rejects an empty WeChat code before calling the API", async () => {
+    vi.mocked(wx.login).mockImplementation((options) => {
+      const result = { code: "", errMsg: "login:ok" };
+      options?.success?.(result);
+      return Promise.resolve(result);
+    });
+    const api = respond(200, { success: true, data: session() });
+    await expect(wxLogin()).rejects.toThrow("微信登录失败");
+    expect(api).not.toHaveBeenCalled();
   });
 });

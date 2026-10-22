@@ -22,6 +22,8 @@ const mockUni = {
   hideLoading: vi.fn(),
   downloadFile: vi.fn(),
   saveVideoToPhotosAlbum: vi.fn(),
+  getStorageSync: vi.fn(),
+  setStorageSync: vi.fn(),
 };
 
 (global as any).uni = mockUni;
@@ -34,10 +36,12 @@ import {
 } from "../video";
 import { getObjectUrl } from "@/api/cloud";
 import { wxPay } from "@/api/pay";
+import { selectDeviceApiVersion } from "@/config/backend";
 
 describe("video.ts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    selectDeviceApiVersion(1);
   });
 
   afterEach(() => {
@@ -45,6 +49,11 @@ describe("video.ts", () => {
   });
 
   describe("getSignedVideoUrl", () => {
+    it("uses the backend captured by the video workflow", async () => {
+      vi.mocked(getObjectUrl).mockResolvedValue("https://signed.invalid/video?sign=x");
+      await getSignedVideoUrl("video.mp4", true, 3, "https://x.4mr.cn/v2");
+      expect(getObjectUrl).toHaveBeenCalledWith("video.mp4", "https://x.4mr.cn/v2");
+    });
     it("should return signed URL without preview params", async () => {
       (getObjectUrl as any).mockResolvedValue("https://signed-url.com/video.mp4?sign=xxx");
 
@@ -188,10 +197,103 @@ describe("video.ts", () => {
   });
 
   describe("handlePayment", () => {
+    it("uses the captured legacy backend and omits file_id after switching to v1", async () => {
+      vi.mocked(wxPay).mockResolvedValue(true);
+      await handlePayment(
+        { file_id: 12, openid: "owner", amount: 100, description: "扫码设备文件" },
+        "https://x.4mr.cn/v2",
+      );
+      expect(wxPay).toHaveBeenCalledWith(
+        {
+          openid: "owner",
+          out_trade_no: "ORDER123456",
+          amount: 100,
+          description: "扫码设备文件",
+        },
+        "https://x.4mr.cn/v2",
+      );
+      expect(vi.mocked(wxPay).mock.calls[0][0]).not.toHaveProperty("file_id");
+    });
+
+    it("allows legacy payment without a file_id", async () => {
+      vi.mocked(wxPay).mockResolvedValue(true);
+
+      const result = await handlePayment(
+        { openid: "owner", amount: 100, description: "旧设备文件" },
+        "https://x.4mr.cn/v2",
+      );
+
+      expect(result).toBe(true);
+      expect(wxPay).toHaveBeenCalledWith(
+        {
+          openid: "owner",
+          out_trade_no: "ORDER123456",
+          amount: 100,
+          description: "旧设备文件",
+        },
+        "https://x.4mr.cn/v2",
+      );
+      expect(vi.mocked(wxPay).mock.calls[0][0]).not.toHaveProperty("file_id");
+    });
+
+    it("keeps the captured v1 backend and file_id after switching to legacy", async () => {
+      selectDeviceApiVersion(0);
+      vi.mocked(wxPay).mockResolvedValue(true);
+
+      await handlePayment(
+        { file_id: 12, openid: "owner", amount: 100, description: "新设备文件" },
+        "https://checkin.voxel.cn/api/v2",
+      );
+
+      expect(wxPay).toHaveBeenCalledWith(
+        expect.objectContaining({ file_id: 12, openid: "owner" }),
+        "https://checkin.voxel.cn/api/v2",
+      );
+    });
+
+    it.each([undefined, 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, NaN, Infinity, "12"])(
+      "rejects invalid v1 file_id %s before requesting payment",
+      async (fileId) => {
+        const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+        vi.mocked(wxPay).mockResolvedValue(true);
+
+        await expect(
+          handlePayment(
+            {
+              file_id: fileId as number | undefined,
+              openid: "owner",
+              amount: 100,
+              description: "新设备文件",
+            },
+            "https://checkin.voxel.cn/api/v2",
+          ),
+        ).rejects.toThrow("文件 ID 无效");
+        expect(wxPay).not.toHaveBeenCalled();
+        expect(mockUni.showLoading).not.toHaveBeenCalled();
+        consoleSpy.mockRestore();
+      },
+    );
+
+    it.each(["https://x.4mr.cn/v2", "https://checkin.voxel.cn/api/v2"])(
+      "returns false when payment is cancelled on %s",
+      async (apiUrl) => {
+        vi.mocked(wxPay).mockResolvedValue(false);
+
+        const result = await handlePayment(
+          { file_id: 12, openid: "owner", amount: 100, description: "扫码设备文件" },
+          apiUrl,
+        );
+
+        expect(result).toBe(false);
+        expect(mockUni.hideLoading).toHaveBeenCalled();
+      },
+    );
+
     it("should handle payment successfully", async () => {
       (wxPay as any).mockResolvedValue({ success: true });
 
       const result = await handlePayment({
+        file_id: 12,
         openid: "test-openid",
         amount: 100,
         description: "测试支付",
@@ -208,6 +310,7 @@ describe("video.ts", () => {
       (wxPay as any).mockResolvedValue(null);
 
       const result = await handlePayment({
+        file_id: 12,
         openid: "test-openid",
         amount: 100,
         description: "测试支付",
@@ -220,16 +323,15 @@ describe("video.ts", () => {
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       (wxPay as any).mockRejectedValue(new Error("Payment error"));
 
-      const result = await handlePayment({
-        openid: "test-openid",
-        amount: 100,
-        description: "测试支付",
-      });
-
-      expect(result).toBe(false);
-      expect(mockUni.showToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: "支付失败" }),
-      );
+      await expect(
+        handlePayment({
+          file_id: 12,
+          openid: "test-openid",
+          amount: 100,
+          description: "测试支付",
+        }),
+      ).rejects.toThrow("Payment error");
+      expect(mockUni.hideLoading).toHaveBeenCalled();
 
       consoleSpy.mockRestore();
     });

@@ -1,6 +1,8 @@
 import { getObjectUrl } from "@/api/cloud";
 import { wxPay, generateOrderNo } from "@/api/pay";
 import logger from "@/utils/logger";
+import config from "@/config";
+import { isLegacyApiUrl } from "@/config/backend";
 
 /** COS默认域名 */
 const COS_DEFAULT_DOMAIN = "https://game-1251022382.cos.ap-nanjing.myqcloud.com";
@@ -16,9 +18,10 @@ export const getSignedVideoUrl = async (
   key: string,
   isPreview: boolean = false,
   time: number = 0.01,
+  apiUrl: string = config.apiUrl,
 ): Promise<string> => {
   try {
-    const url = await getObjectUrl(key);
+    const url = await getObjectUrl(key, apiUrl);
     if (isPreview) {
       return `${url}&ci-process=snapshot&time=${time}`;
     }
@@ -170,6 +173,7 @@ export const downloadAndSaveVideo = async (url: string): Promise<boolean> => {
 
 /** 支付参数 */
 interface PaymentParams {
+  file_id?: number;
   openid: string;
   amount: number;
   description: string;
@@ -180,18 +184,35 @@ interface PaymentParams {
  * @param params 支付参数
  * @returns 是否支付成功
  */
-export const handlePayment = async (params: PaymentParams): Promise<boolean> => {
+export const handlePayment = async (
+  params: PaymentParams,
+  apiUrl: string = config.apiUrl,
+): Promise<boolean> => {
   try {
+    const isLegacy = isLegacyApiUrl(apiUrl);
+    if (
+      !isLegacy &&
+      (typeof params.file_id !== "number" ||
+        !Number.isSafeInteger(params.file_id) ||
+        params.file_id <= 0)
+    ) {
+      throw new Error("文件 ID 无效");
+    }
+
     const orderNo = generateOrderNo();
 
     uni.showLoading({ title: "正在发起支付...", mask: true });
 
-    const payResult = await wxPay({
-      openid: params.openid,
-      out_trade_no: orderNo,
-      amount: params.amount,
-      description: params.description,
-    });
+    const payResult = await wxPay(
+      {
+        ...(isLegacy ? {} : { file_id: params.file_id }),
+        openid: params.openid,
+        out_trade_no: orderNo,
+        amount: params.amount,
+        description: params.description,
+      },
+      apiUrl,
+    );
 
     uni.hideLoading();
 
@@ -199,7 +220,6 @@ export const handlePayment = async (params: PaymentParams): Promise<boolean> => 
   } catch (error) {
     console.error("[video] 支付过程中出错:", error);
     uni.hideLoading();
-    uni.showToast({ title: "支付失败", icon: "none" });
-    return false;
+    throw error instanceof Error ? error : new Error("支付失败，请稍后重试");
   }
 };

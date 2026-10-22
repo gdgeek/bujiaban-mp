@@ -9,7 +9,7 @@
             <text>正在加载记录...</text>
           </view>
         </block>
-        <block v-else-if="videoStore.videos.length === 0">
+        <block v-else-if="list.length === 0">
           <view class="empty-state">
             <text>暂无记录</text>
           </view>
@@ -34,60 +34,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
+import config from "@/config";
 defineOptions({ name: "VideoPage" });
-import { onShow } from "@dcloudio/uni-app";
-import { useVideoStore } from "@/stores/modules/video";
+import { onShow, onPullDownRefresh } from "@dcloudio/uni-app";
 import FileCard from "@/components/file-card/index.vue";
 import { getFileList } from "@/utils/common";
 import FooterCopyright from "@/components/FooterCopyright.vue";
-import type { IDType, FileType } from "@/api/checkin";
-import global from "@/utils/global";
+import type { FileType } from "@/api/checkin";
 import { login } from "@/api/login";
 const { safeAreaInsets } = uni.getWindowInfo();
-
-const list = ref<FileType[] | null>(null);
-// 加载状态
+const list = ref<FileType[]>([]);
 const loading = ref(true);
-// 用户openid
-const id = ref<IDType | null>(null);
-// 视频store
-const videoStore = useVideoStore();
+let pendingRefresh: Promise<void> | null = null;
 
-// 初始化页面
-onMounted(async () => {
-  console.error(global.url);
-  // 获取openid
-  const storedId = await login();
-  if (!storedId) {
-    console.warn("未找到存储的openid，需要先访问打卡页面");
-    // 提示用户先登录
-    uni.showToast({
-      title: "请先登录系统",
-      icon: "none",
-      duration: 2000,
-    });
-  } else {
-    id.value = storedId;
+const refreshRecords = (): Promise<void> => {
+  if (pendingRefresh) return pendingRefresh;
+  const apiUrl = config.apiUrl;
+  loading.value = true;
+  pendingRefresh = (async () => {
+    try {
+      const id = await login(false, apiUrl);
+      if (!id) {
+        uni.showToast({ title: "请先登录系统", icon: "none" });
+        return;
+      }
+      list.value = await getFileList(id.unionid, apiUrl);
+    } catch {
+      uni.showToast({ title: "获取视频列表失败", icon: "none" });
+    } finally {
+      loading.value = false;
+      pendingRefresh = null;
+    }
+  })();
+  return pendingRefresh;
+};
 
-    list.value = await getFileList(id.value.unionid);
-
-    console.error("已获取到openid:", list);
-  }
-});
-
-// 每次页面显示时刷新数据
-onShow(async () => {
+onShow(refreshRecords);
+onPullDownRefresh(async () => {
   try {
-    loading.value = true;
-  } catch (error) {
-    console.error("获取视频列表失败:", error);
-    uni.showToast({
-      title: "获取视频列表失败",
-      icon: "none",
-    });
+    await refreshRecords();
   } finally {
-    loading.value = false;
+    uni.stopPullDownRefresh();
   }
 });
 </script>

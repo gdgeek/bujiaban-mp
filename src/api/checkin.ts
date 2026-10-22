@@ -1,6 +1,7 @@
-import global from "@/utils/global";
-import { buildAuthHeader, calculateHash } from "@/utils/common";
+import config from "@/config";
+import { calculateHash, isValidId } from "@/utils/common";
 import logger from "@/utils/logger";
+import { post } from "@/utils/request";
 
 export interface CheckinInfo {
   created_at: string;
@@ -19,6 +20,7 @@ export interface FileType {
   bucket: string;
   created_at: string;
   unlocked: number;
+  price?: number | null;
 }
 
 export interface ReportInfo {
@@ -46,6 +48,7 @@ export interface UserType {
 }
 
 export interface FileInfo {
+  file_id?: number;
   key: string;
   created_at: string;
 }
@@ -72,7 +75,7 @@ export interface IDType {
   };
   user: UserType | null;
   openid: string;
-  unionid: string;
+  unionid: string | null;
 }
 
 export interface LoginResponse {
@@ -85,34 +88,45 @@ export interface LoginResponse {
  * 微信登录获取openid
  * @returns 包含openid的对象
  */
-export const wxLogin = async (): Promise<LoginResponse> => {
+export const wxLogin = async (apiUrl: string = config.apiUrl): Promise<LoginResponse> => {
+  const apiBase = apiUrl.replace(/\/+$/, "");
   return new Promise((resolve, reject) => {
     wx.login({
       success: function (res) {
-        if (res.code) {
+        if (typeof res.code === "string" && res.code.trim()) {
           wx.request({
-            url: `${global.url}/site/login`,
+            url: `${apiBase}/site/login`,
             data: {
               code: res.code,
             },
             method: "POST",
             success: function (res) {
+              const body = res.data as Partial<LoginResponse> | null;
+              if (
+                !(res.statusCode >= 200 && res.statusCode < 300) ||
+                !body ||
+                body.success !== true ||
+                !isValidId(body.data)
+              ) {
+                reject(new Error("微信登录失败，登录响应无效，请重试"));
+                return;
+              }
               logger.debug("checkin", "wxLogin 成功");
-              resolve(res.data as LoginResponse);
+              resolve(body as LoginResponse);
             },
             fail: function (res) {
               console.warn("[checkin] 请求openid失败:", res.errMsg);
-              reject(res.errMsg);
+              reject(new Error("微信登录请求失败，请稍后重试"));
             },
           });
         } else {
           console.warn("[checkin] 微信登录失败:", res.errMsg);
-          reject(res.errMsg);
+          reject(new Error("微信登录失败，请重试"));
         }
       },
       fail: function (res) {
         console.warn("[checkin] 微信登录失败:", res.errMsg);
-        reject(res.errMsg);
+        reject(new Error("微信登录失败，请重试"));
       },
     });
   });
@@ -176,33 +190,16 @@ export const localRefresh = async (
   status?: string,
   idata: string | object = "",
 ): Promise<ApiResponse> => {
-  return new Promise((resolve, reject) => {
-    const time = Math.floor(Date.now() / 1000).toString();
-    const hash = calculateHash(token, time, id);
-
-    const data: LocalRefreshData = {
-      token,
-      id,
-      status,
-      data: typeof idata === "string" ? idata : JSON.stringify(idata),
-    };
-
-    wx.request({
-      url: `${global.url}/server/applet?time=${time}&hash=${hash}&expand=token,file,device,setup,applet`,
-      method: "POST",
-      header: {
-        ...buildAuthHeader(),
-        "Content-Type": "application/json",
-      },
-      data,
-      success: function (res) {
-        logger.debug("checkin", "localRefresh 成功");
-        resolve(res.data as ApiResponse);
-      },
-      fail: function (res) {
-        console.warn("[checkin] localRefresh 失败:", res.errMsg);
-        reject(res.errMsg);
-      },
-    });
-  });
+  const time = Math.floor(Date.now() / 1000).toString();
+  const hash = calculateHash(token, time, id);
+  const data: LocalRefreshData = {
+    token,
+    id,
+    status,
+    data: typeof idata === "string" ? idata : JSON.stringify(idata),
+  };
+  return post<ApiResponse>(
+    `/server/applet?time=${time}&hash=${hash}&expand=token,file,device,setup,applet`,
+    { ...data },
+  );
 };
