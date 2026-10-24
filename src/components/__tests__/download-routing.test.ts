@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadSetup } from "../../pages/__tests__/setup-harness";
 
 const legacyApi = "https://x.4mr.cn/v2";
-const currentApi = "https://checkin.voxel.cn/api/v2";
+const currentApi = "https://c.4mr.cn/api/v2";
 let activeApi: string;
 let navigate: ReturnType<typeof vi.fn>;
 let signed: ReturnType<typeof vi.fn>;

@@ -56,7 +56,7 @@ const request = vi.fn();
 const originalRequest = uni.request;
 const NOW = 1_800_000_000_000;
 const LEGACY_API = "https://x.4mr.cn/v2";
-const V1_API = "https://checkin.voxel.cn/api/v2";
+const V1_API = "https://c.4mr.cn/api/v2";
 const credentials = (id = "first", expires = NOW / 1000 + 3600) => ({
   bucket: "test-123456",
   region: "ap-shanghai",

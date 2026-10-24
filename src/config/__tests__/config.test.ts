@@ -44,7 +44,7 @@ describe("config/index.ts", () => {
       vi.stubEnv("VITE_API_URL", "");
       vi.resetModules();
       const { config: defaults } = await import("../index");
-      expect(defaults.apiUrl).toBe("https://checkin.voxel.cn/api/v2");
+      expect(defaults.apiUrl).toBe("https://c.4mr.cn/api/v2");
     });
 
     it.each(["development", "production"])(
@@ -54,7 +54,7 @@ describe("config/index.ts", () => {
         vi.stubEnv("VITE_API_URL", env.VITE_API_URL);
         vi.resetModules();
         const { config: configured } = await import("../index");
-        expect(configured.apiUrl).toBe("https://checkin.voxel.cn/api/v2");
+        expect(configured.apiUrl).toBe("https://c.4mr.cn/api/v2");
       },
     );
   });

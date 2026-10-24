@@ -6,7 +6,7 @@ export interface AdminLoginTicket {
 }
 
 const DEFAULT_ORIGINS = [
-  "https://checkin.voxel.cn",
+  "https://c.4mr.cn",
   "https://x.b0.01xr.com",
   "https://x.b1.01xr.com",
   "https://x.4mr.cn",
@@ -185,7 +185,7 @@ export async function approveAdminLogin(
 ): Promise<void> {
   validateTicket(ticket);
   const apiBase = `${ticket.origin}${
-    ticket.origin === "https://checkin.voxel.cn" ? "/api/v2" : "/v2"
+    ticket.origin === "https://c.4mr.cn" ? "/api/v2" : "/v2"
   }`;
   const checkActive = () => {
     if (isCancelled()) throw new Error("已取消登录");

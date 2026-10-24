@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `https://w.4mr.cn/t?k=TOKEN` | 0 | `https://x.4mr.cn/v2` |
 | `https://w.4mr.cn/t?k=TOKEN&v=0` | 0 | `https://x.4mr.cn/v2` |
-| `https://w.4mr.cn/t?k=TOKEN&v=1` | 1 | `https://checkin.voxel.cn/api/v2` |
+| `https://w.4mr.cn/t?k=TOKEN&v=1` | 1 | `https://c.4mr.cn/api/v2` |
 
 版本是二维码协议标记，与设备上报的 `device.version` 分开。Token 格式沿用后端的 1 个英文字母加 32 个十六进制字符。不允许二维码提供任意 API 地址；非法及暂不支持的版本提示错误。
 
@@ -26,6 +26,6 @@
 
 微信开发者工具重新打开构建项目后，首页正常显示，控制台没有错误；此项验证为本地启动检查，未执行真实设备扫码或真实支付。
 
-设备端生成新二维码时应追加 `&v=1`；现有工作区没有设备端二维码生成源码，本轮实现接收、解析与路由，并提供 `buildDeviceQr` 构建工具及协议说明。上线时保留 `w.4mr.cn` 的小程序二维码打开规则，以及 `x.4mr.cn`、`checkin.voxel.cn` 两个 API 域名的 request 合法域名配置。
+设备端生成新二维码时应追加 `&v=1`；现有工作区没有设备端二维码生成源码，本轮实现接收、解析与路由，并提供 `buildDeviceQr` 构建工具及协议说明。上线时保留 `w.4mr.cn` 的小程序二维码打开规则，以及 `x.4mr.cn`、`c.4mr.cn` 两个 API 域名的 request 合法域名配置。
 
 用户随后授权发布，并进一步限定旧 v0 支付不改、新 v1 支付修改。发布进度另记于根仓库 `docs/superpowers/plans/2026-10-23-mini-versioned-payments-release.md`；仅更新新后端，旧 `x.4mr.cn` 服务及原工作区的其他改动保留。

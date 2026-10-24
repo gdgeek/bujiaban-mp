@@ -4,7 +4,7 @@ import { loadSetup, nodeText } from "../../pages/__tests__/setup-harness";
 const setup = { money: 0, slogans: ["hello"], shots: [], thumbs: [] };
 const identity = { unionid: "private-unionid" };
 const legacyApiUrl = "https://x.4mr.cn/v2";
-const currentApiUrl = "https://checkin.voxel.cn/api/v2";
+const currentApiUrl = "https://c.4mr.cn/api/v2";
 let activeApiUrl: string;
 const config = {
   get apiUrl() {

@@ -33,13 +33,13 @@ v1 历史文件的价格保留为 `NULL`，不得批量设为免费。已解锁�
 
 ### API 入口与后端切换
 
-设备拍摄二维码格式为 `https://w.4mr.cn/t?k=TOKEN&v=1`。`k` 是拍摄会话 Token；二维码未带 `v` 或 `v=0` 时，小程序访问旧后端 `https://x.4mr.cn/v2`；`v=1` 时访问新后端 `https://checkin.voxel.cn/api/v2`。旧二维码无需修改，新设备生成二维码时追加 `&v=1`。微信链接进入和小程序内扫码均保留版本号，非法或未支持的版本不会进入录制流程。
+设备拍摄二维码格式为 `https://w.4mr.cn/t?k=TOKEN&v=1`。`k` 是拍摄会话 Token；二维码未带 `v` 或 `v=0` 时，小程序访问旧后端 `https://x.4mr.cn/v2`；`v=1` 时访问新后端 `https://c.4mr.cn/api/v2`。旧二维码无需修改，新设备生成二维码时追加 `&v=1`。微信链接进入和小程序内扫码均保留版本号，非法或未支持的版本不会进入录制流程。
 
 小程序记住最近一次扫码的后端，记录、用户和设备功能跟随该后端；从未扫码时使用下述默认新 API。两套登录 Token、云存储临时凭据、SDK 实例和待确认支付订单按 API 隔离。旧未分域登录缓存会重新登录，不会猜测归属后迁移到另一后端。版本号用于扫码分流，与设备软件上报的 `device.version` 无关。详见 [设备二维码版本记录](docs/superpowers/plans/2026-10-23-device-qr-version.md)。
 
-默认、开发和生产的 v1 配置使用 `https://checkin.voxel.cn/api/v2`。该入口由服务端反向代理到 B0 主后端与 B1 备用后端，自动切换由代理负责；小程序不重试网络失败的业务写操作。启用前需在微信小程序管理后台的 request 合法域名中保留 `https://x.4mr.cn` 并加入 `https://checkin.voxel.cn`，保持开发者工具 `urlCheck: true`。
+默认、开发和生产的 v1 配置使用 `https://c.4mr.cn/api/v2`。该入口由服务端反向代理到 B0 主后端与 B1 备用后端，自动切换由代理负责；小程序不重试网络失败的业务写操作。启用前需在微信小程序管理后台的 request 合法域名中保留 `https://x.4mr.cn` 并加入 `https://c.4mr.cn`，保持开发者工具 `urlCheck: true`。
 
-管理后台扫码登录仍使用二维码中的 origin，重新获取目标后端的微信凭据；默认与环境配置同时信任 `https://checkin.voxel.cn`，并保留 `https://x.b0.01xr.com`、`https://x.b1.01xr.com` 和 `https://x.4mr.cn` 以兼容现有二维码。二维码的 canonical origin 必须保持根 origin，不包含路径：`https://checkin.voxel.cn` 的登录与审批请求使用 `/api/v2`，其他可信直连 origin 继续使用 `/v2`。B0 与 B1 生成新二维码时应统一使用 `https://checkin.voxel.cn` 作为 canonical origin。
+管理后台扫码登录仍使用二维码中的 origin，重新获取目标后端的微信凭据；默认与环境配置同时信任 `https://c.4mr.cn`，并保留 `https://x.b0.01xr.com`、`https://x.b1.01xr.com` 和 `https://x.4mr.cn` 以兼容现有二维码。二维码的 canonical origin 必须保持根 origin，不包含路径：`https://c.4mr.cn` 的登录与审批请求使用 `/api/v2`，其他可信直连 origin 继续使用 `/v2`。B0 与 B1 生成新二维码时应统一使用 `https://c.4mr.cn` 作为 canonical origin。
 
 统一域名不会自动保证现有 Bearer Token 可在两个后端通用；上线前须验证 B0 签发的 Token 在 B1 仍能通过鉴权，并确认扫码登录状态可跨后端继续处理。腾讯云 COS 的上传、下载和删除仍由 COS SDK 直接访问存储域名。
 

@@ -22,7 +22,7 @@ describe("admin login QR protocol", () => {
   });
 
   it("accepts the unified checkin origin by default", () => {
-    const target = "https://checkin.voxel.cn";
+    const target = "https://c.4mr.cn";
     expect(api.parseAdminLoginQr(qr(target))).toEqual({ id, secret, origin: target });
   });
 
@@ -32,15 +32,15 @@ describe("admin login QR protocol", () => {
       const env = loadEnv(mode, process.cwd());
       vi.stubEnv("VITE_ADMIN_LOGIN_ORIGINS", env.VITE_ADMIN_LOGIN_ORIGINS);
       expect(api.getTrustedAdminLoginOrigins()).toEqual([
-        "https://checkin.voxel.cn",
+        "https://c.4mr.cn",
         "https://x.b0.01xr.com",
         "https://x.b1.01xr.com",
         "https://x.4mr.cn",
       ]);
-      expect(api.parseAdminLoginQr(qr("https://checkin.voxel.cn"))).toEqual({
+      expect(api.parseAdminLoginQr(qr("https://c.4mr.cn"))).toEqual({
         id,
         secret,
-        origin: "https://checkin.voxel.cn",
+        origin: "https://c.4mr.cn",
       });
     },
   );
@@ -89,11 +89,11 @@ describe("admin login QR protocol", () => {
     qr("https://x.b0.01xr.com:443"),
     qr("https://X.B0.01XR.COM"),
     qr("https://x.b0.01xr.com\\@evil.example"),
-    qr("https://checkin.voxel.cn/"),
-    qr("https://checkin.voxel.cn/v2"),
-    qr("https://checkin.voxel.cn/api/v2"),
-    qr("https://checkin.voxel.cn?evil=1"),
-    qr("https://checkin.voxel.cn#fragment"),
+    qr("https://c.4mr.cn/"),
+    qr("https://c.4mr.cn/v2"),
+    qr("https://c.4mr.cn/api/v2"),
+    qr("https://c.4mr.cn?evil=1"),
+    qr("https://c.4mr.cn#fragment"),
   ])("rejects an untrusted or noncanonical origin: %s", (value) => {
     expect(() => api.parseAdminLoginQr(value)).toThrow();
   });
@@ -128,7 +128,7 @@ describe("admin login QR protocol", () => {
   it("does not trust malformed allowlist values", () => {
     vi.stubEnv(
       "VITE_ADMIN_LOGIN_ORIGINS",
-      "https://x.b0.01xr.com/path,https://user@x.b0.01xr.com,https://checkin.voxel.cn/api/v2",
+      "https://x.b0.01xr.com/path,https://user@x.b0.01xr.com,https://c.4mr.cn/api/v2",
     );
     expect(api?.getTrustedAdminLoginOrigins()).toEqual([]);
     expect(() => api.parseAdminLoginQr(qr())).toThrow("不受信任");
@@ -226,7 +226,7 @@ describe("confirmation and credentials stay within the target backend", () => {
   });
 
   it.each([
-    ["https://checkin.voxel.cn", "/api/v2"],
+    ["https://c.4mr.cn", "/api/v2"],
     ["https://x.b0.01xr.com", "/v2"],
     ["https://x.b1.01xr.com", "/v2"],
     ["https://x.4mr.cn", "/v2"],
@@ -307,7 +307,7 @@ describe("confirmation and credentials stay within the target backend", () => {
     },
   );
 
-  it.each([origin, "https://checkin.voxel.cn"])(
+  it.each([origin, "https://c.4mr.cn"])(
     "does not approve or retry when %s login fails",
     async (target) => {
       requestSpy.mockImplementation((options) =>
