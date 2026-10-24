@@ -1,6 +1,6 @@
 /** Device QR versions select fixed API realms; QR content cannot supply an API URL. */
 const currentApiUrl =
-  (import.meta.env?.VITE_API_URL as string) || "https://checkin.voxel.cn/api/v2";
+  (import.meta.env?.VITE_API_URL as string) || "https://c.4mr.cn/api/v2";
 const legacyApiUrl = "https://x.4mr.cn/v2";
 const selectionKey = "AR_DEVICE_QR_VERSION";
 let activeVersion: 0 | 1 | undefined;

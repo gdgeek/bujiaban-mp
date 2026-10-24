@@ -6,7 +6,7 @@ import { buildAuthHeader, clearId, getToken, loadId, saveId } from "../common";
 import { request } from "../request";
 
 const OLD_API = "https://x.4mr.cn/v2";
-const NEW_API = "https://checkin.voxel.cn/api/v2";
+const NEW_API = "https://c.4mr.cn/api/v2";
 const LEGACY_KEY = "AR_CHECKIN_OPENID";
 const keyFor = (api: string) => `${LEGACY_KEY}:${encodeURIComponent(api)}`;
 const session = (accessToken: string): IDType => ({

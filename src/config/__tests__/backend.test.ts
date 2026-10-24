@@ -20,7 +20,7 @@ describe("device QR backend selection", () => {
     const backend = await import("../backend");
     expect(backend.isLegacyApiUrl("https://x.4mr.cn/v2")).toBe(true);
     expect(backend.isLegacyApiUrl("https://x.4mr.cn/v2/")).toBe(true);
-    expect(backend.isLegacyApiUrl("https://checkin.voxel.cn/api/v2")).toBe(false);
+    expect(backend.isLegacyApiUrl("https://c.4mr.cn/api/v2")).toBe(false);
     expect(backend.isLegacyApiUrl("https://x.4mr.cn/v2/other")).toBe(false);
     expect(backend.isLegacyApiUrl("https://x.4mr.cn.invalid/v2")).toBe(false);
     backend.selectDeviceApiVersion(1);
@@ -29,7 +29,7 @@ describe("device QR backend selection", () => {
 
   it("uses the current backend before a device has been scanned", async () => {
     const backend = await import("../backend");
-    expect(backend.getActiveApiUrl()).toBe("https://checkin.voxel.cn/api/v2");
+    expect(backend.getActiveApiUrl()).toBe("https://c.4mr.cn/api/v2");
   });
 
   it("routes legacy and new QR versions to their own fixed backends", async () => {
@@ -37,7 +37,7 @@ describe("device QR backend selection", () => {
     backend.selectDeviceApiVersion(0);
     expect(backend.getActiveApiUrl()).toBe("https://x.4mr.cn/v2");
     backend.selectDeviceApiVersion(1);
-    expect(backend.getActiveApiUrl()).toBe("https://checkin.voxel.cn/api/v2");
+    expect(backend.getActiveApiUrl()).toBe("https://c.4mr.cn/api/v2");
   });
 
   it("persists the last scanned backend across an app restart", async () => {
@@ -60,7 +60,7 @@ describe("device QR backend selection", () => {
 
   it("ignores a corrupt persisted version", async () => {
     storage.set(selectionKey, "https://untrusted.invalid/v2");
-    expect((await import("../backend")).getActiveApiUrl()).toBe("https://checkin.voxel.cn/api/v2");
+    expect((await import("../backend")).getActiveApiUrl()).toBe("https://c.4mr.cn/api/v2");
   });
 
   it("keeps the configured current API available while legacy still uses its fixed URL", async () => {
@@ -76,6 +76,6 @@ describe("device QR backend selection", () => {
     backend.selectDeviceApiVersion(0);
     expect(config.apiUrl).toBe("https://x.4mr.cn/v2");
     backend.selectDeviceApiVersion(1);
-    expect(config.apiUrl).toBe("https://checkin.voxel.cn/api/v2");
+    expect(config.apiUrl).toBe("https://c.4mr.cn/api/v2");
   });
 });

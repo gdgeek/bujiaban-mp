@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const backend = vi.hoisted(() => ({ apiUrl: "https://checkin.voxel.cn/api/v2" }));
+const backend = vi.hoisted(() => ({ apiUrl: "https://c.4mr.cn/api/v2" }));
 vi.mock("@/config", () => ({
   default: {
     get apiUrl() {
@@ -17,7 +17,7 @@ describe("authenticated file payment", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    backend.apiUrl = "https://checkin.voxel.cn/api/v2";
+    backend.apiUrl = "https://c.4mr.cn/api/v2";
     wx.request = request;
     uni.request = ((options: Record<string, unknown>) =>
       new Promise((resolve) => {
@@ -25,7 +25,7 @@ describe("authenticated file payment", () => {
       })) as typeof uni.request;
     uni.requestPayment = payment;
     wx.requestPayment = payment;
-    uni.removeStorageSync("AR_PENDING_PAYMENT:https://checkin.voxel.cn/api/v2:owner:12");
+    uni.removeStorageSync("AR_PENDING_PAYMENT:https://c.4mr.cn/api/v2:owner:12");
     uni.removeStorageSync("AR_PENDING_PAYMENT:https://x.4mr.cn/v2:owner:12");
     uni.removeStorageSync("AR_PENDING_PAYMENT:https://x.4mr.cn/v2:owner:undefined");
     saveId({
@@ -113,7 +113,7 @@ describe("authenticated file payment", () => {
 
   it("rechecks an uncertain payment before creating another order", async () => {
     uni.setStorageSync(
-      "AR_PENDING_PAYMENT:https://checkin.voxel.cn/api/v2:owner:12",
+      "AR_PENDING_PAYMENT:https://c.4mr.cn/api/v2:owner:12",
       "previous-order-123",
     );
     request.mockImplementation((options) =>
@@ -133,7 +133,7 @@ describe("authenticated file payment", () => {
 
   it("resumes the same pending unpaid order instead of charging a new order", async () => {
     uni.setStorageSync(
-      "AR_PENDING_PAYMENT:https://checkin.voxel.cn/api/v2:owner:12",
+      "AR_PENDING_PAYMENT:https://c.4mr.cn/api/v2:owner:12",
       "previous-order-123",
     );
     let queries = 0;
@@ -332,7 +332,7 @@ describe("authenticated file payment", () => {
     const legacyApi = "https://x.4mr.cn/v2";
     backend.apiUrl = legacyApi;
     payment.mockImplementation((options) => {
-      backend.apiUrl = "https://checkin.voxel.cn/api/v2";
+      backend.apiUrl = "https://c.4mr.cn/api/v2";
       options.success({});
     });
     await expect(
@@ -351,7 +351,7 @@ describe("authenticated file payment", () => {
       }),
     );
     await expect(isOrderPaid("legacy-order-123", "https://x.4mr.cn/v2")).resolves.toBe(true);
-    await expect(isOrderPaid("new-order-123", "https://checkin.voxel.cn/api/v2")).resolves.toBe(
+    await expect(isOrderPaid("new-order-123", "https://c.4mr.cn/api/v2")).resolves.toBe(
       false,
     );
   });

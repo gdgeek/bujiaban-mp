@@ -3,7 +3,7 @@ import { loadSetup, nodeText } from "./setup-harness";
 
 const identity = { unionid: "private-unionid", openid: "private-openid", user: null };
 const LEGACY_API = "https://x.4mr.cn/v2";
-const CURRENT_API = "https://checkin.voxel.cn/api/v2";
+const CURRENT_API = "https://c.4mr.cn/api/v2";
 const backend = { apiUrl: LEGACY_API };
 const file = { id: 1, key: "video.mp4" };
 const device = {

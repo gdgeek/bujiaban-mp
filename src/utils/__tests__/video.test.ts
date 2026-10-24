@@ -242,12 +242,12 @@ describe("video.ts", () => {
 
       await handlePayment(
         { file_id: 12, openid: "owner", amount: 100, description: "新设备文件" },
-        "https://checkin.voxel.cn/api/v2",
+        "https://c.4mr.cn/api/v2",
       );
 
       expect(wxPay).toHaveBeenCalledWith(
         expect.objectContaining({ file_id: 12, openid: "owner" }),
-        "https://checkin.voxel.cn/api/v2",
+        "https://c.4mr.cn/api/v2",
       );
     });
 
@@ -265,7 +265,7 @@ describe("video.ts", () => {
               amount: 100,
               description: "新设备文件",
             },
-            "https://checkin.voxel.cn/api/v2",
+            "https://c.4mr.cn/api/v2",
           ),
         ).rejects.toThrow("文件 ID 无效");
         expect(wxPay).not.toHaveBeenCalled();
@@ -274,7 +274,7 @@ describe("video.ts", () => {
       },
     );
 
-    it.each(["https://x.4mr.cn/v2", "https://checkin.voxel.cn/api/v2"])(
+    it.each(["https://x.4mr.cn/v2", "https://c.4mr.cn/api/v2"])(
       "returns false when payment is cancelled on %s",
       async (apiUrl) => {
         vi.mocked(wxPay).mockResolvedValue(false);

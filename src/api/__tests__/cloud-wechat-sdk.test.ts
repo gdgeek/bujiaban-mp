@@ -136,7 +136,7 @@ it("keeps the original SDK bound to its API when the active backend changes", as
   const legacyCos = await getCosInstance();
   const legacyUrl = new URL(await getObjectUrl("old.mp4"));
   expect(legacyUrl.hostname).toBe("legacy-123456.cos.ap-shanghai.myqcloud.com");
-  activeApi.apiUrl = "https://checkin.voxel.cn/api/v2";
+  activeApi.apiUrl = "https://c.4mr.cn/api/v2";
   const v1Url = new URL(await getObjectUrl("new.mp4"));
   expect(v1Url.hostname).toBe("v1-123456.cos.ap-shanghai.myqcloud.com");
   expect(v1Url.searchParams.get("q-ak")).toBe("v1-1");

@@ -11,7 +11,7 @@ let toast: ReturnType<typeof vi.fn>;
 let activeApiUrl: string;
 
 beforeEach(() => {
-  activeApiUrl = "https://checkin.voxel.cn/api/v2";
+  activeApiUrl = "https://c.4mr.cn/api/v2";
   getFile = vi.fn().mockResolvedValue(locked);
   pay = vi.fn().mockResolvedValue(false);
   download = vi.fn().mockResolvedValue(true);
@@ -23,7 +23,7 @@ beforeEach(() => {
   for (const key of [
     "AR_PURCHASED_FILES",
     "AR_PURCHASED_FILES:" + encodeURIComponent("https://x.4mr.cn/v2"),
-    "AR_PURCHASED_FILES:" + encodeURIComponent("https://checkin.voxel.cn/api/v2"),
+    "AR_PURCHASED_FILES:" + encodeURIComponent("https://c.4mr.cn/api/v2"),
   ])
     uni.removeStorageSync(key);
   toast = vi.fn();
@@ -66,10 +66,10 @@ describe("payment page server authority", () => {
     await page.fire("onLoad", query);
     activeApiUrl = "https://x.4mr.cn/v2";
     await page.state.handlePay();
-    expect(getFile).toHaveBeenLastCalledWith(12, "https://checkin.voxel.cn/api/v2");
+    expect(getFile).toHaveBeenLastCalledWith(12, "https://c.4mr.cn/api/v2");
     expect(pay).toHaveBeenCalledWith(
       expect.objectContaining({ file_id: 12 }),
-      "https://checkin.voxel.cn/api/v2",
+      "https://c.4mr.cn/api/v2",
     );
   });
   it("ignores free/purchased navigation flags and pays the server amount", async () => {
@@ -84,7 +84,7 @@ describe("payment page server authority", () => {
     await page.state.handlePay();
     expect(pay).toHaveBeenCalledWith(
       expect.objectContaining({ file_id: 12, amount: 100 }),
-      "https://checkin.voxel.cn/api/v2",
+      "https://c.4mr.cn/api/v2",
     );
     expect(download).not.toHaveBeenCalled();
   });
@@ -178,7 +178,7 @@ describe("legacy payment page compatibility", () => {
     download.mockResolvedValue(false);
     const page = paymentPage();
     await page.fire("onLoad", legacyQuery());
-    activeApiUrl = "https://checkin.voxel.cn/api/v2";
+    activeApiUrl = "https://c.4mr.cn/api/v2";
     await page.state.handlePay();
     expect(pay).toHaveBeenLastCalledWith(expect.objectContaining({ amount: 100 }), legacyApi);
     expect(signed).toHaveBeenLastCalledWith("legacy.mp4", false, 0.01, legacyApi);
@@ -209,7 +209,7 @@ describe("legacy payment page compatibility", () => {
 
   it("does not accept another backend cache or purchased navigation flags", async () => {
     uni.setStorageSync(
-      `AR_PURCHASED_FILES:${encodeURIComponent("https://checkin.voxel.cn/api/v2")}`,
+      `AR_PURCHASED_FILES:${encodeURIComponent("https://c.4mr.cn/api/v2")}`,
       ["legacy.mp4"],
     );
     const page = paymentPage();
